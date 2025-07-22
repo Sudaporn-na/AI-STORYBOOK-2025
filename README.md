@@ -76,6 +76,10 @@ python manage.py createsuperuser
 ```
 python manage.py runserver
 ```
+```
+uvicorn classroom_project.asgi:application --host 127.0.0.1 --port 8000 --reload
+```
+
 
 ### ลงgit
 ### สร้าง Branch
