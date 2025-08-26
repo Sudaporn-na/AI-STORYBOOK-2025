@@ -132,3 +132,7 @@ git restore requirements.txt
 ```
 del .\security.log
 ```
+### รัน uvicorn
+```
+uvicorn classroom_project.asgi:application --host 127.0.0.1 --port 8000
+```

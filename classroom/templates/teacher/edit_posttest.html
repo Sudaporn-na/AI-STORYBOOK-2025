@@ -1,0 +1,51 @@
+{% extends "teacher/base_teacher.html" %}
+{% load static %}
+{% block title %}แก้ไขแบบทดสอบ{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-10 space-y-8">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">แก้ไขแบบทดสอบ</h1>
+        <a href="{% url 'view_uploaded_lesson' storybook.id %}" class="text-sm text-indigo-500 hover:underline">← กลับ</a>
+    </div>
+
+    <form method="post" action="{% url 'edit_posttest' storybook.id %}" class="space-y-8">
+        {% csrf_token %}
+
+        {% for q in questions %}
+        <div class="bg-white border border-gray-200 p-6 rounded-lg shadow-sm space-y-4">
+            <div>
+                <label class="font-semibold text-gray-700">คำถาม {{ forloop.counter }}</label>
+                <input type="text" name="question_{{ q.id }}" value="{{ q.question_text }}"
+                    class="mt-1 w-full border rounded-md px-3 py-2 text-sm" required>
+            </div>
+
+            {% for i in "1234"|make_list %}
+            <div class="flex items-center gap-2">
+                <input type="radio" name="correct_{{ q.id }}" value="{{ i }}" {% if q.correct_choice == i|add:0 %}checked{% endif %}>
+                <input type="text" name="choice{{ i }}_{{ q.id }}"
+                    value="{% if i == '1' %}{{ q.choice_1 }}{% elif i == '2' %}{{ q.choice_2 }}{% elif i == '3' %}{{ q.choice_3 }}{% elif i == '4' %}{{ q.choice_4 }}{% endif %}"
+                    class="w-full border rounded-md px-3 py-2 text-sm" required>
+            </div>
+            {% endfor %}
+
+            <div>
+                <label class="text-sm text-gray-600">คำอธิบายสำหรับคำตอบที่ถูกต้อง</label>
+                <textarea name="explanation_{{ q.id }}" class="w-full border rounded-md px-3 py-2 text-sm" rows="2">{{ q.explanation }}</textarea>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-sm text-gray-500 italic">ยังไม่มีคำถามแบบทดสอบ</p>
+        {% endfor %}
+
+        <div class="flex justify-end">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm">
+                💾 บันทึกการเปลี่ยนแปลง
+            </button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

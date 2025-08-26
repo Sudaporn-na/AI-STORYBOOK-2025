@@ -5,11 +5,8 @@
 
 <div class="bg-gray-50 w-full font-poppins text-gray-700 min-h-screen px-6 py-8">
     <div class="max-w-5xl mx-auto">
-
-        <!-- ✅ เริ่ม Form -->
         <form method="POST" enctype="multipart/form-data" class="space-y-10">
             {% csrf_token %}
-
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-2xl font-semibold">Profile Settings</h1>
                 <a href="{% url 'view_profile_admin' %}"
@@ -17,7 +14,6 @@
                     →</a>
             </div>
 
-            <!-- ✅ Profile Details -->
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
                     <h2 class="text-lg font-semibold mb-2">Profile Details</h2>
@@ -32,17 +28,11 @@
                         </div>
                         <div class="border border-dashed border-gray-300 rounded-lg w-full p-6 text-center">
                             <p class="text-sm text-gray-500 mb-2">Upload new picture</p>
-
-                            <!-- ✅ ชื่อไฟล์ -->
                             <p id="file-name" class="text-sm text-gray-600 mb-3 truncate text-center">No file chosen</p>
-
-                            <!-- ✅ ปุ่ม Choose File ตรงกลาง -->
                             <label for="id_profile_picture"
                                 class="inline-block cursor-pointer file:bg-black bg-black text-white text-sm font-semibold py-2 px-5 rounded-full hover:bg-gray-800 transition">
                                 Choose File
                             </label>
-
-                            <!-- ✅ input[type="file"] ซ่อน -->
                             <input type="file" name="profile_picture" id="id_profile_picture"
                                 accept="image/png, image/jpeg" class="hidden" onchange="updateFileName(event)" />
 
@@ -52,16 +42,11 @@
 
                             <p class="text-xs text-gray-400 mt-2">Supported Format: JPG, PNG (max 10MB)</p>
                         </div>
-
-
                     </div>
                 </div>
             </div>
-
-            <!-- Divider -->
             <hr class="my-6 border-gray-300" />
 
-            <!-- ✅ Personal Info -->
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
                     <h2 class="text-lg font-semibold mb-2">Personal Info</h2>
@@ -100,9 +85,8 @@
             </div>
 
 
-            <!-- Divider -->
             <hr class="my-6 border-gray-300" />
-            <!-- Public Class Code -->
+
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
                     <h2 class="text-lg font-semibold mb-2">Public Class Code</h2>
@@ -124,10 +108,8 @@
                 </div>
             </div>
 
-            <!-- Divider -->
+            
             <hr class="my-6 border-gray-300" />
-
-            <!-- ✅ Bio Description -->
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
                     <h2 class="text-lg font-semibold mb-2">Bio Description</h2>
@@ -138,10 +120,8 @@
                 </div>
             </div>
 
-            <!-- Divider -->
-            <hr class="my-6 border-gray-300" />
 
-            <!-- ✅ Social Media Links -->
+            <hr class="my-6 border-gray-300" />
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
                     <h2 class="text-lg font-semibold mb-2">Social Media Links</h2>
@@ -159,7 +139,6 @@
                 </div>
             </div>
 
-            <!-- ✅ Action Buttons -->
             <div class="flex justify-end items-center gap-4 mt-6">
                 <a href="#"
                     class="px-4 py-2 text-gray-600 hover:text-black border rounded-full">Cancel</a>

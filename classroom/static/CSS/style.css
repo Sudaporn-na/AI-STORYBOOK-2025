@@ -45,8 +45,8 @@ body {
 }
 .user-details .title,
 .menu .title {
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: bold;
   color: #757575;
   text-transform: uppercase;
   margin-bottom: 10px;
@@ -99,11 +99,32 @@ body {
   padding-left: 20px;
   padding-top: 5px;
   border-left: 1px solid #f6f6f6;
+
+  /* จำกัดความสูงไว้พอดีกับ 4 รายการ */
+  max-height: 130px; /* ประมาณ 4 x 45px */
+  overflow-y: auto;
 }
 .menu .sub-menu li a {
   padding: 10px 8px;
   font-size: 12px;
 }
+
+/* เพิ่ม scrollbar แบบสวยงาม (optional) */
+.menu .sub-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.menu .sub-menu::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 3px;
+}
+
+.menu ul li.active .sub-menu {
+  display: block;
+}
+
+
+
 .menu:not(:last-child) {
   padding-bottom: 10px;
   margin-bottom: 20px;

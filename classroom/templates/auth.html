@@ -10,11 +10,9 @@
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>Authentication</title>
 
-  <!-- Tailwind -->
+
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet" />
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
   <style>
@@ -30,14 +28,11 @@
 <body class="flex items-center justify-center min-h-screen px-4">
   <div
     class="bg-white/80 backdrop-blur-md shadow-2xl rounded-3xl p-8 w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
-
-    <!-- Header -->
     <div class="text-center mb-6">
       <h2 class="text-3xl font-semibold text-gray-800">Welcome</h2>
       <p class="text-sm text-gray-600">Sign in or create a new account</p>
     </div>
 
-    <!-- Messages -->
     {% if messages %}
     {% for message in messages %}
     <div class="mb-4 px-4 py-2 rounded bg-{{ message.tags }}-100 text-{{ message.tags }}-700">
@@ -46,7 +41,7 @@
     {% endfor %}
     {% endif %}
 
-    <!-- 🔐 Login Form -->
+
     <form method="POST" id="loginForm" class="space-y-4" autocomplete="off">
       {% csrf_token %}
       <input type="hidden" name="action" value="login">
@@ -95,7 +90,6 @@
 
     </form>
 
-    <!-- 📝 Register Form -->
     <form method="POST" id="registerForm" class="space-y-4 hidden" autocomplete="off">
       {% csrf_token %}
       <input type="hidden" name="action" value="register">
@@ -165,7 +159,6 @@
   </div>
 
   <script>
-    // toggle show/hide password
     function togglePassword(id, icon) {
       const input = document.getElementById(id);
       if (input) {
@@ -182,7 +175,6 @@
       });
     }
 
-    // toggle tab
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
 

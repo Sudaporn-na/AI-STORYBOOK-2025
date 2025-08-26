@@ -3,7 +3,7 @@ import os
 from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 from channels.auth import AuthMiddlewareStack
-import classroom.routing  # <== routing ของ Channels
+import classroom.routing  #routing ของ Channels
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'classroom_project.settings')
 

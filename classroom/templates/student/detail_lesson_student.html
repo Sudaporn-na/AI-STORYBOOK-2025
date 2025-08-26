@@ -41,66 +41,76 @@
         </button>
     </div>
 
-    <!-- Player Control -->
-    <div class="flex items-center justify-between text-gray-600 text-sm mt-4">
+    <!-- Player Control + Progress -->
+    <div class="flex items-center justify-between mt-4 gap-4">
+        <!-- Play/Pause -->
         <button id="player-toggle"
             class="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow hover:bg-gray-100 transition">
-            <!-- ▶️ Icon: เล่น -->
             <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800" viewBox="0 0 24 24"
                 fill="currentColor">
                 <path d="M8 5v14l11-7z" />
             </svg>
-            <!-- ⏸️ Icon: หยุด -->
             <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800 hidden"
                 viewBox="0 0 24 24" fill="currentColor">
                 <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
             </svg>
         </button>
 
+        <!-- Progress Bar -->
+        <div class="flex-1 mx-4">
+            <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                <div id="total-progress-bar" class="bg-indigo-500 h-2 w-0 transition-all duration-200 ease-linear">
+                </div>
+            </div>
+        </div>
+
+        <!-- Time & Mute -->
         <div class="flex items-center gap-3">
-            <span class="text-gray-700 font-medium">01:00</span>
-            <!-- 🔈 ปุ่มเปิด/ปิดเสียง -->
+            <span id="global-time-display" class="block text-right text-sm text-gray-700 mt-1">00:00 / 00:00</span>
             <button id="mute-btn"
                 class="flex items-center justify-center w-9 h-9 rounded-full bg-white shadow hover:bg-gray-100 transition">
-                <!-- ไอคอนเปิดเสียง -->
                 <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a9 9 0 010 12.73" />
                 </svg>
-
-                <!-- ไอคอนปิดเสียง -->
                 <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800 hidden"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 14M15 5l-7 14" />
                 </svg>
             </button>
-
         </div>
     </div>
+
+
 
     <!-- ✅ ผู้ใช้ + แชร์/รายการโปรด -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-8">
 
         <!-- 👤 ผู้ใช้ -->
+        <!-- ใช้ storybook.user แทน request.user -->
         <div class="flex items-center space-x-3">
-            <img src="{% static 'images/default_avatar.png' %}" class="w-10 h-10 rounded-full object-cover"
-                alt="avatar">
+            <img src="{% if storybook.user.profile_picture %}{{ storybook.user.profile_picture.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}"
+                class="w-10 h-10 rounded-full object-cover" alt="avatar">
             <div>
-                <p class="font-semibold text-sm text-gray-800">{{ request.user.get_full_name }}</p>
-                <p class="text-xs text-gray-500">อย่าลืมดูภาพนิ่งด้วยนะครับ</p>
+                <p class="font-semibold text-sm text-gray-800">{{ storybook.user.get_full_name }}</p>
+                <p class="text-xs text-gray-500">ครูผู้สร้างบทเรียน</p>
             </div>
         </div>
+
+
+
 
         <!-- 📤 แชร์ + ⭐ รายการโปรด + ... -->
         <div class="flex items-center gap-3">
 
             <!-- ปุ่ม แชร์ -->
-            <button
+            <button id="share-btn" data-url="{{ request.build_absolute_uri }}"
                 class="flex items-center px-4 py-2 rounded-xl bg-white border shadow-sm text-gray-700 text-sm hover:bg-gray-100 transition">
-                <i class="fa-solid fa-share-nodes mr-2"></i> แชร์เป็น
+                <i class="fa-solid fa-share-nodes mr-2"></i> แชร์บทเรียน
             </button>
+
 
             <!-- ปุ่ม รายการโปรด -->
             <button
@@ -118,16 +128,15 @@
                 <!-- เมนู Dropdown -->
                 <div id="menu-dropdown"
                     class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg py-2 hidden z-50">
-                    <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fa-solid fa-download mr-2"></i> ดาวน์โหลด
-                    </a>
-                    <!-- ปุ่มเปิดเมนู -->
-                    <a href="#" id="open-report-modal"
+                    <a id="export-pdf-btn" href="{% url 'lesson_detail_for_pdf' storybook.id %}"
                         class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fa-solid fa-flag mr-2"></i> รายงาน
+                        <i class="fa-solid fa-download mr-2"></i> ดาวน์โหลด PDF
                     </a>
-
-                    <!-- ✅ Modal -->
+                    <button id="open-report-modal"
+                        class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full">
+                        <i class="fa-solid fa-flag mr-2"></i> รายงานเนื้อหา
+                    </button>
+                    <!-- Modal -->
                     <div id="report-modal"
                         class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden">
                         <div class="bg-white w-full max-w-md rounded-xl shadow-lg p-6 relative">
@@ -153,7 +162,7 @@
                             <div id="step2" class="hidden">
                                 <button id="back-to-step1" class="text-sm text-blue-600 mb-2">← ย้อนกลับ</button>
                                 <p class="text-gray-700 text-sm mb-3">รายละเอียดเพิ่มเติม (ถ้ามี)</p>
-                                <textarea id="detail-text" rows="4" class="w-full border rounded-lg p-2 text-sm"
+                                <textarea id="detail-text" name="detail" rows="4" class="w-full border rounded-lg p-2 text-sm"
                                     placeholder="เพิ่มรายละเอียด..."></textarea>
                                 <button id="submit-report"
                                     class="mt-4 w-full bg-gray-800 text-white py-2 rounded-lg">รายงาน</button>
@@ -166,11 +175,28 @@
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
 
         </div>
+        <!-- PDF Loading Overlay -->
+        <div id="pdf-loading-overlay" style="
+            display: none;
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+        ">
+            <div style="
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center; color: #fff;
+            ">
+                <i class="fa fa-spinner fa-spin fa-3x"></i>
+                <p style="margin-top: .5em; font-size: 1.1em;">กำลังสร้าง PDF…</p>
+            </div>
+        </div>
+
 
     </div>
 
@@ -219,131 +245,6 @@
         </div>
     </form>
 
-
-
-
-    <!-- ✅ ความคิดเห็น -->
-    <div class="mt-10 space-y-6">
-        <h2 class="text-lg font-bold text-gray-800">243 ความคิดเห็น</h2>
-
-        <!-- ✏️ กล่องคอมเมนต์ + ปุ่ม + ดาว -->
-        <div class="flex flex-wrap justify-between items-start gap-4">
-            <!-- Input -->
-            <div class="flex items-start gap-3 flex-1">
-                <textarea
-                    class="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    placeholder="ส่งความคิดเห็นของคุณที่นี่..."></textarea>
-                <button
-                    class="bg-gray-800 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-700 transition">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
-            </div>
-
-            <!-- ⭐️ ดาว -->
-            <div class="flex items-center space-x-1 text-yellow-400 text-lg mt-2 sm:mt-0">
-                <i class="fa-solid fa-star hover:scale-110 transition cursor-pointer"></i>
-                <i class="fa-solid fa-star hover:scale-110 transition cursor-pointer"></i>
-                <i class="fa-solid fa-star hover:scale-110 transition cursor-pointer"></i>
-                <i class="fa-solid fa-star hover:scale-110 transition cursor-pointer"></i>
-                <i class="fa-solid fa-star hover:scale-110 transition cursor-pointer"></i>
-            </div>
-        </div>
-
-        <!-- 💬 ตัวอย่างความคิดเห็น -->
-        <div class="space-y-6">
-            <!-- ความคิดเห็น 1 -->
-            <div class="flex justify-between items-start gap-4 border-b pb-4">
-                <div class="flex gap-4">
-                    <img src="https://randomuser.me/api/portraits/men/12.jpg"
-                        class="w-10 h-10 rounded-full object-cover">
-                    <div>
-                        <p class="font-semibold text-sm text-gray-800">Michael Roberts <span
-                                class="text-gray-400">commented on your post</span></p>
-                        <p class="text-sm text-gray-600 mt-1">Never underestimate the power of a story. Even the
-                            simplest tale can carry deep morals</p>
-                        <p class="text-xs text-gray-400 mt-1">08:56 PM on 31 October, 2024</p>
-                    </div>
-                </div>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-ellipsis"></i>
-                </button>
-            </div>
-
-            <!-- ความคิดเห็น 2 -->
-            <div class="flex justify-between items-start gap-4 border-b pb-4">
-                <div class="flex gap-4">
-                    <div
-                        class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center font-bold text-sm text-white">
-                        PM</div>
-                    <div>
-                        <p class="font-semibold text-sm text-gray-800">New Task Assigned <span
-                                class="text-gray-400">commented on your post</span></p>
-                        <p class="text-sm text-gray-600 mt-1">Never underestimate the power of a story. Even the
-                            simplest tale can carry deep morals</p>
-                        <p class="text-xs text-gray-400 mt-1">04:25 PM on 31 October, 2024</p>
-                    </div>
-                </div>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-ellipsis"></i>
-                </button>
-            </div>
-
-            <!-- ความคิดเห็น 3 -->
-            <div class="flex justify-between items-start gap-4 border-b pb-4">
-                <div class="flex gap-4">
-                    <img src="https://randomuser.me/api/portraits/women/65.jpg"
-                        class="w-10 h-10 rounded-full object-cover">
-                    <div>
-                        <p class="font-semibold text-sm text-gray-800">Jessica Liu <span class="text-gray-400">commented
-                                on your post</span></p>
-                        <p class="text-sm text-gray-600 mt-1">Even a simple story can leave a strong impact on young
-                            learners.</p>
-                        <p class="text-xs text-gray-400 mt-1">08:49 PM on 30 October, 2024</p>
-                    </div>
-                </div>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-ellipsis"></i>
-                </button>
-            </div>
-
-            <!-- ความคิดเห็น 4 -->
-            <div class="flex justify-between items-start gap-4 border-b pb-4">
-                <div class="flex gap-4">
-                    <img src="https://randomuser.me/api/portraits/men/11.jpg"
-                        class="w-10 h-10 rounded-full object-cover">
-                    <div>
-                        <p class="font-semibold text-sm text-gray-800">Michael Roberts <span
-                                class="text-gray-400">commented on your post</span></p>
-                        <p class="text-sm text-gray-600 mt-1">Simple but powerful content. Great job!</p>
-                        <p class="text-xs text-gray-400 mt-1">08:56 PM on 31 October, 2024</p>
-                    </div>
-                </div>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-ellipsis"></i>
-                </button>
-            </div>
-
-            <!-- ความคิดเห็น 5 -->
-            <div class="flex justify-between items-start gap-4 border-b pb-4">
-                <div class="flex gap-4">
-                    <div
-                        class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center font-bold text-sm text-white">
-                        HR</div>
-                    <div>
-                        <p class="font-semibold text-sm text-gray-800">Reminder <span class="text-gray-400">commented on
-                                your post</span></p>
-                        <p class="text-sm text-gray-600 mt-1">Learning with stories makes abstract concepts easier to
-                            grasp.</p>
-                        <p class="text-xs text-gray-400 mt-1">10:30 AM on 30 October, 2024</p>
-                    </div>
-                </div>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-ellipsis"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-
 </div>
 
 
@@ -353,6 +254,46 @@
 
 
 <!-- JS -->
+<script>
+    document.getElementById('share-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('share-btn');
+        const url = btn.dataset.url;
+
+        // ถ้าเบราว์เซอร์รองรับ Web Share API (มือถือ/บาง desktop)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: document.title,
+                    text: 'เชิญดูบทเรียนนี้ครับ',
+                    url: url
+                });
+            } catch (err) {
+                console.error('Share failed:', err);
+            }
+        } else {
+            // fallback: คัดลอกลิงก์ลง clipboard
+            try {
+                await navigator.clipboard.writeText(url);
+                // แสดงแจ้งเตือนสั้นๆ
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i> คัดลอกเรียบร้อย';
+                setTimeout(() => btn.innerHTML = original, 2000);
+            } catch (err) {
+                alert('ไม่สามารถคัดลอกลิงก์ได้: ' + err);
+            }
+        }
+    });
+</script>
+
+<script>
+    document.getElementById('export-pdf-btn').addEventListener('click', function () {
+        // แสดง overlay ทันทีที่กดปุ่ม
+        document.getElementById('pdf-loading-overlay').style.display = 'block';
+        // Browser จะสั่ง navigate ไปที่ export_lesson_pdf URL
+        // อย่าเรียก preventDefault() ไว้ จะทำให้การดาวน์โหลดไม่เกิดขึ้น
+    });
+</script>
+
 <script>
     // สำหรับเมนู ...
     const menuToggleBtn = document.getElementById('menu-toggle-btn');
@@ -384,262 +325,207 @@
 </script>
 
 
+<!-- ฝังค่าจาก Django -->
+<div id="storybook-meta" data-storybook-id="{{ storybook.id }}" data-csrf="{{ csrf_token }}"></div>
 
 <script>
-    const scenes = {{ scenes| safe }};
-    const container = document.querySelector(".grid.grid-cols-2");
-    let currentIndex = 0;
-
-    function renderScenes(index) {
-        container.innerHTML = "";
-        const left = scenes[index];
-        const right = scenes[index + 1];
-
-        [left, right].forEach((scene) => {
-            const sceneDiv = document.createElement("div");
-            sceneDiv.className = "relative flex items-end justify-center p-4 border-r border-gray-300";
-
-            if (scene) {
-                sceneDiv.innerHTML = `
-                    ${scene.image_url ? `<img src="${scene.image_url}" alt="Scene" class="absolute inset-0 w-full h-full object-cover">` : ''}
-                    <div class="relative z-10 flex flex-col items-center space-y-2">
-                        <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded-md max-w-[90%] text-center shadow-lg">
-                            ${scene.text || ''}
-                        </p>
-                        ${scene.audio_url ? `<audio controls src="${scene.audio_url}" class="w-full max-w-xs"></audio>` : ''}
-                    </div>
-                `;
-            } else {
-                sceneDiv.innerHTML = `<div class="text-gray-400 text-sm italic">Empty Page</div>`;
-            }
-
-            container.appendChild(sceneDiv);
-        });
-    }
-
-    document.getElementById("next-btn")?.addEventListener("click", () => {
-        currentIndex = (currentIndex + 2) % scenes.length;
-        renderScenes(currentIndex);
-    });
-
-    document.getElementById("prev-btn")?.addEventListener("click", () => {
-        currentIndex = (currentIndex - 2 + scenes.length) % scenes.length;
-        renderScenes(currentIndex);
-    });
-
-    renderScenes(0); // Initial render
-</script>
-
-<script>
-    const toggleBtn = document.getElementById('menu-toggle');
-    const dropdown = document.getElementById('menu-dropdown');
-
-    toggleBtn.addEventListener('click', () => {
-        dropdown.classList.toggle('hidden');
-    });
-
-    // ปิด dropdown เมื่อคลิกข้างนอก
-    document.addEventListener('click', (e) => {
-        if (!toggleBtn.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.add('hidden');
+    document.addEventListener("DOMContentLoaded", () => {
+        // 1) Helpers for formatting & calculating
+        const durations = [];      // durations[i] = length of scene i in seconds
+        let totalDuration = 0;
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = String(Math.floor(sec % 60)).padStart(2, '0');
+            return `${m}:${s}`;
         }
-    });
-</script>
+        function computeTotalDuration() {
+            totalDuration = durations.reduce((s, d) => s + (d || 0), 0);
+            document.getElementById("global-time-display").textContent =
+                `00:00 / ${formatTime(totalDuration)}`;
+        }
+        function updateGlobalProgress(elapsed) {
+            if (!totalDuration) return;
+            const pct = Math.min(elapsed / totalDuration * 100, 100);
+            document.getElementById("total-progress-bar").style.width = pct + "%";
+            document.getElementById("global-time-display").textContent =
+                `${formatTime(elapsed)} / ${formatTime(totalDuration)}`;
+        }
 
+        // 2) Grab DOM elements
+        const meta = document.getElementById("storybook-meta");
+        const ws = new WebSocket(`ws://${window.location.host}/ws/storybook/${meta.dataset.storybookId}/`);
+        const container = document.querySelector(".grid.grid-cols-2");
+        const playBtn = document.getElementById("player-toggle");
+        const prevBtn = document.getElementById("prev-btn");
+        const nextBtn = document.getElementById("next-btn");
+        const muteBtn = document.getElementById("mute-btn");
+        const iconPlay = document.getElementById("icon-play");
+        const iconPause = document.getElementById("icon-pause");
+        const iconOn = document.getElementById("icon-sound-on");
+        const iconOff = document.getElementById("icon-sound-off");
+        const loading = document.createElement("div");
+        loading.id = "loading-message";
+        loading.className = "absolute inset-0 flex items-center justify-center text-gray-400 text-sm";
+        container.appendChild(loading);
 
-<script>
-    document.querySelectorAll('.fa-star').forEach((star, index, stars) => {
-        star.addEventListener('click', () => {
-            stars.forEach((s, i) => {
-                s.classList.toggle('text-yellow-400', i <= index);
-                s.classList.toggle('text-gray-400', i > index);
+        // 3) State
+        let scenesList = [], currentIndex = 0, currentAudioIndex = 0;
+        let currentAudios = [], isPlaying = false, isMuted = false;
+
+        function updateLoadingMessage() {
+            loading.innerText = `กำลังสร้างฉากที่ ${scenesList.length + 1}…`;
+        }
+
+        function toggleIcons() {
+            iconPlay.classList.toggle("hidden", isPlaying);
+            iconPause.classList.toggle("hidden", !isPlaying);
+        }
+
+        // 4) Preload each scene’s audio OFF-DOM to get its duration
+        function preloadDuration(sceneNumber, url) {
+            const a = new Audio(url);
+            a.preload = "metadata";
+            a.addEventListener("loadedmetadata", () => {
+                durations[sceneNumber - 1] = a.duration;
+                computeTotalDuration();
+            }, { once: true });
+        }
+
+        // 5) Render 2 pages + their <audio> tags in DOM
+        function renderScenePair(left, right) {
+            currentAudioIndex = 0;
+            container.innerHTML = "";
+            [left, right].forEach((scene, idx) => {
+                const div = document.createElement("div");
+                div.className = "relative flex items-end justify-center p-4 border-r border-gray-300";
+                if (scene) {
+                    const audioTag = scene.audio_url
+                        ? `<audio id="scene-audio-${idx}" src="${scene.audio_url}"></audio>`
+                        : "";
+                    div.innerHTML = `
+          ${scene.image_url ? `<img src="${scene.image_url}" class="absolute inset-0 w-full h-full object-cover">` : ``}
+          <div class="relative z-10 flex flex-col items-center space-y-2">
+            <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded max-w-[90%] text-center shadow">
+              ${scene.text || ""}
+            </p>
+            ${audioTag}
+          </div>`;
+                } else {
+                    div.innerHTML = `<div class="text-gray-400 italic">Empty Page</div>`;
+                }
+                container.appendChild(div);
             });
-        });
-    });
-</script>
 
+            // delay to ensure <audio> tags are in DOM
+            setTimeout(() => {
+                applyMute();
+                if (isPlaying) {
+                    playInOrder(
+                        document.getElementById("scene-audio-0"),
+                        document.getElementById("scene-audio-1")
+                    );
+                }
+            }, 50);
+        }
 
-<!-- ✅ ฝังค่าจาก Django -->
-<div id="storybook-meta"
-     data-storybook-id="{{ storybook.id }}"
-     data-csrf="{{ csrf_token }}">
-</div>
+        function applyMute() {
+            document.querySelectorAll("audio").forEach(a => a.muted = isMuted);
+        }
 
-
-
-<script>
-    // ✅ ดึงค่าจาก HTML ที่ฝังไว้
-    const meta = document.getElementById("storybook-meta");
-    const storybookId = meta.dataset.storybookId;
-    const csrfToken = meta.dataset.csrf;
-
-    const ws = new WebSocket(`ws://${window.location.host}/ws/storybook/${storybookId}/`);
-
-    let scenesList = [];
-    let currentIndex = 0;
-    let currentAudioIndex = 0;
-    let currentAudios = [];
-    let isPlaying = false;
-    let isMuted = false;
-
-    const container = document.querySelector(".grid.grid-cols-2");
-    const playerBtn = document.getElementById("player-toggle");
-    const iconPlay = document.getElementById("icon-play");
-    const iconPause = document.getElementById("icon-pause");
-
-    const muteBtn = document.getElementById('mute-btn');
-    const iconSoundOn = document.getElementById('icon-sound-on');
-    const iconSoundOff = document.getElementById('icon-sound-off');
-
-    const loadingDiv = document.createElement("div");
-    loadingDiv.className = "absolute inset-0 flex items-center justify-center text-gray-400 text-sm";
-    loadingDiv.id = "loading-message";
-    container.appendChild(loadingDiv);
-
-    function updateLoadingMessage() {
-        const expectedScene = scenesList.length + 1;
-        loadingDiv.innerText = `กำลังสร้างฉากที่ ${expectedScene}...`;
-    }
-
-    function togglePlayerIcon() {
-        iconPlay.classList.toggle("hidden", isPlaying);
-        iconPause.classList.toggle("hidden", !isPlaying);
-    }
-
-    function applyMuteToCurrentAudios() {
-        document.querySelectorAll('audio').forEach(audio => {
-            audio.muted = isMuted;
-        });
-    }
-
-    muteBtn?.addEventListener('click', () => {
-        isMuted = !isMuted;
-        iconSoundOn.classList.toggle('hidden', isMuted);
-        iconSoundOff.classList.toggle('hidden', !isMuted);
-        applyMuteToCurrentAudios();
-    });
-
-    async function playInOrder(audioLeft, audioRight) {
-        currentAudios = [audioLeft, audioRight].filter(a => a);
-        const audioList = currentAudios;
-        audioList.forEach(audio => audio.muted = isMuted);
-
-        for (let i = currentAudioIndex; i < audioList.length; i++) {
-            if (!isPlaying) return;
-
-            try {
-                await audioList[i].play();
-                await new Promise(resolve => {
-                    audioList[i].onended = () => {
-                        currentAudioIndex = i + 1;
-                        resolve();
-                    };
+        // 6) Play sequentially & update global progress
+        async function playInOrder(left, right) {
+            currentAudios = [left, right].filter(a => a);
+            // bind timeupdate on each
+            let offset = durations.slice(0, currentIndex).reduce((s, d) => s + (d || 0), 0);
+            currentAudios.forEach((audio, i) => {
+                audio.muted = isMuted;
+                audio.addEventListener("timeupdate", () => {
+                    updateGlobalProgress(offset + audio.currentTime);
                 });
-            } catch (e) {
-                console.warn("Failed to play audio", e);
+            });
+
+            for (let i = currentAudioIndex; i < currentAudios.length; i++) {
+                if (!isPlaying) return;
+                try {
+                    await currentAudios[i].play();
+                    await new Promise(res => currentAudios[i].onended = res);
+                    offset += currentAudios[i].duration;
+                    currentAudioIndex = i + 1;
+                } catch { }
+            }
+
+            // next pair
+            if (isPlaying && currentIndex + 2 < scenesList.length) {
+                currentIndex += 2;
+                renderScenePair(scenesList[currentIndex], scenesList[currentIndex + 1]);
             }
         }
 
-        if (isPlaying && currentIndex + 2 < scenesList.length) {
-            currentIndex += 2;
-            currentAudioIndex = 0;
-            renderScenePair(scenesList[currentIndex], scenesList[currentIndex + 1]);
-        }
-    }
+        // 7) WebSocket: receive each scene, preload its duration, then once you have 2, render pair…
+        ws.addEventListener("message", e => {
+            const d = JSON.parse(e.data);
+            const ns = {
+                scene_number: d.scene_number,
+                text: d.text,
+                image_url: d.image_url,
+                audio_url: d.audio_url
+            };
+            // replace/update
+            scenesList = scenesList.filter(s => s.scene_number !== ns.scene_number);
+            scenesList.push(ns);
+            scenesList.sort((a, b) => a.scene_number - b.scene_number);
 
-    function renderScenePair(left, right) {
-        currentAudioIndex = 0;
-        container.innerHTML = '';
-        [left, right].forEach((scene, index) => {
-            const sceneDiv = document.createElement("div");
-            sceneDiv.className = "relative flex items-end justify-center p-4 border-r border-gray-300";
+            // preload duration
+            if (ns.audio_url) preloadDuration(ns.scene_number, ns.audio_url);
 
-            if (scene) {
-                const audioHtml = scene.audio_url
-                    ? `<audio id="scene-audio-${index}" src="${scene.audio_url}" class="w-full max-w-xs"></audio>`
-                    : '';
-
-                sceneDiv.innerHTML = `
-                    ${scene.image_url ? `<img src="${scene.image_url}" class="absolute inset-0 w-full h-full object-cover">` : ''}
-                    <div class="relative z-10 flex flex-col items-center space-y-2">
-                        <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded-md max-w-[90%] text-center shadow-lg">
-                            ${scene.text || ''}
-                        </p>
-                        ${audioHtml}
-                    </div>
-                `;
+            if (scenesList.length >= 2 && loading) {
+                loading.remove();
+            }
+            if (scenesList.length === 2) {
+                renderScenePair(scenesList[0], scenesList[1]);
             } else {
-                sceneDiv.innerHTML = `<div class="text-gray-400 text-sm italic">Empty Page</div>`;
+                updateLoadingMessage();
             }
-
-            container.appendChild(sceneDiv);
         });
 
-        setTimeout(() => {
-            applyMuteToCurrentAudios();
+        // 8) Controls
+        playBtn.addEventListener("click", () => {
+            isPlaying = !isPlaying;
+            toggleIcons();
             if (isPlaying) {
-                const audioLeft = document.getElementById("scene-audio-0");
-                const audioRight = document.getElementById("scene-audio-1");
-                playInOrder(audioLeft, audioRight);
+                playInOrder(
+                    document.getElementById("scene-audio-0"),
+                    document.getElementById("scene-audio-1")
+                );
+            } else {
+                currentAudios.forEach(a => a.pause());
             }
-        }, 300);
-    }
+        });
 
-    ws.addEventListener('message', function (event) {
-        const data = JSON.parse(event.data);
-        const newScene = {
-            scene_number: data.scene_number,
-            text: data.text,
-            image_url: data.image_url,
-            audio_url: data.audio_url,
-        };
+        muteBtn.addEventListener("click", () => {
+            isMuted = !isMuted;
+            iconOn.classList.toggle("hidden", isMuted);
+            iconOff.classList.toggle("hidden", !isMuted);
+            applyMute();
+        });
 
-        scenesList = scenesList.filter(scene => scene.scene_number !== newScene.scene_number);
-        scenesList.push(newScene);
-        scenesList.sort((a, b) => a.scene_number - b.scene_number);
-
-        if (scenesList.length === 2) {
-            currentIndex = 0;
-            renderScenePair(scenesList[0], scenesList[1]);
-        }
-
-        updateLoadingMessage();
+        prevBtn.addEventListener("click", () => {
+            if (currentIndex >= 2) {
+                currentIndex -= 2;
+                currentAudioIndex = 0;
+                renderScenePair(scenesList[currentIndex], scenesList[currentIndex + 1]);
+            }
+        });
+        nextBtn.addEventListener("click", () => {
+            if (currentIndex + 2 < scenesList.length) {
+                currentIndex += 2;
+                currentAudioIndex = 0;
+                renderScenePair(scenesList[currentIndex], scenesList[currentIndex + 1]);
+            }
+        });
     });
 
-    playerBtn?.addEventListener("click", () => {
-        isPlaying = !isPlaying;
-        togglePlayerIcon();
-
-        if (isPlaying) {
-            const audioLeft = document.getElementById("scene-audio-0");
-            const audioRight = document.getElementById("scene-audio-1");
-            playInOrder(audioLeft, audioRight);
-        } else {
-            currentAudios.forEach(audio => {
-                audio.pause();
-            });
-        }
-    });
-
-    document.getElementById("next-btn")?.addEventListener("click", () => {
-        if (currentIndex + 2 < scenesList.length) {
-            currentIndex += 2;
-            currentAudioIndex = 0;
-            renderScenePair(scenesList[currentIndex], scenesList[currentIndex + 1]);
-        }
-    });
-
-    document.getElementById("prev-btn")?.addEventListener("click", () => {
-        if (currentIndex - 2 >= 0) {
-            currentIndex -= 2;
-            currentAudioIndex = 0;
-            renderScenePair(scenesList[currentIndex], scenesList[currentIndex + 1]);
-        }
-    });
-
-    updateLoadingMessage();
-
-    // =================== 🧾 Modal รายงาน ====================
+    // =================== Modal รายงาน ====================
     document.getElementById("open-report-modal").onclick = (e) => {
         e.preventDefault();
         document.getElementById("report-modal").classList.remove("hidden");
@@ -665,6 +551,16 @@
         const reason = document.querySelector('input[name="reason"]:checked')?.value;
         const detail = document.getElementById("detail-text").value;
 
+        if (!reason) {
+            alert("กรุณาเลือกเหตุผล");
+            return;
+        }
+
+        // ✅ ดึงค่า storybookId และ csrfToken จาก HTML
+        const meta = document.getElementById("storybook-meta");
+        const storybookId = meta.dataset.storybookId;
+        const csrfToken = meta.dataset.csrf;
+
         fetch(`/submit-report/${storybookId}/`, {
             method: "POST",
             headers: {
@@ -673,23 +569,22 @@
             },
             body: `reason=${encodeURIComponent(reason)}&detail=${encodeURIComponent(detail)}`
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === "success") {
-                document.getElementById("step2").classList.add("hidden");
-                document.getElementById("step3").classList.remove("hidden");
-            } else {
-                alert("เกิดข้อผิดพลาดในการส่งรายงาน");
-            }
-        })
-        .catch(err => {
-            console.error("Report Error:", err);
-            alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
-        });
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    document.getElementById("step2").classList.add("hidden");
+                    document.getElementById("step3").classList.remove("hidden");
+                } else {
+                    alert("เกิดข้อผิดพลาดในการส่งรายงาน");
+                    console.log("Form error:", data.errors || data);
+                }
+            })
+            .catch(err => {
+                console.error("Report Error:", err);
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+            });
     };
+
 </script>
-
-
-
 
 {% endblock %}

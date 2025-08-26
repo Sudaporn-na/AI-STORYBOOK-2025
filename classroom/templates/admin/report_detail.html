@@ -7,8 +7,11 @@
 
   {% for report in reports %}
   <div class="bg-white rounded-xl shadow p-6 flex gap-4">
-    <img src="{{ storybook.cover_image_url|default:'https://via.placeholder.com/120' }}" class="w-28 h-28 rounded-lg object-cover" alt="">
-
+    {% with storybook.scenes.first.image_url as image %}
+      <img src="{{ image|default:'https://via.placeholder.com/120' }}"
+           class="w-28 h-28 rounded-lg object-cover" alt="ภาพปกนิทาน">
+    {% endwith %}
+    
     <div class="flex-1 space-y-2">
       <h3 class="text-lg font-bold text-gray-800">เหตุผลในการรายงาน / {{ report.reason }}</h3>
       <p class="text-gray-600 text-sm">{{ report.detail }}</p>

@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 # settings.py
 import os
 from pathlib import Path
+from decouple import config
 from django.core.management.utils import get_random_secret_key
 
 
@@ -22,7 +23,6 @@ load_dotenv()
 
 
 
-# settings.py
 ASGI_APPLICATION = 'classroom_project.asgi.application'
 
 
@@ -37,11 +37,9 @@ CHANNEL_LAYERS = {
 
 
 
-# แล้วคุณจะสามารถเข้าถึงได้แบบนี้
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -57,11 +55,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-br=mqmex*7_gg3&@6i)n0n9$kgbx275^ya!g@y15q83d6-029r'
+SECRET_KEY = config('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # หรือจาก .env
+DEBUG = True  
 
 if DEBUG:
     SECURE_SSL_REDIRECT = False
@@ -169,6 +165,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'classroom.context_processors.teacher_classrooms',
             ],
         },
     },
@@ -184,7 +181,7 @@ WSGI_APPLICATION = 'classroom_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'AI_STORYBOOOK_DB'),
+        'NAME': os.environ.get('DB_NAME', 'NSC2025'),
         'USER': os.environ.get('DB_USER', 'postgres'),
         'PASSWORD': os.environ.get('DB_PASSWORD', 'Suda@04022547'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
@@ -230,7 +227,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Login settings
 LOGIN_URL = '/auth/'
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = 'select_role'
 LOGOUT_REDIRECT_URL = '/auth/'
 
 # Rate limiting

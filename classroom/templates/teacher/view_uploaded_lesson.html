@@ -41,17 +41,32 @@
         </button>
     </div>
 
-    <!-- Player Control -->
-    <div class="flex items-center justify-between text-gray-600 text-sm mt-4">
-        <button
+    <!-- Player Control + Progress -->
+    <div class="flex items-center justify-between mt-4 gap-4">
+        <!-- Play/Pause -->
+        <button id="player-toggle"
             class="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow hover:bg-gray-100 transition">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800" viewBox="0 0 24 24"
+            <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800" viewBox="0 0 24 24"
                 fill="currentColor">
                 <path d="M8 5v14l11-7z" />
             </svg>
+            <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800 hidden"
+                viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+            </svg>
         </button>
+
+        <!-- Progress Bar -->
+        <div class="flex-1 mx-4">
+            <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                <div id="total-progress-bar" class="bg-indigo-500 h-2 w-0 transition-all duration-200 ease-linear">
+                </div>
+            </div>
+        </div>
+
+        <!-- Time & Mute -->
         <div class="flex items-center gap-3">
-            <span class="text-gray-700 font-medium">01:00</span>
+            <span id="global-time-display" class="block text-right text-sm text-gray-700 mt-1">00:00 / 00:00</span>
             <button id="mute-btn"
                 class="flex items-center justify-center w-9 h-9 rounded-full bg-white shadow hover:bg-gray-100 transition">
                 <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800"
@@ -69,42 +84,51 @@
     </div>
 
     <div class="flex justify-center mt-6">
-        <button id="Edit-Lesson" type="button"
-            class="w-full sm:w-64 px-6 py-3 rounded-xl bg-gray-800 text-white hover:bg-gray-700 transition">
-            Edit Lesson
-        </button>
+        <a href="{% url 'teacher_view_lesson_detail' storybook.id %}">
+            <button id="Edit-Lesson" type="button"
+                class="w-full sm:w-64 px-6 py-3 rounded-xl bg-gray-800 text-white hover:bg-gray-700 transition">
+                เเก้ไขรายละเอียดบทเรียน
+            </button>
+        </a>
     </div>
 
 
-    <!-- Lesson Metadata Form -->
-    <form id="lesson-form" class="space-y-6">
+    <div id="lesson-form" class="space-y-6">
+        <!-- Lesson Name -->
         <div>
             <label class="block text-sm font-medium text-gray-700">Lesson Name</label>
             <input id="lesson-name" type="text" value="{{ storybook.title }}"
-                class="w-full border border-dashed border-blue-400 rounded-lg px-4 py-3"
-                placeholder="Enter lesson name">
+                class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
+                placeholder="Lesson Name" readonly>
         </div>
+
+        <!-- Creator -->
         <div>
             <label class="block text-sm font-medium text-gray-700">Creator</label>
             <input id="lesson-creator" type="text"
                 value="{{ storybook.user.get_full_name|default:storybook.user.email }}"
-                class="w-full border border-dashed border-blue-400 rounded-lg px-4 py-3" placeholder="Creator name">
+                class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
+                placeholder="Creator Name" readonly>
         </div>
+
+        <!-- Description -->
         <div>
             <label class="block text-sm font-medium text-gray-700">Description</label>
-            <textarea id="lesson-description" name="description"
-                class="w-full border border-dashed border-blue-400 rounded-lg px-4 py-3"
-                placeholder="Description of the lesson">{{ storybook.description }}</textarea>
+            <textarea id="lesson-description"
+                class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
+                placeholder="Description" readonly>{{ storybook.description }}</textarea>
         </div>
 
+        <!-- Additional Content -->
         <div>
             <label class="block text-sm font-medium text-gray-700">Additional Content</label>
-            <textarea id="lesson-additional" name="additional_content"
-                class="w-full border border-dashed border-blue-400 rounded-lg px-4 py-3"
-                placeholder="Additional Content here">{{ storybook.additional_content }}</textarea>
+            <textarea id="lesson-additional"
+                class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
+                placeholder="Additional Content" readonly>{{ storybook.additional_content }}</textarea>
         </div>
+    </div>
 
-    </form>
+
 
     <!-- 📥 Download Permission Section -->
     <div class="space-y-2 mt-10">
@@ -113,21 +137,18 @@
 
         <div class="flex flex-col space-y-4 mt-2">
             <label class="flex items-start gap-3 cursor-default">
-                <input type="radio" name="download_permission" value="public"
-                    class="accent-blue-600 mt-1 w-4 h-4"
+                <input type="radio" name="download_permission" value="public" class="accent-blue-600 mt-1 w-4 h-4"
                     {% if storybook.download_permission == "public" %}checked{% endif %} disabled>
                 <span class="text-gray-800 text-sm leading-5">
                     <strong>Public</strong><br>
                     Anyone can download your Lessons
                 </span>
             </label>
-
             <label class="flex items-start gap-3 cursor-default">
-                <input type="radio" name="download_permission" value="private"
-                    class="accent-gray-400 mt-1 w-4 h-4"
+                <input type="radio" name="download_permission" value="private" class="accent-gray-400 mt-1 w-4 h-4"
                     {% if storybook.download_permission == "private" %}checked{% endif %} disabled>
                 <span class="text-gray-500 text-sm leading-5">
-                    <strong>Public</strong><br>
+                    <strong>Private</strong><br>
                     Anyone can’t download your Lessons
                 </span>
             </label>
@@ -139,9 +160,9 @@
 
 
 
-    <!-- 📋 Post Test Assignment -->
-    <h3 class="text-2xl font-bold text-gray-800 mt-10 mb-6">📋 Post Test Assignment</h3>
-    
+    <!-- Post Test Assignment -->
+    <h3 class="text-2xl font-bold text-gray-800 mt-10 mb-6">แบบทดสอบท้ายบทเรียน</h3>
+
     <div class="space-y-6">
         {% for q in questions %}
         <div class="bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -152,115 +173,269 @@
                 <div class="flex items-start gap-2">
                     <div
                         class="w-5 h-5 mt-0.5 flex items-center justify-center rounded-full 
-                            {% if q.correct_choice == 1 %}bg-green-100 text-green-600{% else %}bg-gray-100 text-gray-500{% endif %}">
+                        {% if q.correct_choice == 1 %}bg-green-100 text-green-600{% else %}bg-gray-100 text-gray-500{% endif %}">
                         A
                     </div>
-                    <p class="{% if q.correct_choice == 1 %}text-green-700 font-medium{% else %}text-gray-700{% endif %}">
+                    <p
+                        class="{% if q.correct_choice == 1 %}text-green-700 font-medium{% else %}text-gray-700{% endif %}">
                         {{ q.choice_1 }}
-                        {% if q.correct_choice == 1 %}<span class="ml-1"><i class="fas fa-check-circle text-green-500 ml-1"></i></span>{% endif %}
+                        {% if q.correct_choice == 1 %}<i class="fas fa-check-circle text-green-500 ml-2"></i>{% endif %}
                     </p>
                 </div>
                 <div class="flex items-start gap-2">
                     <div
                         class="w-5 h-5 mt-0.5 flex items-center justify-center rounded-full 
-                            {% if q.correct_choice == 2 %}bg-green-100 text-green-600{% else %}bg-gray-100 text-gray-500{% endif %}">
+                        {% if q.correct_choice == 2 %}bg-green-100 text-green-600{% else %}bg-gray-100 text-gray-500{% endif %}">
                         B
                     </div>
-                    <p class="{% if q.correct_choice == 2 %}text-green-700 font-medium{% else %}text-gray-700{% endif %}">
+                    <p
+                        class="{% if q.correct_choice == 2 %}text-green-700 font-medium{% else %}text-gray-700{% endif %}">
                         {{ q.choice_2 }}
-                        {% if q.correct_choice == 2 %}<span class="ml-1"><i class="fas fa-check-circle text-green-500 ml-1"></i></span>{% endif %}
+                        {% if q.correct_choice == 2 %}<i class="fas fa-check-circle text-green-500 ml-2"></i>{% endif %}
                     </p>
                 </div>
                 <div class="flex items-start gap-2">
                     <div
                         class="w-5 h-5 mt-0.5 flex items-center justify-center rounded-full 
-                            {% if q.correct_choice == 3 %}bg-green-100 text-green-600{% else %}bg-gray-100 text-gray-500{% endif %}">
+                        {% if q.correct_choice == 3 %}bg-green-100 text-green-600{% else %}bg-gray-100 text-gray-500{% endif %}">
                         C
                     </div>
-                    <p class="{% if q.correct_choice == 3 %}text-green-700 font-medium{% else %}text-gray-700{% endif %}">
+                    <p
+                        class="{% if q.correct_choice == 3 %}text-green-700 font-medium{% else %}text-gray-700{% endif %}">
                         {{ q.choice_3 }}
-                        {% if q.correct_choice == 3 %}<span class="ml-1"><i class="fas fa-check-circle text-green-500 ml-1"></i></span>{% endif %}
+                        {% if q.correct_choice == 3 %}<i class="fas fa-check-circle text-green-500 ml-2"></i>{% endif %}
                     </p>
                 </div>
                 <div class="flex items-start gap-2">
                     <div
                         class="w-5 h-5 mt-0.5 flex items-center justify-center rounded-full 
-                            {% if q.correct_choice == 4 %}bg-green-100 text-green-600{% else %}bg-gray-100 text-gray-500{% endif %}">
+                        {% if q.correct_choice == 4 %}bg-green-100 text-green-600{% else %}bg-gray-100 text-gray-500{% endif %}">
                         D
                     </div>
-                    <p class="{% if q.correct_choice == 4 %}text-green-700 font-medium{% else %}text-gray-700{% endif %}">
+                    <p
+                        class="{% if q.correct_choice == 4 %}text-green-700 font-medium{% else %}text-gray-700{% endif %}">
                         {{ q.choice_4 }}
-                        {% if q.correct_choice == 4 %}<span class="ml-1"><i class="fas fa-check-circle text-green-500 ml-1"></i></span>{% endif %}
+                        {% if q.correct_choice == 4 %}<i class="fas fa-check-circle text-green-500 ml-2"></i>{% endif %}
                     </p>
                 </div>
             </div>
+            {% if q.explanation %}
+            <div class="mt-4 text-sm text-blue-700 bg-blue-50 border border-blue-100 rounded-md px-4 py-3">
+                <strong>คำอธิบาย:</strong> {{ q.explanation }}
+            </div>
+            {% endif %}
         </div>
         {% empty %}
-        <p class="text-sm text-gray-500 italic">No post-test questions available.</p>
+        <p class="text-sm text-gray-500 italic">ยังไม่มีแบบทดสอบท้ายบทในบทเรียนนี้</p>
         {% endfor %}
     </div>
+
 
 
 </div>
 
 <!-- JS -->
 
+<!-- ฝังค่าจาก Django -->
+<div id="storybook-meta" data-storybook-id="{{ storybook.id }}" data-csrf="{{ csrf_token }}"></div>
 
 <script>
-    const scenes = {{ scenes| safe }};
-    const container = document.querySelector(".grid.grid-cols-2");
-    let currentIndex = 0;
+    document.addEventListener("DOMContentLoaded", () => {
+        // 1) Helpers for formatting & calculating
+        const durations = [];      // durations[i] = length of scene i in seconds
+        let totalDuration = 0;
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = String(Math.floor(sec % 60)).padStart(2, '0');
+            return `${m}:${s}`;
+        }
+        function computeTotalDuration() {
+            totalDuration = durations.reduce((s, d) => s + (d || 0), 0);
+            document.getElementById("global-time-display").textContent =
+                `00:00 / ${formatTime(totalDuration)}`;
+        }
+        function updateGlobalProgress(elapsed) {
+            if (!totalDuration) return;
+            const pct = Math.min(elapsed / totalDuration * 100, 100);
+            document.getElementById("total-progress-bar").style.width = pct + "%";
+            document.getElementById("global-time-display").textContent =
+                `${formatTime(elapsed)} / ${formatTime(totalDuration)}`;
+        }
 
-    function renderScenes(index) {
-        container.innerHTML = "";
-        const left = scenes[index];
-        const right = scenes[index + 1];
+        // 2) Grab DOM elements
+        const meta = document.getElementById("storybook-meta");
+        const ws = new WebSocket(`ws://${window.location.host}/ws/storybook/${meta.dataset.storybookId}/`);
+        const container = document.querySelector(".grid.grid-cols-2");
+        const playBtn = document.getElementById("player-toggle");
+        const prevBtn = document.getElementById("prev-btn");
+        const nextBtn = document.getElementById("next-btn");
+        const muteBtn = document.getElementById("mute-btn");
+        const iconPlay = document.getElementById("icon-play");
+        const iconPause = document.getElementById("icon-pause");
+        const iconOn = document.getElementById("icon-sound-on");
+        const iconOff = document.getElementById("icon-sound-off");
+        const loading = document.createElement("div");
+        loading.id = "loading-message";
+        loading.className = "absolute inset-0 flex items-center justify-center text-gray-400 text-sm";
+        container.appendChild(loading);
 
-        [left, right].forEach((scene) => {
-            const sceneDiv = document.createElement("div");
-            sceneDiv.className = "relative flex items-end justify-center p-4 border-r border-gray-300";
+        // 3) State
+        let scenesList = [], currentIndex = 0, currentAudioIndex = 0;
+        let currentAudios = [], isPlaying = false, isMuted = false;
 
-            if (scene) {
-                sceneDiv.innerHTML = `
-                    ${scene.image_url ? `<img src="${scene.image_url}" alt="Scene" class="absolute inset-0 w-full h-full object-cover">` : ''}
-                    <div class="relative z-10 flex flex-col items-center space-y-2">
-                        <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded-md max-w-[90%] text-center shadow-lg">
-                            ${scene.text || ''}
-                        </p>
-                        ${scene.audio_url ? `<audio controls src="${scene.audio_url}" class="w-full max-w-xs"></audio>` : ''}
-                    </div>
-                `;
-            } else {
-                sceneDiv.innerHTML = `<div class="text-gray-400 text-sm italic">Empty Page</div>`;
+        function updateLoadingMessage() {
+            loading.innerText = `กำลังสร้างฉากที่ ${scenesList.length + 1}…`;
+        }
+
+        function toggleIcons() {
+            iconPlay.classList.toggle("hidden", isPlaying);
+            iconPause.classList.toggle("hidden", !isPlaying);
+        }
+
+        // 4) Preload each scene’s audio OFF-DOM to get its duration
+        function preloadDuration(sceneNumber, url) {
+            const a = new Audio(url);
+            a.preload = "metadata";
+            a.addEventListener("loadedmetadata", () => {
+                durations[sceneNumber - 1] = a.duration;
+                computeTotalDuration();
+            }, { once: true });
+        }
+
+        // 5) Render 2 pages + their <audio> tags in DOM
+        function renderScenePair(left, right) {
+            currentAudioIndex = 0;
+            container.innerHTML = "";
+            [left, right].forEach((scene, idx) => {
+                const div = document.createElement("div");
+                div.className = "relative flex items-end justify-center p-4 border-r border-gray-300";
+                if (scene) {
+                    const audioTag = scene.audio_url
+                        ? `<audio id="scene-audio-${idx}" src="${scene.audio_url}"></audio>`
+                        : "";
+                    div.innerHTML = `
+          ${scene.image_url ? `<img src="${scene.image_url}" class="absolute inset-0 w-full h-full object-cover">` : ``}
+          <div class="relative z-10 flex flex-col items-center space-y-2">
+            <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded max-w-[90%] text-center shadow">
+              ${scene.text || ""}
+            </p>
+            ${audioTag}
+          </div>`;
+                } else {
+                    div.innerHTML = `<div class="text-gray-400 italic">Empty Page</div>`;
+                }
+                container.appendChild(div);
+            });
+
+            // delay to ensure <audio> tags are in DOM
+            setTimeout(() => {
+                applyMute();
+                if (isPlaying) {
+                    playInOrder(
+                        document.getElementById("scene-audio-0"),
+                        document.getElementById("scene-audio-1")
+                    );
+                }
+            }, 50);
+        }
+
+        function applyMute() {
+            document.querySelectorAll("audio").forEach(a => a.muted = isMuted);
+        }
+
+        // 6) Play sequentially & update global progress
+        async function playInOrder(left, right) {
+            currentAudios = [left, right].filter(a => a);
+            // bind timeupdate on each
+            let offset = durations.slice(0, currentIndex).reduce((s, d) => s + (d || 0), 0);
+            currentAudios.forEach((audio, i) => {
+                audio.muted = isMuted;
+                audio.addEventListener("timeupdate", () => {
+                    updateGlobalProgress(offset + audio.currentTime);
+                });
+            });
+
+            for (let i = currentAudioIndex; i < currentAudios.length; i++) {
+                if (!isPlaying) return;
+                try {
+                    await currentAudios[i].play();
+                    await new Promise(res => currentAudios[i].onended = res);
+                    offset += currentAudios[i].duration;
+                    currentAudioIndex = i + 1;
+                } catch { }
             }
 
-            container.appendChild(sceneDiv);
+            // next pair
+            if (isPlaying && currentIndex + 2 < scenesList.length) {
+                currentIndex += 2;
+                renderScenePair(scenesList[currentIndex], scenesList[currentIndex + 1]);
+            }
+        }
+
+        // 7) WebSocket: receive each scene, preload its duration, then once you have 2, render pair…
+        ws.addEventListener("message", e => {
+            const d = JSON.parse(e.data);
+            const ns = {
+                scene_number: d.scene_number,
+                text: d.text,
+                image_url: d.image_url,
+                audio_url: d.audio_url
+            };
+            // replace/update
+            scenesList = scenesList.filter(s => s.scene_number !== ns.scene_number);
+            scenesList.push(ns);
+            scenesList.sort((a, b) => a.scene_number - b.scene_number);
+
+            // preload duration
+            if (ns.audio_url) preloadDuration(ns.scene_number, ns.audio_url);
+
+            if (scenesList.length >= 2 && loading) {
+                loading.remove();
+            }
+            if (scenesList.length === 2) {
+                renderScenePair(scenesList[0], scenesList[1]);
+            } else {
+                updateLoadingMessage();
+            }
         });
-    }
 
-    document.getElementById("next-btn")?.addEventListener("click", () => {
-        currentIndex = (currentIndex + 2) % scenes.length;
-        renderScenes(currentIndex);
+        // 8) Controls
+        playBtn.addEventListener("click", () => {
+            isPlaying = !isPlaying;
+            toggleIcons();
+            if (isPlaying) {
+                playInOrder(
+                    document.getElementById("scene-audio-0"),
+                    document.getElementById("scene-audio-1")
+                );
+            } else {
+                currentAudios.forEach(a => a.pause());
+            }
+        });
+
+        muteBtn.addEventListener("click", () => {
+            isMuted = !isMuted;
+            iconOn.classList.toggle("hidden", isMuted);
+            iconOff.classList.toggle("hidden", !isMuted);
+            applyMute();
+        });
+
+        prevBtn.addEventListener("click", () => {
+            if (currentIndex >= 2) {
+                currentIndex -= 2;
+                currentAudioIndex = 0;
+                renderScenePair(scenesList[currentIndex], scenesList[currentIndex + 1]);
+            }
+        });
+        nextBtn.addEventListener("click", () => {
+            if (currentIndex + 2 < scenesList.length) {
+                currentIndex += 2;
+                currentAudioIndex = 0;
+                renderScenePair(scenesList[currentIndex], scenesList[currentIndex + 1]);
+            }
+        });
     });
-
-    document.getElementById("prev-btn")?.addEventListener("click", () => {
-        currentIndex = (currentIndex - 2 + scenes.length) % scenes.length;
-        renderScenes(currentIndex);
-    });
-
-    renderScenes(0); // Initial render
 </script>
 
-
-<script>
-    const btn = document.getElementById('mute-btn');
-    const iconOn = document.getElementById('icon-sound-on');
-    const iconOff = document.getElementById('icon-sound-off');
-
-    btn.addEventListener('click', () => {
-        iconOn.classList.toggle('hidden');
-        iconOff.classList.toggle('hidden');
-    });
-</script>
 
 {% endblock %}

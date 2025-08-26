@@ -10,26 +10,18 @@
   <meta http-equiv="X-XSS-Protection" content="1; mode=block">
   <title>{% block title %}ระบบจัดการชั้นเรียน{% endblock %}</title>
 
-  <!-- Tailwind CSS -->
+
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-  <!-- ICONS -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
-
-  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
-  <!-- STYLESHEET -->
   <link rel="stylesheet" href="{% static 'css/style.css' %}" />
-  <!-- Tailwind CSS -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-
   <link rel="stylesheet" href="https://unpkg.com/stpageflip/dist/page-flip.browser.min.css" />
   <script src="https://unpkg.com/stpageflip"></script>
 
@@ -46,8 +38,6 @@
 <body class="h-screen fixed top-0 left-0 w-full overflow-hidden border-gray-300 border-2 bg-gray-100 font-poppins">
   {% if user.is_authenticated %}
   <div class="container flex">
-    <!-- Sidebar fix left -->
-
     <div class="sidebar">
       <div class="menu-btn">
         <i class="ph-bold ph-caret-left"></i>
@@ -97,24 +87,10 @@
             </a>
           </li>
         </ul>
-        <div class="head hover:bg-gray-100 p-2 rounded-lg transition">
-          <a href="{% url 'profile_settings_admin' %}">
-            <div class="user-img">
-              <img
-                src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}{% static 'images/default.jpg' %}{% endif %}"
-                class="rounded-full w-12 h-12 object-cover" />
-            </div>
-          </a>
-          <div class="user-details">
-            <p class="name font-semibold">{{ user.get_full_name|default:user.username }}</p>
-            <p class="title text-sm text-gray-500">{{ user.get_user_type_display }}</p>
-          </div>
-        </div>
       </div>
     </div>
 
     {% endif %}
-    <!-- Content ขวา เลื่อน scroll ได้ -->
     <div class="ml-0 flex-1 h-screen overflow-y-auto ">
       <main class="main-contents p-6">
         {% if messages %}
@@ -131,10 +107,8 @@
     </div>
   </div>
 
-  <!-- Jquery -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.js" crossorigin="anonymous"></script>
 
-  <!-- Custom JS -->
   <script src="{% static 'js/script.js' %}"></script>
 </body>
 

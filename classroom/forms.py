@@ -1,27 +1,20 @@
-# forms.py
+# classroom/forms.py
 from django import forms
+from .models import Lesson, User, Report, Classroom
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
-from .models import User
 from django.utils import timezone
 import re
-from django import forms
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-# classroom/forms.py
-
-from django import forms
-from .models import Lesson
 
 class LessonUploadForm(forms.ModelForm):
     class Meta:
         model = Lesson
         fields = ['file']
-
-
 
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
@@ -34,9 +27,7 @@ class ProfileUpdateForm(forms.ModelForm):
             'bio': forms.Textarea(attrs={'rows': 4, 'class': 'w-full rounded-xl border px-4 py-3 text-sm resize-none'}),
             'facebook': forms.TextInput(attrs={'class': 'w-full mt-1 rounded-full border px-4 py-2'}),
             'line': forms.TextInput(attrs={'class': 'w-full mt-1 rounded-full border px-4 py-2'}),
-            # เพิ่ม styling ฟิลด์อื่นๆ ได้ที่นี่
         }
-
 
 
 class ProfileUpdateForm(forms.ModelForm):
@@ -60,12 +51,10 @@ class ProfileUpdateForm(forms.ModelForm):
         })
 
 
-
 class SecureUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
     first_name = forms.CharField(max_length=30, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
     last_name = forms.CharField(max_length=30, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
-    # user_type = forms.ChoiceField(choices=[('teacher', 'Teacher'), ('student', 'Student')],widget=forms.Select(attrs={'class': 'form-control'}))
     
     class Meta:
         model = User
@@ -86,6 +75,7 @@ class SecureUserCreationForm(UserCreationForm):
             raise ValidationError("ชื่อผู้ใช้ต้องมีเฉพาะตัวอักษร ตัวเลข และ underscore เท่านั้น")
         return username
 
+
 class SecureAuthenticationForm(AuthenticationForm):
     username = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'อีเมล'}))
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'รหัสผ่าน'}))
@@ -103,7 +93,7 @@ class SecureAuthenticationForm(AuthenticationForm):
                     raise ValidationError("บัญชีถูกล็อก กรุณาลองใหม่ภายหลัง")
                 
                 # Check if user is approved
-                # ✅ เฉพาะครูเท่านั้นที่ต้องรออนุมัติ
+                # เฉพาะครูเท่านั้นที่ต้องรออนุมัติ
                 if user.user_type == 'teacher' and not user.is_approved:
                     raise ValidationError("บัญชีครูยังไม่ได้รับการอนุมัติจากผู้ดูแลระบบ")
 
@@ -131,19 +121,11 @@ class JoinClassroomForm(forms.Form):
     )
 
 
-
-from django import forms
-from .models import Report
-
 class ReportForm(forms.ModelForm):
     class Meta:
         model = Report
         fields = ['reason', 'detail']
 
-
-# forms.py
-from django import forms
-from .models import Classroom
 
 class ClassroomForm(forms.ModelForm):
     class Meta:

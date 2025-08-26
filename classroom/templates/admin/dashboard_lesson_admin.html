@@ -1,10 +1,7 @@
-<!-- templates/admin/dashboard_lesson_admin.html -->
 {% extends 'admin/base_admin.html' %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto p-6">
-
-  <!-- Section: Summary Cards -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
     <div class="bg-white shadow-md rounded-xl p-6 flex items-center justify-between">
       <div>
@@ -22,20 +19,18 @@
     </div>
   </div>
 
-  <!-- Section: Lesson List -->
+
   <div class="bg-white shadow-lg rounded-2xl p-6">
     <h2 class="text-xl font-bold text-gray-700 mb-2">บทเรียนที่ถูกรายงานทั้งหมด</h2>
-    <!-- <p class="text-sm text-gray-500 mb-6">คุณสามารถค้นหารายละเอียดเพิ่มเติมเกี่ยวกับโครงการของคุณได้ที่นี่...</p> -->
-
-    <!-- Section: รายการบทเรียนถูกรายงาน -->
     <div class="space-y-4">
       {% for report in reports %}
       <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl shadow-sm">
         <div class="flex items-center gap-4">
-          {% with storybook.scenes.first.image_url as image %}
-            <img src="{% if image %}{{ image }}{% else %}https://picsum.photos/seed/{{ storybook.id }}/400/200{% endif %}"
-                class="w-full h-44 object-cover">
-            {% endwith %}
+          {% with report.storybook.scenes.first.image_url as image %}
+          <img
+            src="{% if image %}{{ image }}{% else %}https://picsum.photos/seed/{{ report.storybook.id }}/400/200{% endif %}"
+            class="w-44 h-32 object-cover rounded-md">
+          {% endwith %}
           <div>
             <h4 class="text-base font-bold">{{ report.storybook.title }}</h4>
             <p class="text-sm text-gray-500">

@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from .models import User, Classroom
 from django.utils import timezone
 
-@admin.action(description='✅ อนุมัติผู้ใช้ที่เลือก')
+@admin.action(description='อนุมัติผู้ใช้ที่เลือก')
 def approve_selected_users(modeladmin, request, queryset):
     queryset.update(is_approved=True)
 

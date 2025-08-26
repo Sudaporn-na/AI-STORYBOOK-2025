@@ -2,10 +2,8 @@
 {% block title %}แบบทดสอบ{% endblock %}
 
 {% block content %}
-
 <div class="bg-gradient-to-b from-white to-purple-50 min-h-screen flex items-center justify-center px-4 py-10">
-
-    <form method="post" id="quiz-form"
+    <form method="post" action="{% url 'take_post_test' storybook.id %}" id="quiz-form"
         class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl p-8 space-y-10 border border-purple-200">
         {% csrf_token %}
 
@@ -31,12 +29,23 @@
                     {% endfor %}
                 </div>
 
-                <div class="text-right">
+                <!-- Navigation Buttons -->
+                <div class="mt-4 flex justify-between">
+                    {% if not forloop.first %}
                     <button type="button"
-                        class="next-btn mt-4 px-6 py-2 bg-purple-600 text-white font-semibold rounded-full shadow hover:bg-purple-500 transition">
-                        ▶️ ถัดไป
+                        class="prev-btn px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-full shadow hover:bg-gray-400 transition">
+                        ⬅️ ย้อนกลับ
+                    </button>
+                    {% else %}
+                    <span></span>  <!-- Placeholder to align next button to right -->
+                    {% endif %}
+
+                    <button type="button"
+                        class="next-btn px-6 py-2 bg-purple-600 text-white font-semibold rounded-full shadow hover:bg-purple-500 transition">
+                        ถัดไป ➡️
                     </button>
                 </div>
+
             </div>
         </div>
         {% endfor %}
@@ -48,14 +57,19 @@
             </button>
         </div>
     </form>
-
 </div>
 
 <script>
     const steps = document.querySelectorAll(".question-step");
     const nextButtons = document.querySelectorAll(".next-btn");
+    const prevButtons = document.querySelectorAll(".prev-btn");
     const submitSection = document.getElementById("submit-section");
     let currentStep = 0;
+
+    function showStep(step) {
+        steps.forEach((s, i) => s.classList.toggle("hidden", i !== step));
+        submitSection.classList.toggle("hidden", step < steps.length);
+    }
 
     nextButtons.forEach((btn, index) => {
         btn.addEventListener("click", () => {
@@ -67,16 +81,16 @@
                 return;
             }
 
-            currentQuestion.classList.add("hidden");
             currentStep++;
+            showStep(currentStep);
+        });
+    });
 
-            if (currentStep < steps.length) {
-                steps[currentStep].classList.remove("hidden");
-            } else {
-                submitSection.classList.remove("hidden");
-            }
+    prevButtons.forEach((btn, index) => {
+        btn.addEventListener("click", () => {
+            currentStep--;
+            showStep(currentStep);
         });
     });
 </script>
-
 {% endblock %}

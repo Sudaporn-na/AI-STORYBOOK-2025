@@ -5,13 +5,11 @@
 {% block content %}
 <div class="max-w-5xl mx-auto px-4 py-10 space-y-10">
 
-    <!-- Lesson Header -->
     <h1 class="text-2xl font-bold text-gray-800">{{ storybook.title }}</h1>
     <p class="text-gray-500 text-sm">By {{ storybook.user.get_full_name|default:storybook.user.email }}</p>
 
-    <!-- Flipbook Frame -->
+
     <div class="relative bg-black rounded-[20px] w-full h-[600px] overflow-hidden shadow-lg">
-        <!-- Scene Pages -->
         <div class="absolute inset-4 bg-white rounded-[16px] grid grid-cols-2 overflow-hidden">
             {% for scene in scenes|slice:":2" %}
             <div class="relative flex items-end justify-center p-4 border-r border-gray-300">
@@ -30,7 +28,6 @@
             {% endfor %}
         </div>
 
-        <!-- ✅ ปุ่ม Prev / Next ติดขอบซ้าย-ขวา กลางแนวตั้ง -->
         <button id="prev-btn"
             class="absolute top-1/2 left-0 -translate-y-1/2 px-3 py-2 bg-white text-gray-700 rounded-r-lg shadow hover:bg-gray-200 transition z-30">
             ⬅
@@ -41,16 +38,14 @@
         </button>
     </div>
 
-    <!-- Player Control -->
     <div class="flex items-center justify-between text-gray-600 text-sm mt-4">
         <button id="player-toggle"
             class="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow hover:bg-gray-100 transition">
-            <!-- ▶️ Icon: เล่น -->
             <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800" viewBox="0 0 24 24"
                 fill="currentColor">
                 <path d="M8 5v14l11-7z" />
             </svg>
-            <!-- ⏸️ Icon: หยุด -->
+            
             <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800 hidden"
                 viewBox="0 0 24 24" fill="currentColor">
                 <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
@@ -59,10 +54,10 @@
 
         <div class="flex items-center gap-3">
             <span class="text-gray-700 font-medium">01:00</span>
-            <!-- 🔈 ปุ่มเปิด/ปิดเสียง -->
+            
             <button id="mute-btn"
                 class="flex items-center justify-center w-9 h-9 rounded-full bg-white shadow hover:bg-gray-100 transition">
-                <!-- ไอคอนเปิดเสียง -->
+                
                 <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
@@ -70,7 +65,7 @@
                         d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a9 9 0 010 12.73" />
                 </svg>
 
-                <!-- ไอคอนปิดเสียง -->
+                
                 <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800 hidden"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 14M15 5l-7 14" />
@@ -80,61 +75,52 @@
         </div>
     </div>
 
-    <!-- ✅ ผู้ใช้ + แชร์/รายการโปรด -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-8">
 
-        <!-- 👤 ผู้ใช้ -->
+        
         <div class="flex items-center space-x-3">
-            <img src="{% static 'images/default_avatar.png' %}" class="w-10 h-10 rounded-full object-cover"
-                alt="avatar">
+            <img src="{% if storybook.user.profile_picture %}{{ storybook.user.profile_picture.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}"
+                class="w-10 h-10 rounded-full object-cover" alt="avatar">
             <div>
-                <p class="font-semibold text-sm text-gray-800">{{ request.user.get_full_name }}</p>
-                <p class="text-xs text-gray-500">อย่าลืมดูภาพนิ่งด้วยนะครับ</p>
+                <p class="font-semibold text-sm text-gray-800">{{ storybook.user.get_full_name }}</p>
+                <p class="text-xs text-gray-500">ครูผู้สร้างบทเรียน</p>
             </div>
         </div>
 
-        <!-- 📤 แชร์ + ⭐ รายการโปรด + ... -->
         <div class="flex items-center gap-3">
 
-            <!-- ปุ่ม แชร์ -->
             <button
                 class="flex items-center px-4 py-2 rounded-xl bg-white border shadow-sm text-gray-700 text-sm hover:bg-gray-100 transition">
-                <i class="fa-solid fa-share-nodes mr-2"></i> แชร์เป็น
+                <i class="fa-solid fa-share-nodes mr-2"></i> แชร์
             </button>
 
-            <!-- ปุ่ม รายการโปรด -->
             <button
                 class="flex items-center px-4 py-2 rounded-xl bg-white border shadow-sm text-gray-700 text-sm hover:bg-gray-100 transition">
                 <i class="fa-solid fa-bookmark mr-2"></i> รายการโปรด
             </button>
 
-            <!-- ปุ่ม ... เมนู -->
             <div class="relative">
                 <button id="menu-toggle-btn"
                     class="w-9 h-9 flex items-center justify-center rounded-full border bg-white hover:bg-gray-100 text-gray-700 shadow transition">
                     <i class="fa-solid fa-ellipsis"></i>
                 </button>
 
-                <!-- เมนู Dropdown -->
                 <div id="menu-dropdown"
                     class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg py-2 hidden z-50">
                     <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fa-solid fa-download mr-2"></i> ดาวน์โหลด
                     </a>
-                    <!-- ปุ่มเปิดเมนู -->
                     <a href="#" id="open-report-modal"
                         class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fa-solid fa-flag mr-2"></i> รายงาน
                     </a>
 
-                    <!-- ✅ Modal -->
                     <div id="report-modal"
                         class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden">
                         <div class="bg-white w-full max-w-md rounded-xl shadow-lg p-6 relative">
                             <button id="close-report-modal"
                                 class="absolute top-3 right-3 text-gray-500 hover:text-red-500">✕</button>
 
-                            <!-- Step 1 -->
                             <div id="step1">
                                 <h2 class="text-lg font-bold mb-2">รายงาน</h2>
                                 <p class="text-sm text-gray-600 mb-4">เลือกเหตุผลที่ตรงที่สุด</p>
@@ -149,7 +135,6 @@
                                     class="mt-6 w-full bg-gray-800 text-white py-2 rounded-lg">ดำเนินการต่อ</button>
                             </div>
 
-                            <!-- Step 2 -->
                             <div id="step2" class="hidden">
                                 <button id="back-to-step1" class="text-sm text-blue-600 mb-2">← ย้อนกลับ</button>
                                 <p class="text-gray-700 text-sm mb-3">รายละเอียดเพิ่มเติม (ถ้ามี)</p>
@@ -159,7 +144,6 @@
                                     class="mt-4 w-full bg-gray-800 text-white py-2 rounded-lg">รายงาน</button>
                             </div>
 
-                            <!-- Step 3 -->
                             <div id="step3" class="hidden text-center">
                                 <p class="text-green-600 font-semibold text-lg mb-2">✔ รายงานสำเร็จ</p>
                                 <p class="text-gray-600 text-sm">ระบบบันทึกเรียบร้อย</p>
@@ -174,7 +158,6 @@
 
     </div>
 
-    <!-- ✅ ปุ่ม แบบทดสอบ + รายละเอียด อยู่กลางจอ -->
     <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-6 text-center">
         <a href="{% url 'take_post_test' storybook.id %}">
             <button id="quiz-btn" type="button"
@@ -191,170 +174,39 @@
 
     <form id="lesson-details" class="mt-8 hidden">
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Lesson Name</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อบทเรียน</label>
             <p class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
                 {{ storybook.title }}
             </p>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Creator</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้สร้าง</label>
             <p class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
                 {{ storybook.user.get_full_name|default:storybook.user.email }}
             </p>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย</label>
             <div class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
-                บทเรียน AI ที่สร้างจาก PDF/DOCX
+                บทเรียน AI ที่สร้างจาก PDF
             </div>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Additional Content</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">รายละเอียดเพิ่มเติม</label>
             <div class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
                 -
             </div>
         </div>
     </form>
 
-
-
-
-    <!-- ✅ ความคิดเห็น -->
-    <div class="mt-10 space-y-6">
-        <h2 class="text-lg font-bold text-gray-800">243 ความคิดเห็น</h2>
-
-        <!-- ✏️ กล่องคอมเมนต์ + ปุ่ม + ดาว -->
-        <div class="flex flex-wrap justify-between items-start gap-4">
-            <!-- Input -->
-            <div class="flex items-start gap-3 flex-1">
-                <textarea
-                    class="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    placeholder="ส่งความคิดเห็นของคุณที่นี่..."></textarea>
-                <button
-                    class="bg-gray-800 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-700 transition">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
-            </div>
-
-            <!-- ⭐️ ดาว -->
-            <div class="flex items-center space-x-1 text-yellow-400 text-lg mt-2 sm:mt-0">
-                <i class="fa-solid fa-star hover:scale-110 transition cursor-pointer"></i>
-                <i class="fa-solid fa-star hover:scale-110 transition cursor-pointer"></i>
-                <i class="fa-solid fa-star hover:scale-110 transition cursor-pointer"></i>
-                <i class="fa-solid fa-star hover:scale-110 transition cursor-pointer"></i>
-                <i class="fa-solid fa-star hover:scale-110 transition cursor-pointer"></i>
-            </div>
-        </div>
-
-        <!-- 💬 ตัวอย่างความคิดเห็น -->
-        <div class="space-y-6">
-            <!-- ความคิดเห็น 1 -->
-            <div class="flex justify-between items-start gap-4 border-b pb-4">
-                <div class="flex gap-4">
-                    <img src="https://randomuser.me/api/portraits/men/12.jpg"
-                        class="w-10 h-10 rounded-full object-cover">
-                    <div>
-                        <p class="font-semibold text-sm text-gray-800">Michael Roberts <span
-                                class="text-gray-400">commented on your post</span></p>
-                        <p class="text-sm text-gray-600 mt-1">Never underestimate the power of a story. Even the
-                            simplest tale can carry deep morals</p>
-                        <p class="text-xs text-gray-400 mt-1">08:56 PM on 31 October, 2024</p>
-                    </div>
-                </div>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-ellipsis"></i>
-                </button>
-            </div>
-
-            <!-- ความคิดเห็น 2 -->
-            <div class="flex justify-between items-start gap-4 border-b pb-4">
-                <div class="flex gap-4">
-                    <div
-                        class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center font-bold text-sm text-white">
-                        PM</div>
-                    <div>
-                        <p class="font-semibold text-sm text-gray-800">New Task Assigned <span
-                                class="text-gray-400">commented on your post</span></p>
-                        <p class="text-sm text-gray-600 mt-1">Never underestimate the power of a story. Even the
-                            simplest tale can carry deep morals</p>
-                        <p class="text-xs text-gray-400 mt-1">04:25 PM on 31 October, 2024</p>
-                    </div>
-                </div>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-ellipsis"></i>
-                </button>
-            </div>
-
-            <!-- ความคิดเห็น 3 -->
-            <div class="flex justify-between items-start gap-4 border-b pb-4">
-                <div class="flex gap-4">
-                    <img src="https://randomuser.me/api/portraits/women/65.jpg"
-                        class="w-10 h-10 rounded-full object-cover">
-                    <div>
-                        <p class="font-semibold text-sm text-gray-800">Jessica Liu <span class="text-gray-400">commented
-                                on your post</span></p>
-                        <p class="text-sm text-gray-600 mt-1">Even a simple story can leave a strong impact on young
-                            learners.</p>
-                        <p class="text-xs text-gray-400 mt-1">08:49 PM on 30 October, 2024</p>
-                    </div>
-                </div>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-ellipsis"></i>
-                </button>
-            </div>
-
-            <!-- ความคิดเห็น 4 -->
-            <div class="flex justify-between items-start gap-4 border-b pb-4">
-                <div class="flex gap-4">
-                    <img src="https://randomuser.me/api/portraits/men/11.jpg"
-                        class="w-10 h-10 rounded-full object-cover">
-                    <div>
-                        <p class="font-semibold text-sm text-gray-800">Michael Roberts <span
-                                class="text-gray-400">commented on your post</span></p>
-                        <p class="text-sm text-gray-600 mt-1">Simple but powerful content. Great job!</p>
-                        <p class="text-xs text-gray-400 mt-1">08:56 PM on 31 October, 2024</p>
-                    </div>
-                </div>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-ellipsis"></i>
-                </button>
-            </div>
-
-            <!-- ความคิดเห็น 5 -->
-            <div class="flex justify-between items-start gap-4 border-b pb-4">
-                <div class="flex gap-4">
-                    <div
-                        class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center font-bold text-sm text-white">
-                        HR</div>
-                    <div>
-                        <p class="font-semibold text-sm text-gray-800">Reminder <span class="text-gray-400">commented on
-                                your post</span></p>
-                        <p class="text-sm text-gray-600 mt-1">Learning with stories makes abstract concepts easier to
-                            grasp.</p>
-                        <p class="text-xs text-gray-400 mt-1">10:30 AM on 30 October, 2024</p>
-                    </div>
-                </div>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-ellipsis"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-
 </div>
 
 
 
-
-
-
-
-<!-- JS -->
 <script>
-    // สำหรับเมนู ...
     const menuToggleBtn = document.getElementById('menu-toggle-btn');
     const menuDropdown = document.getElementById('menu-dropdown');
 
@@ -370,7 +222,6 @@
 </script>
 
 <script>
-    // สำหรับแสดง/ปิด รายละเอียดบทเรียน
     const detailsToggleBtn = document.getElementById("details-toggle-btn");
     const lessonDetailBox = document.getElementById("lesson-details");
 
@@ -378,7 +229,6 @@
         const isHidden = lessonDetailBox.classList.contains("hidden");
         lessonDetailBox.classList.toggle("hidden");
 
-        // เปลี่ยนข้อความปุ่ม
         detailsToggleBtn.innerText = isHidden ? "ปิดรายละเอียดบทเรียน" : "แสดงรายละเอียดบทเรียน";
     });
 </script>
@@ -427,7 +277,7 @@
         renderScenes(currentIndex);
     });
 
-    renderScenes(0); // Initial render
+    renderScenes(0); 
 </script>
 
 <script>
@@ -438,7 +288,6 @@
         dropdown.classList.toggle('hidden');
     });
 
-    // ปิด dropdown เมื่อคลิกข้างนอก
     document.addEventListener('click', (e) => {
         if (!toggleBtn.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.classList.add('hidden');
@@ -459,7 +308,6 @@
 </script>
 
 
-<!-- ✅ ฝังค่าจาก Django -->
 <div id="storybook-meta"
      data-storybook-id="{{ storybook.id }}"
      data-csrf="{{ csrf_token }}">
@@ -468,7 +316,6 @@
 
 
 <script>
-    // ✅ ดึงค่าจาก HTML ที่ฝังไว้
     const meta = document.getElementById("storybook-meta");
     const storybookId = meta.dataset.storybookId;
     const csrfToken = meta.dataset.csrf;
@@ -639,7 +486,7 @@
 
     updateLoadingMessage();
 
-    // =================== 🧾 Modal รายงาน ====================
+
     document.getElementById("open-report-modal").onclick = (e) => {
         e.preventDefault();
         document.getElementById("report-modal").classList.remove("hidden");
@@ -688,8 +535,4 @@
         });
     };
 </script>
-
-
-
-
 {% endblock %}

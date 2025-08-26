@@ -8,31 +8,34 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="X-Frame-Options" content="DENY">
   <meta http-equiv="X-XSS-Protection" content="1; mode=block">
-  <title>{% block title %}ระบบจัดการชั้นเรียน{% endblock %}</title>
+  <title>{% block title %}AI STORYBOOK{% endblock %}</title>
 
   <!-- Tailwind CSS -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
   <!-- ICONS -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+
 
   <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
 
   <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;600;700&display=swap" rel="stylesheet" />
+
   <!-- STYLESHEET -->
   <link rel="stylesheet" href="{% static 'css/style.css' %}" />
-  <!-- Tailwind CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
 
   <style>
     body {
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Bai Jamjuree', sans-serif;
       background: linear-gradient(135deg, #fff 0%, #fff 100%);
       min-height: 100vh;
     }
@@ -42,7 +45,7 @@
 <body class="h-screen fixed top-0 left-0 w-full overflow-hidden border-gray-300 border-2 bg-gray-100 font-poppins">
   {% if user.is_authenticated %}
   <div class="container flex">
-    <!-- Sidebar fix left -->
+    <!-- Sidebar -->
 
     <div class="sidebar">
       <div class="menu-btn">
@@ -59,7 +62,7 @@
 
       <div class="nav">
         <div class="menu">
-          <p class="title">Main</p>
+          <p class="title">เมนู</p>
           <ul>
             <li>
 
@@ -69,51 +72,62 @@
                 <span class="text">หน้าหลัก</span>
               </a>
             </li>
-            <li class="active">
+            <li>
               <a href="#">
-                <i class="icon ph-bold ph-file-text"></i>
-                <span class="text">แดชบอร์ด</span>
+                <i class="icon ph-bold ph-user"></i>
+                <span class="text">สร้างบทเรียน</span>
+                <i class="arrow ph-bold ph-caret-down"></i>
               </a>
+              <ul class="sub-menu">
+                {% for classroom in classrooms %}
+                <li>
+                  <a href="{% url 'create_lesson_for_classroom' classroom.id %}">
+                    <span class="text">{{ classroom.name }}</span>
+                  </a>
+                </li>
+                {% empty %}
+                <li><span class="text text-gray-400">ไม่มีห้องเรียน</span></li>
+                {% endfor %}
+              </ul>
             </li>
+
+
             <li>
               <a href="{% url 'teacher_lesson_history' %}">
                 <i class="icon ph-bold ph-calendar-blank"></i>
                 <span class="text">ประวัติ</span>
               </a>
             </li>
+          </ul>
+        </div>
+        <div class="menu">
+          <p class="title">เกี่ยวกับ</p>
+          <ul>
             <li>
-              <a href="{% url 'notifications' %}">
-                <i class="icon ph-bold ph-chart-bar"></i>
-                <span class="text">เเจ้งเตือน</span>
+              <a href="{% url 'license' %}">
+                <i class="icon ph-bold ph-gear"></i>
+                <span class="text">ข้อตกลงการใช้ซอฟต์แวร์</span>
               </a>
             </li>
           </ul>
         </div>
-        <!-- <div class="menu">
-          <p class="title">Settings</p>
-          <ul>
-            <li>
-              <a href="#">
-                <i class="icon ph-bold ph-gear"></i>
-                <span class="text">Settings</span>
-              </a>
-            </li>
-          </ul>
-        </div> -->
       </div>
       <div class="menu">
         <span class="title">บัญชีผู้ใช้</span>
         <ul>
-          <!-- <li>
-            <a href="#">
-              <i class="icon ph-bold ph-info"></i>
-              <span class="text">Help</span>
-            </a>
-          </li> -->
           <li>
             <a href="{% url 'logout' %}">
               <i class="icon ph-bold ph-sign-out"></i>
               <span class="text">ออกจากระบบ</span>
+            </a>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <a href="{% url 'delete_account' %}"
+              onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีผู้ใช้ของคุณ?');">
+              <i class="fa-solid fa-trash"></i>
+              <span class="text">ลบบัญชีผู้ใช้</span>
             </a>
           </li>
         </ul>
@@ -151,10 +165,7 @@
     </div>
   </div>
 
-  <!-- Jquery -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.js" crossorigin="anonymous"></script>
-
-  <!-- Custom JS -->
   <script src="{% static 'js/script.js' %}"></script>
 </body>
 

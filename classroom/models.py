@@ -2,6 +2,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
+from django.db import models
+from django.contrib.auth import get_user_model
 import uuid
 import secrets
 import string
@@ -43,7 +45,7 @@ class Classroom(models.Model):
     code = models.CharField(max_length=10, unique=True, blank=True)
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='teaching_classes')
     students = models.ManyToManyField(User, related_name='enrolled_classes', blank=True)
-    is_approved = models.BooleanField(default=False)
+    is_approved = models.BooleanField(default=True)
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_classes')
     created_at = models.DateTimeField(auto_now_add=True)
     cover_image = models.ImageField(upload_to='classroom_covers/', null=True, blank=True)
@@ -60,10 +62,6 @@ class Classroom(models.Model):
                 return code
 
 
-# classroom/models.py
-
-from django.db import models
-from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -79,19 +77,21 @@ class Lesson(models.Model):
         return self.title
     
 
-
+from django.db import models
 # models.py
 class Storybook(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name="storybooks", null=True, blank=True)
     title = models.CharField(max_length=255)
     file = models.FileField(upload_to='lessons/')
+    cover_image_url = models.URLField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_ready = models.BooleanField(default=False)
     is_failed = models.BooleanField(default=False)
     is_uploaded = models.BooleanField(default=False)
     download_permission = models.CharField(max_length=10, choices=[('public', 'Public'), ('private', 'Private')], default='public')
     lesson = models.ForeignKey('Lesson', on_delete=models.CASCADE, related_name='storybook', null=True, blank=True)
+    favorites = models.ManyToManyField(User, related_name='favorite_storybooks', blank=True)
 
 
 class Scene(models.Model):
@@ -100,7 +100,7 @@ class Scene(models.Model):
     text = models.TextField()
     image_prompt = models.TextField()
     image_url = models.URLField(max_length=1000, blank=True, null=True)
-    audio_url = models.URLField(max_length=1000, blank=True, null=True)  # ✅ เพิ่ม
+    audio_url = models.URLField(max_length=1000, blank=True, null=True)  
     
 
 class PostTestQuestion(models.Model):
@@ -113,10 +113,11 @@ class PostTestQuestion(models.Model):
     choice_4 = models.CharField(max_length=255)
 
     correct_choice = models.PositiveSmallIntegerField(choices=[(1, 'Choice 1'), (2, 'Choice 2'), (3, 'Choice 3'), (4, 'Choice 4')])
+    explanation = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     
-class PostTestSubmission(models.Model):  # หรือชื่อ PostTestAttempt
+class PostTestSubmission(models.Model): 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     storybook = models.ForeignKey(Storybook, on_delete=models.CASCADE)
     score = models.IntegerField()

@@ -16,19 +16,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.shortcuts import redirect  # ✅ เพิ่มบรรทัดนี้
-from classroom import views  # ✅ อย่าลืม import views ด้วย
-from django.conf import settings  # ✅ เพิ่มบรรทัดนี้
+from django.shortcuts import redirect 
+from classroom import views  
+from django.conf import settings  
 from django.conf.urls.static import static
 
 urlpatterns = [
     path('auth/', views.auth_view, name='auth_view'),
     path('admin/', admin.site.urls),
-    path('', include('classroom.urls')),  # ✅ รวม urls ของแอป classroom
-    path('accounts/', include('allauth.urls')),  # ✅ เพิ่มบรรทัดนี้
+    path('', include('classroom.urls')),  
+    path('accounts/', include('allauth.urls')),  
     
 ]
 
-# ✅ เพิ่มตรงนี้เข้าไป
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,43 +1,37 @@
 {% extends "admin/base_admin.html" %}
 {% load custom_filters %}
+
 {% block content %}
 <div class="p-6 space-y-6">
-
-  <!-- Header -->
   <h2 class="text-2xl font-bold">รายชื่อผู้ใช้งาน</h2>
 
-  <!-- Search + Page Selector -->
   <div class="flex justify-between items-center">
     <div class="relative">
-      <input type="text" placeholder="ค้นหา" class="pl-10 pr-4 py-2 border rounded-lg shadow-sm w-64">
-      <span class="absolute left-3 top-2.5 text-gray-500">🔍</span>
+      <input id="searchInput" type="text" placeholder="ค้นหา"
+        class="text-left pl-4 pr-4 py-2 border rounded-lg shadow-sm w-64" onkeyup="filterRows()">
     </div>
     <div>
       <label class="mr-2 text-sm">รายการต่อหน้า</label>
       <select class="border rounded px-2 py-1 text-sm">
         <option>10</option>
-        <option>13</option>
+        <option>15</option>
         <option>20</option>
       </select>
     </div>
   </div>
 
-  <!-- Tabs -->
+
   <div class="flex justify-center border-b border-gray-200 space-x-6 text-lg font-semibold">
     <button onclick="showTab('teachers')" id="tab-teachers"
-      class="py-2 px-4 text-gray-500 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600 transition-all duration-200">
-      ครู
-    </button>
+      class="py-2 px-4 text-blue-600 border-b-2 border-blue-600">ครู</button>
     <button onclick="showTab('students')" id="tab-students"
-      class="py-2 px-4 text-gray-500 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-600 transition-all duration-200">
-      นักเรียน
-    </button>
+      class="py-2 px-4 text-gray-500 border-b-2 border-transparent hover:text-blue-600 hover:border-blue-600 transition-all duration-200">นักเรียน</button>
   </div>
 
-  <!-- Teacher Table -->
+
   <div id="teachers" class="tab-content">
     <div class="overflow-x-auto bg-white rounded-lg shadow">
-      <table class="min-w-full text-sm text-left">
+      <table class="min-w-full text-sm text-left" id="teacherTable">
         <thead class="bg-gray-100">
           <tr class="text-gray-700">
             <th class="py-3 px-4">#</th>
@@ -76,10 +70,10 @@
                 <a href="{% url 'delete_user' user_id=teacher.id %}"
                   onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้นี้?');" title="ลบ"
                   class="inline-flex items-center justify-center w-8 h-8 rounded-md border border-gray-300 text-gray-800 hover:bg-red-100 hover:text-red-600">
-                  <!-- ไอคอนถังขยะ -->
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 
                       0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4" />
                   </svg>
                 </a>
@@ -92,10 +86,10 @@
     </div>
   </div>
 
-  <!-- Student Table -->
+
   <div id="students" class="tab-content hidden">
     <div class="overflow-x-auto bg-white rounded-lg shadow">
-      <table class="min-w-full text-sm text-left">
+      <table class="min-w-full text-sm text-left" id="studentTable">
         <thead class="bg-gray-100">
           <tr class="text-gray-700">
             <th class="py-3 px-4">#</th>
@@ -122,7 +116,6 @@
             </td>
             <td class="text-center">
               <div class="flex justify-center gap-2">
-                <!-- ปุ่มดู -->
                 <a href="#" title="ดูรายละเอียด"
                   class="inline-flex items-center justify-center w-8 h-8 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
@@ -130,15 +123,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
                 </a>
-
-                <!-- ปุ่มลบ -->
                 <a href="{% url 'delete_user' user_id=student.id %}"
                   onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้นี้?');" title="ลบ"
                   class="inline-flex items-center justify-center w-8 h-8 rounded-md border border-gray-300 text-gray-800 hover:bg-red-100 hover:text-red-600">
-                  <!-- ไอคอนถังขยะ -->
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 
                       0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4" />
                   </svg>
                 </a>
@@ -152,23 +143,42 @@
   </div>
 </div>
 
-<!-- JavaScript Toggle Tabs -->
+
 <script>
   function showTab(tab) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.getElementById(tab).classList.remove('hidden');
 
-    // highlight active tab
-    document.getElementById("tab-teachers").classList.remove("text-blue-600", "border-blue-600");
-    document.getElementById("tab-students").classList.remove("text-blue-600", "border-blue-600");
+    const tabTeacher = document.getElementById("tab-teachers");
+    const tabStudent = document.getElementById("tab-students");
+
+    tabTeacher.classList.remove("text-blue-600", "border-blue-600");
+    tabTeacher.classList.add("text-gray-500", "border-transparent");
+
+    tabStudent.classList.remove("text-blue-600", "border-blue-600");
+    tabStudent.classList.add("text-gray-500", "border-transparent");
 
     if (tab === "teachers") {
-      document.getElementById("tab-teachers").classList.add("text-blue-600", "border-blue-600");
-      document.getElementById("tab-students").classList.add("text-gray-500", "border-transparent");
+      tabTeacher.classList.add("text-blue-600", "border-blue-600");
+      tabTeacher.classList.remove("text-gray-500", "border-transparent");
     } else {
-      document.getElementById("tab-students").classList.add("text-blue-600", "border-blue-600");
-      document.getElementById("tab-teachers").classList.add("text-gray-500", "border-transparent");
+      tabStudent.classList.add("text-blue-600", "border-blue-600");
+      tabStudent.classList.remove("text-gray-500", "border-transparent");
     }
+
+    filterRows(); 
+  }
+
+  function filterRows() {
+    const input = document.getElementById("searchInput").value.toLowerCase();
+    const currentTab = document.getElementById("teachers").classList.contains("hidden") ? "students" : "teachers";
+    const table = document.getElementById(currentTab === "teachers" ? "teacherTable" : "studentTable");
+    const rows = table.querySelectorAll("tbody tr");
+
+    rows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(input) ? "" : "none";
+    });
   }
 </script>
 {% endblock %}

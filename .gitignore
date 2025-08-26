@@ -5,7 +5,6 @@ __pycache__/
 *.pyd
 *.so
 
-# Django stuff
 *.sqlite3
 *.log
 *.pot
@@ -13,11 +12,8 @@ __pycache__/
 *.pyo
 *.pyd
 *.db
-
-# Environment Variables
 .env
 
-# Virtual environment
 .venv/
 venv/
 ENV/
@@ -26,27 +22,15 @@ env/
 # VSCode
 .vscode/
 
-# macOS
-.DS_Store
-
 # Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
-
-# Migrations (optional, ถ้าไม่อยากแชร์ migration)
+# Django migrations
 **/migrations/*.py
 !**/migrations/__init__.py
-
-# Python bytecode
 __pycache__/
 *.py[cod]
-
-# Virtual env
 .venv/
-
-# Env files
 .env
 
-# SQLite
-*.sqlite3

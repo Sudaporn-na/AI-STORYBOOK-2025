@@ -1,26 +1,51 @@
 {% extends 'teacher/base_teacher.html' %}
 {% load static %}
-{% block title %}Create lesson to image{% endblock %}
+{% block title %}สร้างบทเรียนให้เป็นนิทาน{% endblock %}
 
 {% block content %}
 <div class="w-full max-w-screen-xl mx-auto px-6 py-10">
-    <h1 class="text-3xl font-bold mb-2">Create lesson to image</h1>
+    <h1 class="text-3xl font-bold mb-2">สร้างบทเรียนให้เป็นภาพนิทาน</h1>
     <p class="text-sm text-gray-500 mb-6">
-        <strong>Media Upload</strong><br>
-        Upload your document (PDF only)
+        <strong>การอัพโหลดไฟล์บทเรียน</strong><br>
+        เพิ่มเอกสารของคุณที่นี่ และคุณสามารถอัปโหลดไฟล์ได้สูงสุด 1 ไฟล์
     </p>
 
-    <!-- ✅ Upload Form -->
-    <form id="upload-form" action="{% url 'upload_lesson_file' classroom.id %}" method="POST" enctype="multipart/form-data"
-          class="border-2 border-dashed border-blue-300 rounded-xl px-8 py-40 bg-white text-center relative">
+    <!-- <form id="scene-form">
+        <input type="hidden" name="age_level" id="age-level-input" value="9-10">
+
+        <div class="max-w-md mx-auto grid grid-cols-3 gap-4">
+            <div data-value="7-8" class="age-box cursor-pointer p-4 text-center rounded-lg border border-gray-300
+                bg-gray-50 hover:bg-indigo-100 transition">
+                <p class="font-semibold">7–8 ปี</p>
+                <p class="text-xs text-gray-500">ง่ายสุด</p>
+            </div>
+            <div data-value="9-10" class="age-box cursor-pointer p-4 text-center rounded-lg border border-gray-300
+                bg-indigo-500 text-white transition">
+                <p class="font-semibold">9–10 ปี</p>
+                <p class="text-xs">ระดับกลาง</p>
+            </div>
+            <div data-value="11-12" class="age-box cursor-pointer p-4 text-center rounded-lg border border-gray-300
+                bg-gray-50 hover:bg-indigo-100 transition">
+                <p class="font-semibold">11–12 ปี</p>
+                <p class="text-xs text-gray-500">ท้าทาย</p>
+            </div>
+        </div>
+    </form> -->
+
+
+
+    <!-- Upload Form -->
+    <form id="upload-form" action="{% url 'upload_lesson_file' classroom.id %}" method="POST"
+        enctype="multipart/form-data"
+        class="border-2 border-dashed border-blue-300 rounded-xl px-8 py-40 bg-white text-center relative mt-8">
         {% csrf_token %}
 
         <!-- Drag & Drop UI -->
         <div id="upload-area" class="flex flex-col items-center justify-center space-y-2 text-blue-600">
             <div class="text-5xl">+</div>
-            <span class="text-sm font-medium underline">Click here</span>
-            <span class="text-xs text-gray-400">to upload your file or drag</span>
-            <span class="text-xs text-gray-400">Supported Format: PDF</span>
+            <span class="text-sm font-medium underline">คลิกที่นี่</span>
+            <span class="text-xs text-gray-400">เพื่ออัพโหลดไฟล์ของคุณหรือลาก</span>
+            <span class="text-xs text-gray-400">รูปแบบที่รองรับ PDF</span>
         </div>
 
         <!-- ✅ File Preview -->
@@ -31,43 +56,62 @@
 
         <!-- ✅ File Input -->
         <input id="file-upload" name="file" type="file" class="hidden" accept=".pdf" required
-               onchange="handleFile(this)" />
+            onchange="handleFile(this)" />
         <label for="file-upload" class="absolute inset-0 cursor-pointer"></label>
     </form>
 
-    <p class="mt-4 text-xs text-gray-400">Only .pdf files supported</p>
+    <p class="mt-4 text-xs text-gray-400">รองรับเฉพาะไฟล์ .pdf เท่านั้น</p>
 
     <div class="mt-8 flex justify-center gap-4">
         <button type="button" onclick="window.history.back()"
-                class="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
-            Cancel
+            class="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
+            ยกเลิก
         </button>
         <button type="button" onclick="submitForm()"
-                class="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">
-            Create Lesson
+            class="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">
+            สร้างบทเรียน
         </button>
     </div>
 </div>
 
 <!-- ✅ JavaScript -->
 <script>
-function handleFile(input) {
-    const file = input.files[0];
-    if (file) {
-        document.getElementById('upload-area').classList.add('hidden');
-        document.getElementById('file-preview').classList.remove('hidden');
-        document.getElementById('file-name').innerText = file.name;
-    }
-}
-
-function submitForm() {
-    const fileInput = document.getElementById('file-upload');
-    if (!fileInput.files.length) {
-        alert("Please select a PDF file before submitting.");
-        return;
+    function handleFile(input) {
+        const file = input.files[0];
+        if (file) {
+            document.getElementById('upload-area').classList.add('hidden');
+            document.getElementById('file-preview').classList.remove('hidden');
+            document.getElementById('file-name').innerText = file.name;
+        }
     }
 
-    document.getElementById('upload-form').submit();
-}
+    function submitForm() {
+        const fileInput = document.getElementById('file-upload');
+        if (!fileInput.files.length) {
+            alert("Please select a PDF file before submitting.");
+            return;
+        }
+
+        document.getElementById('upload-form').submit();
+    }
 </script>
+
+
+<script>
+  document.querySelectorAll('.age-box').forEach(box => {
+    box.addEventListener('click', () => {
+      // อัปเดตค่าภายใน input
+      document.getElementById('age-level-input').value = box.dataset.value;
+
+      // ลบคลาสเด่นทั้งหมด แล้วไฮไลต์แค่ตัวที่คลิก
+      document.querySelectorAll('.age-box').forEach(el => {
+        el.classList.remove('bg-indigo-500','text-white');
+        el.classList.add('bg-gray-50');
+      });
+      box.classList.remove('bg-gray-50');
+      box.classList.add('bg-indigo-500','text-white');
+    });
+  });
+</script>
+
 {% endblock %}

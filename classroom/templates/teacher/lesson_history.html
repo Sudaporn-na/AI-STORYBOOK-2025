@@ -11,10 +11,11 @@
     </div>
 
     <!-- Search Box -->
-    <div class="mb-10">
-        <input type="text" placeholder="ค้นหาบทเรียน"
+    <form method="get" action="">
+        <input type="text" name="q" value="{{ query }}" placeholder="ค้นหาบทเรียน"
             class="w-full px-5 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 shadow-sm bg-white" />
-    </div>
+    </form>
+
 
     {% if latest_storybooks %}
     <section>

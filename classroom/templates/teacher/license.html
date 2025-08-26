@@ -1,0 +1,56 @@
+{% extends 'teacher/base_teacher.html' %}
+{% load static %}
+
+{% block title %}ข้อตกลงการใช้ซอฟต์แวร์{% endblock %}
+
+{% block content %}
+<!-- ล้อมทั้งหน้าให้มีพื้นหลังเทาอ่อน และจัดการ์ดตรงกลาง -->
+<div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+  <!-- การ์ดหลัก -->
+  <div class="w-full max-w-4xl bg-white rounded-2xl shadow-lg p-10">
+    <div class="prose lg:prose-xl mx-auto">
+      <h1 class="text-4xl font-bold mb-6 text-gray-800 text-center">
+        ข้อตกลงในการใช้ซอฟต์แวร์
+      </h1>
+
+      <p class="text-gray-700 leading-relaxed text-justify mb-6">
+        ซอฟต์แวร์นี้เป็นผลงานที่พัฒนาขึ้นโดย <strong>นางสาวปรารถนา ดาวงศ์ และนางสาวสุดาพร สงวนดี</strong> จาก
+        <strong>มหาวิทยาลัยอุบลราชธาน</strong> ภายใต้การดูแลของ <strong>ดร.วิชิต สมบัต</strong>
+        ภายใต้โครงการ <strong>แข่งขันพัฒนาโปรแกรมคอมพิวเตอร์แห่งประเทศไทย ครั้งที ่ 27</strong> ซึ่งสนับสนุนโดย
+        สำนักงานพัฒนาวิทยาศาสตร์และเทคโนโลยีแห่งชาติ
+        โดยมีวัตถุประสงค์เพื่อส่งเสริมให้นักเรียนและนักศึกษาได้เรียนรู้และฝึกทักษะในการพัฒนาซอฟต์แวร์
+        ลิขสิทธิ์ของซอฟต์แวร์นี้จึงเป็นของผู้พัฒนา ซึ่งผู้พัฒนาได้อนุญาตให้สำนักงานพัฒนาวิทยาศาสตร์และเทคโนโลยีแห่งชาติ
+        เผยแพร่ซอฟต์แวร์นี้ตาม “ต้นฉบับ” โดยไม่มี การแก้ไขดัดแปลงใด ๆ ท้ังสิ้น
+        ให้แก่บุคคลทั่วไปได้ใช้เพื่อประโยชน์ส่วนบุคคลหรือประโยชน์ทางการศึกษาที่ไม่มีวัตถุประสงค์ในเชิงพาณิชย์
+        โดยไม่คิดค่าตอบแทนการใช้ซอฟต์แวร์ ดังนั้น สำนักงานพัฒนาวิทยาศาสตร์และเทคโนโลยีแห่งชาติจึงไม่มีหน้าที่ใน การดูแล
+        บำรุงรักษา จัดการอบรมการใช้งาน หรือพัฒนาประสิทธิภาพซอฟต์แวร์
+        รวมทั้งไม่รับรองความถูกต้องหรือประสิทธิภาพการทำงานของซอฟต์แวร์ ตลอดจนไม่รับประกันความเสียหายต่าง ๆ
+        อันเกิดจากการใช้ซอฟต์แวร์นี้ท้ังสิ้น
+      </p>
+
+      <h2 class="text-2xl font-semibold mb-4">License Agreement</h2>
+
+      <p class="text-gray-700 leading-relaxed text-justify mb-8">
+        This software is a work developed by Miss Pratthana Davong and Miss Sudaporn Sanguandee from Ubon Ratchathani
+        University under
+        the provision of Dr. Wichit Sombat under 27th Thailand Software Development Contest, which has been supported by
+        the National Science and Technology Development Agency (NSTDA), in order to encourage pupils and students to learn 
+        and practice their skills in developing software. Therefore, the intellectual property of this software shall belong to the
+        developer and the developer gives NSTDA permission to distribute this software as an “as is” and non-modified
+        software for a temporary and non-exclusive use without remuneration to anyone for his or her own purpose or
+        academic purpose, which are not commercial purposes. In this connection, NSTDA shall not be responsible to
+        the user for taking care, maintaining, training, or developing the efficiency of this software. Moreover,
+        NSTDA shall not be liable for any error, software efficiency, and damages in connection with or arising out
+        of the use of the software.
+      </p>
+
+      <div class="flex justify-end">
+        <a href="{% url 'classroom_created' %}"
+          class="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition">
+          ย้อนกลับ
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

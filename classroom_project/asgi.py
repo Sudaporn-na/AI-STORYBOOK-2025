@@ -15,9 +15,9 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'classroom_project.settings')
-django.setup()  # ✅ สำคัญมาก
+django.setup() 
 
-import classroom.routing  # ต้อง import หลังจาก setup()
+import classroom.routing  
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),

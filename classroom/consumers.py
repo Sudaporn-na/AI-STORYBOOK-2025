@@ -2,6 +2,7 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from asgiref.sync import sync_to_async
 from .models import Scene
 
+
 class SceneProgressConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         self.storybook_id = self.scope['url_route']['kwargs']['storybook_id']
@@ -10,7 +11,7 @@ class SceneProgressConsumer(AsyncJsonWebsocketConsumer):
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
-        # ✅ scenes กลายเป็น list ของ dict ไม่ใช่ model object
+        # scenes กลายเป็น list ของ dict ไม่ใช่ model object
         scenes = await self.get_existing_scenes()
         for scene_dict in scenes:
             await self.send_json(scene_dict)

@@ -1,102 +1,65 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>เลือกบทบาท</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-white flex items-center justify-center min-h-screen font-sans">
-
-  <form method="post" action="{% url 'select_role' %}" class="text-center space-y-6 w-full max-w-md px-6">
-    {% csrf_token %}
-
-    <!-- ภาพประกอบ -->
+  <div class="w-full max-w-md px-6 text-center space-y-10">
     <img src="{% static 'images/logo01.png' %}" alt="illustration" class="w-64 mx-auto" />
-
-    <!-- ข้อความ -->
-    <p class="text-gray-800 text-lg font-medium">เพิ่มชั้นเรียนเพื่อเริ่มต้นใช้งาน</p>
-
-    <!-- ปุ่มเลือกบทบาท -->
-    <div id="role-switch" class="relative flex bg-gray-200 rounded-full p-1 mx-auto w-full justify-between">
-
-      <!-- highlight background -->
-      <div id="highlight"
-        class="absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 bg-gray-800 rounded-full transition-all duration-300 ease-in-out z-0"></div>
-
-      <!-- ปุ่มครู -->
-      <button type="button" onclick="selectRole('teacher')"
-        class="relative z-10 px-6 py-2 rounded-full font-semibold text-black min-w-[50%] whitespace-nowrap"
-        data-role="left"
-        onmouseover="moveHighlight(this)">
+    <p class="text-gray-800 text-lg font-medium">เลือกบทบาทเพื่อเริ่มต้นใช้งาน</p>
+    <div class="flex flex-col sm:flex-row justify-center gap-4">
+      <button type="button" onclick="showTeacherForm()"
+        class="w-full sm:w-1/2 bg-gray-900 text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-700 transition text-lg">
         สร้างชั้นเรียน
       </button>
 
-      <!-- ปุ่มนักเรียน -->
-      <button type="submit" name="role" value="student"
-        class="relative z-10 px-6 py-2 rounded-full font-semibold text-white min-w-[50%] whitespace-nowrap"
-        data-role="right"
-        onmouseover="moveHighlight(this)">
-        เข้าร่วมชั้นเรียน
-      </button>
+      <form method="post" action="{% url 'select_role' %}" class="w-full sm:w-1/2">
+        {% csrf_token %}
+        <input type="hidden" name="role" value="student">
+        <button type="submit"
+          class="w-full bg-gray-900 text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-700 transition text-lg">
+          เข้าร่วมชั้นเรียน
+        </button>
+      </form>
     </div>
 
-    <!-- ช่องกรอกรหัสประจำตัวครู -->
-    <div id="teacher-code-section" class="hidden space-y-4">
+    <form method="post" action="{% url 'select_role' %}" id="teacher-form"
+      class="hidden space-y-4 bg-gray-50 p-6 rounded-xl border mt-6">
+      {% csrf_token %}
+      <input type="hidden" name="role" value="teacher">
+
       <label for="teacher_code" class="block text-gray-700 font-medium">กรอกรหัสประจำตัวครู</label>
       <input type="text" name="teacher_code" id="teacher_code"
         class="w-full border border-gray-300 rounded px-4 py-2 text-center" placeholder="เช่น TCH12345" required />
 
-      <!-- ปุ่มยืนยัน -->
-      <button type="submit" name="role" value="teacher"
-        class="bg-blue-600 text-white px-6 py-2 rounded w-full">
+      <button type="submit" class="w-full bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition">
         ยืนยัน
       </button>
-    </div>
+    </form>
 
-    <!-- แสดงข้อความ error -->
     {% if messages %}
     <div class="text-red-600 font-medium">
       {% for message in messages %}
-        {{ message }}
+      {{ message }}
       {% endfor %}
     </div>
     {% endif %}
-  </form>
+
+  </div>
 
   <script>
-    const highlight = document.getElementById('highlight');
-    const buttons = document.querySelectorAll('#role-switch button');
-    const teacherSection = document.getElementById('teacher-code-section');
-
-    function moveHighlight(button) {
-      const isLeft = button.dataset.role === 'left';
-      highlight.style.left = isLeft ? '0.25rem' : 'calc(50% + 0.25rem)';
-
-      buttons.forEach(btn => {
-        if (btn === button) {
-          btn.classList.remove('text-black');
-          btn.classList.add('text-white');
-        } else {
-          btn.classList.remove('text-white');
-          btn.classList.add('text-black');
-        }
-      });
+    function showTeacherForm() {
+      document.getElementById('teacher-form').classList.remove('hidden');
+      document.getElementById('teacher_code').focus();
     }
-
-    function selectRole(role) {
-      if (role === 'teacher') {
-        teacherSection.classList.remove('hidden');
-        teacherSection.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-
-    // ตั้งค่า default ให้ไฮไลต์ที่ "นักเรียน"
-    window.onload = () => {
-      const defaultBtn = document.querySelector('button[data-role="right"]');
-      moveHighlight(defaultBtn);
-    };
   </script>
+
 </body>
+
 </html>

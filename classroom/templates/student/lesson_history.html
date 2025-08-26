@@ -1,0 +1,66 @@
+{% extends 'student/base_student.html' %}
+{% load static %}
+{% block title %}ประวัติบทเรียนของฉัน{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-8">
+
+    <!-- กล่องหัวข้อ -->
+    <div class="bg-black text-white rounded-2xl p-6">
+        <h1 class="text-2xl font-bold mb-1">ประวัติบทเรียน</h1>
+
+    </div>
+
+    <!-- ช่องค้นหา -->
+    <div>
+        <input id="searchInput" type="text" placeholder="  ค้นหาบทเรียน"
+            class="w-full px-4 py-3 rounded-full border border-gray-300 shadow-sm focus:outline-none focus:ring focus:border-indigo-300 transition text-sm" />
+    </div>
+
+    <!-- หัวข้อ "บทเรียน" -->
+    <h2 class="text-xl font-bold text-gray-800">บทเรียน</h2>
+
+    <!-- การ์ดบทเรียน -->
+    <div id="lessonList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for sub in submissions %}
+        <div class="bg-white shadow rounded-xl overflow-hidden lesson-card">
+            <!-- รูปภาพ -->
+            {% if sub.storybook.scenes.first.image_url %}
+            <img src="{{ sub.storybook.scenes.first.image_url }}" alt="ภาพหน้าปก"
+                class="w-full h-48 object-cover">
+            {% else %}
+            <div class="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">ไม่มีภาพปก</div>
+            {% endif %}
+
+            <!-- ข้อมูลบทเรียน -->
+            <div class="p-4">
+                <h3 class="text-lg font-semibold text-gray-800 lesson-title">{{ sub.storybook.title }}</h3>
+                <p class="text-sm text-gray-500">สร้างเมื่อ {{ sub.submitted_at|date:"d M Y" }}</p>
+                <p class="text-sm text-gray-500">คะแนนล่าสุด: {{ sub.score }}{% if sub.total_questions %} / {{ sub.total_questions }}{% endif %} </p>
+                <!-- แถวแสดงจำนวนฉาก + ปุ่มดูบทเรียน -->
+                <div class="flex justify-between items-center mt-2">
+                    <p class="text-sm text-gray-500">{{ sub.storybook.scenes.count }} ฉาก</p>
+                    <a href="{% url 'student_lesson_detail_history' sub.storybook.id %}"
+                        class="text-indigo-600 hover:underline font-medium text-sm">ดูบทเรียน</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-gray-600">คุณยังไม่มีประวัติการเรียน</p>
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- JavaScript สำหรับค้นหา -->
+<script>
+    document.getElementById("searchInput").addEventListener("keyup", function () {
+        const query = this.value.toLowerCase();
+        const cards = document.querySelectorAll(".lesson-card");
+        cards.forEach(card => {
+            const title = card.querySelector(".lesson-title").textContent.toLowerCase();
+            card.style.display = title.includes(query) ? "block" : "none";
+        });
+    });
+</script>
+{% endblock %}

@@ -99,7 +99,7 @@
             <!-- ปุ่ม แชร์ -->
             <button
                 class="flex items-center px-4 py-2 rounded-xl bg-white border shadow-sm text-gray-700 text-sm hover:bg-gray-100 transition">
-                <i class="fa-solid fa-share-nodes mr-2"></i> แชร์เป็น
+                <i class="fa-solid fa-share-nodes mr-2"></i> แชร์
             </button>
 
             <!-- ปุ่ม รายการโปรด -->
@@ -272,28 +272,28 @@
 
     <form id="lesson-form" class="space-y-6">
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Lesson Name</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อบทเรียน</label>
             <p class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
                 {{ storybook.title }}
             </p>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Creator</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้สร้าง</label>
             <p class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
                 {{ storybook.user.get_full_name|default:storybook.user.email }}
             </p>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย</label>
             <div class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
-                บทเรียน AI ที่สร้างจาก PDF/DOCX
+                บทเรียน AI ที่สร้างจาก PDF
             </div>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Additional Content</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">เนื้อหาเพิ่มเติม</label>
             <div class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
                 -
             </div>

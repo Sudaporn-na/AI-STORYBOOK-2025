@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="utf-8">
+    <title>{{ storybook.title }}</title>
+    <style>
+        @font-face {
+            font-family: 'THSarabunNew';
+            src: url("{% static 'fonts/THSarabunNew.ttf' %}") format('truetype');
+        }
+
+        /* ขนาด A4 portrait และขอบกระดาษ */
+        @page {
+            size: A4 portrait;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: 'THSarabun', sans-serif;
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5em;
+        }
+
+        .scene {
+            margin-bottom: 2em;
+        }
+
+        .scene h2 {
+            font-size: 1.1em;
+            margin-bottom: 0.5em;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.3em;
+        }
+
+        .scene p {
+            font-size: 0.95em;
+            margin-bottom: 1em;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 0.5em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+
+        /* Footer คงที่ แสดงเลขหน้า */
+        .pdf-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8em;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Footer แสดงเลขหน้า -->
+    <div class="pdf-footer">
+        บทที่
+        <pdf:pageNumber /> /
+        <pdf:pageCount />
+    </div>
+
+    <!-- หัวเรื่อง -->
+    <h1>{{ storybook.title }}</h1>
+    <p style="text-align: center; font-size: 0.9em; margin-bottom: 2em;">
+        โดย {{ storybook.user.get_full_name|default:storybook.user.email }}
+    </p>
+
+    <!-- สวนฉากทั้งหมด -->
+    {% for scene in scenes %}
+    <div class="scene">
+        <h2>ฉาก {{ scene.scene_number }}</h2>
+        <p>{{ scene.text }}</p>
+        {% if scene.image_url %}
+        <img src="{{ scene.image_url }}" alt="Scene {{ scene.scene_number }}">
+        {% endif %}
+    </div>
+    <div class="page-break"></div>
+    {% endfor %}
+
+</body>
+
+</html>

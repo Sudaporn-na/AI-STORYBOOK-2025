@@ -1,0 +1,20 @@
+{% extends "teacher/base_teacher.html" %}
+{% block title %}ยืนยันลบบัญชี{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-20 p-6 bg-white rounded-lg shadow">
+  <h2 class="text-xl font-semibold mb-4">ยืนยันการลบบัญชี</h2>
+  <p class="mb-6">หากคุณลบบัญชีแล้ว ข้อมูลทั้งหมดจะถูกลบตามไปด้วย ไม่สามารถกู้คืนได้</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="flex justify-between">
+      <a href="{% url 'teacher_lesson_history' %}"
+         class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">ยกเลิก</a>
+      <button type="submit"
+              class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+        ยืนยันลบบัญชี
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

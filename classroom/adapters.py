@@ -50,12 +50,12 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def save_user(self, request, sociallogin, form=None):
         user = super().save_user(request, sociallogin, form)
 
-        # ✅ สร้าง username จาก email เช่น "prarttnadavng"
+        # สร้าง username จาก email 
         if not user.username:
             user.username = user.email.split('@')[0]
 
-        # ✅ หากเลือกบทบาทเป็นครู อนุมัติทันที
-        if user.user_type == 'ครู':  # ← ใช้คำว่า 'ครู' ตามที่คุณใช้จริง
+        # หากเลือกบทบาทเป็นครู อนุมัติทันที
+        if user.user_type == 'ครู':  # ใช้คำว่า 'ครู' ตามที่ใช้จริง
             user.is_approved = True
 
         user.save()

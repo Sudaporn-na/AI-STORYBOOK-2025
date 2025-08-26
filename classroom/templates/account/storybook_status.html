@@ -1,0 +1,44 @@
+<!-- {% extends 'teacher/base_teacher.html' %}
+{% block content %}
+<div class="flex items-center justify-center min-h-[60vh]">
+  <div class="max-w-xl w-full text-center space-y-6 px-6 py-12 bg-white rounded-xl shadow-lg">
+
+    <h2 class="text-2xl font-semibold text-gray-800">📚 กำลังสร้างนิทาน AI</h2>
+
+    <div class="w-full bg-gray-200 h-4 rounded-full">
+      <div id="progress-bar" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+    </div>
+
+    <p id="progress-text" class="text-sm text-gray-600">กำลังประมวลผลฉากที่ 0 จาก 20</p>
+
+  </div>
+</div>
+
+<script>
+  const checkUrl = "{% url 'api_storybook_status' storybook.id %}";
+  const redirectUrl = "{% url 'detail_lesson' storybook.id %}";
+
+  let interval = setInterval(() => {
+    fetch(checkUrl)
+      .then(res => res.json())
+      .then(data => {
+        if (data.is_ready) {
+          clearInterval(interval);
+          window.location.href = redirectUrl;
+        } else if (data.is_failed) {
+          document.getElementById('progress-text').innerText = '❌ เกิดข้อผิดพลาด';
+          clearInterval(interval);
+        } else {
+          // ✅ ใช้ข้อมูลที่ได้จาก API
+          const current = data.current_scene;
+          const total = data.total_scenes;
+
+          const percentage = (current / total) * 100;
+          document.getElementById('progress-bar').style.width = `${percentage}%`;
+          document.getElementById('progress-text').innerText = `📸🔊 กำลังสร้างฉากที่ ${current} จาก ${total}`;
+        }
+      });
+  }, 5000);
+</script>
+
+{% endblock %} -->

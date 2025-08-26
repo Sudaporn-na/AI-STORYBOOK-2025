@@ -5,26 +5,25 @@
     <!-- Header -->
     <header class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold text-gray-900">
-            Hello{% if user.user_type == "teacher" %} Teacher 👋{% else %} student 👋{% endif %}
+            สวัสดี{% if user.user_type == "teacher" %} คุณครู 👋{% else %} นักเรียน 👋{% endif %}
         </h1>
     </header>
 
     <!-- Blue Banner with background image -->
     <div class="relative bg-indigo-600 text-white rounded-2xl overflow-hidden h-[350px] flex items-center px-6">
-        <!-- Background Image -->
         <div class="absolute inset-0">
             <img src="{% static 'images/bg-class.png' %}" alt="Background"
                 class="w-full h-full object-cover opacity-60" />
         </div>
-
-        <!-- Content on top of image -->
         <div class="relative z-10">
-            <h2 class="text-3xl font-bold">Welcome to your classroom</h2>
+            <h2 class="text-3xl font-bold">ยินดีต้อนรับสู่ห้องเรียนของคุณ</h2>
             <p class="mt-2 text-base text-white/90">
-                Let's start creating amazing things together with AI storybook!
+                มาเริ่มสร้างสรรค์สิ่งที่น่าอัศจรรย์ร่วมกันกับหนังสือนิทาน AI กันเถอะ!
             </p>
         </div>
     </div>
+
+    <!-- Storybooks -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {% for storybook in storybooks %}
         <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition">
@@ -34,18 +33,49 @@
             {% endwith %}
             <div class="p-5 space-y-1">
                 <h3 class="text-lg font-semibold">{{ storybook.title }}</h3>
-                <p class="text-sm text-gray-500">Created {{ storybook.created_at|date:"d M Y" }}</p>
+                <p class="text-sm text-gray-500">สร้างเมื่อ {{ storybook.created_at|date:"d M Y" }}</p>
                 <div class="mt-3 flex justify-between items-center text-sm text-indigo-600 font-medium">
-                    <span>{{ storybook.scenes.count }} scenes</span>
-                    <a href="{% url 'student_display_lesson' storybook.id %}">View</a>
-
-
+                    <span>{{ storybook.scenes.count }} ฉาก</span>
+                    <div class="flex items-center gap-3">
+                        <a href="{% url 'student_display_lesson' storybook.id %}">ดูบทเรียน</a>
+                        <button class="favorite-btn" data-id="{{ storybook.id }}"
+                            data-favorited="{% if user in storybook.favorites.all %}true{% else %}false{% endif %}">
+                            <i class="bi {% if user in storybook.favorites.all %}bi-heart-fill text-red-500{% else %}bi-heart{% endif %}"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
         {% empty %}
-        <div class="col-span-full text-center text-gray-500">No storybooks created yet for this class.</div>
+        <div class="col-span-full text-center text-gray-500">ยังไม่มีบทเรียนที่คุณเพิ่มเป็นรายการโปรด</div>
         {% endfor %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.favorite-btn').forEach(button => {
+        button.addEventListener('click', async function () {
+            const storybookId = this.dataset.id;
+            const isFavorited = this.dataset.favorited === 'true';
+
+            const res = await fetch(`/storybook/${storybookId}/toggle-favorite/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+            });
+
+            if (res.ok) {
+                this.dataset.favorited = (!isFavorited).toString();
+                const icon = this.querySelector('i');
+                icon.className = isFavorited
+                    ? 'bi bi-heart'
+                    : 'bi bi-heart-fill text-red-500';
+            }
+        });
+    });
+});
+</script>
+
 {% endblock %}
