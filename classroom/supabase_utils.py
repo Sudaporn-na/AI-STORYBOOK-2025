@@ -42,7 +42,7 @@ def upload_file_from_bytes(file_bytes: bytes, dest_path: str, max_retries=3, ret
 
     for attempt in range(1, max_retries + 1):
         try:
-            logger.info(f"🚀 Uploading to Supabase: {final_path} (attempt {attempt})")
+            logger.info(f" Uploading to Supabase: {final_path} (attempt {attempt})")
             res = supabase.storage.from_(SUPABASE_BUCKET).upload(
                 final_path,
                 file_bytes,
@@ -53,7 +53,7 @@ def upload_file_from_bytes(file_bytes: bytes, dest_path: str, max_retries=3, ret
             return f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{final_path}"
 
         except Exception as e:
-            logger.warning(f"⚠️ Upload failed on attempt {attempt}: {e}")
+            logger.warning(f" Upload failed on attempt {attempt}: {e}")
             if attempt == max_retries:
                 raise RuntimeError(f"Upload failed after {max_retries} attempts: {final_path}")
             time.sleep(retry_delay)
@@ -69,8 +69,8 @@ def upload_file_from_url(file_url: str, dest_path: str, timeout=30) -> str:
         file_bytes = response.content
         return upload_file_from_bytes(file_bytes, dest_path)
     except requests.Timeout:
-        logger.error(f"⏱️ Download from URL timed out: {file_url}")
+        logger.error(f" Download from URL timed out: {file_url}")
         raise
     except requests.RequestException as e:
-        logger.error(f"❌ Failed to download file from: {file_url} ({e})")
+        logger.error(f" Failed to download file from: {file_url} ({e})")
         raise

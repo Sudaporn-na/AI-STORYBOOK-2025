@@ -852,12 +852,12 @@ def classroom_home(request, classroom_id):
         return redirect('class_join_create')
 
     if request.user == classroom.teacher:
-        # ครูเห็นทุก storybook ของตัวเองในคลาสนี้ (ทั้งที่อัปโหลดแล้ว/ยัง)
+        # ครูเห็นทุก storybook ของตัวเองในคลาสนี้ทั้งที่อัปโหลดแล้ว/ยัง
         storybooks = classroom.storybooks.filter(user=request.user).order_by('-created_at')
         template_name = 'teacher/classroom_home.html'
     else:
         # นักเรียนเห็นเฉพาะที่ "พร้อมใช้งาน"
-        storybooks = classroom.storybooks.filter(is_ready=True).order_by('-created_at')
+        storybooks = classroom.storybooks.filter(is_uploaded=True).order_by('-created_at')
         template_name = 'student/classroom_home.html'
 
     return render(request, template_name, {

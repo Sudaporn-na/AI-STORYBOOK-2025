@@ -25,7 +25,10 @@
                 <div class="md:col-span-2 flex flex-col gap-4">
                     <div class="flex gap-8 items-center">
                         <div class="flex flex-col items-center gap-2">
-                            <img src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}https://i.pravatar.cc/100{% endif %}"
+                            <img src="{% if user.profile_picture %}{{ user.profile_picture.url }}
+                                    {% else %}
+                                        {% static 'images/default-profile.png' %}
+                                    {% endif %}"
                                 alt="Profile" class="w-20 h-20 rounded-full object-cover" />
                             <p class="text-xs text-gray-500">นี่คือที่ที่ผู้คนจะได้เห็นใบหน้าที่แท้จริงของคุณ</p>
                         </div>

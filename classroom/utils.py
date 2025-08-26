@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 
 client = OpenAI()
 
-# ========== 1. แปลงข้อความเป็นเสียง ==========
+# 1. แปลงข้อความเป็นเสียง 
 def generate_tts_audio(text, voice="nova"):
     response = client.audio.speech.create(
         model="tts-1",
@@ -20,7 +20,7 @@ def generate_tts_audio(text, voice="nova"):
     return response.read()  # bytes ของไฟล์ mp3
 
 
-# ========== 2. ดึงข้อความจาก PDF ==========
+# 2. ดึงข้อความจาก PDF ]
 def extract_text_from_pdf(file_obj) -> str:
     text = ""
     reader = PyPDF2.PdfReader(file_obj)
@@ -34,14 +34,14 @@ def extract_text_from_pdf(file_obj) -> str:
     return text
 
 
-# ========== 3. สรุปเป็นนิทาน 20 ฉาก ==========
+# 3. สรุปเป็นนิทาน 20 ฉาก 
 def summarize_to_scenes(raw_text):
     system_prompt = (
         "คุณคือผู้ช่วย AI ที่เชี่ยวชาญด้านการแปลงบทเรียนยาก ๆ ให้กลายเป็นนิทานภาพที่เด็กประถมเข้าใจได้ "
         "ภารกิจของคุณคือช่วยให้เด็กอายุ 7–12 ปีเข้าใจเนื้อหาทางวิชาการ เช่น วิทยาศาสตร์ คณิตศาสตร์ ภาษาไทย "
         "ผ่านเรื่องเล่าแบบนิทานที่มีตัวละคร ฉาก และภาพที่น่าสนใจ "
-        "คุณต้องแปลงเนื้อหาให้เป็นเรื่องราว 20 ฉากต่อเนื่อง โดยใช้ภาษาง่าย สนุก และเชื่อมโยงกับชีวิตจริงของเด็ก "
-        "ภาพประกอบจะใช้ prompt สำหรับสร้างภาพจาก DALL·E โดยต้องระบุอย่างละเอียด ฉาก, ตัวละคร, สีสัน, อารมณ์ และ **สไตล์นิทานแนวการ์ตูน**(cartoon style, storybook illustration) ซึ่งต้องสื่อฉากและตัวละครให้ชัดเจน"
+        "คุณต้องแปลงเนื้อหาให้เป็นเรื่องราว 20 ของแต่ละฉากให้มีความยาวประมาณ 1 ย่อหน้า (60–80 คำ) ไม่เกิน 2 บรรทัด ใช้ภาษาที่กระชับ เหมาะสำหรับเด็กประถม และเข้าใจง่าย ฉากต่อเนื่อง โดยใช้ภาษาง่าย สนุก และเชื่อมโยงกับชีวิตจริงของเด็ก "
+        "ภาพประกอบจะใช้ prompt สำหรับสร้างภาพจาก DALL·E โดยต้องระบุอย่างละเอียด ฉาก, ตัวละครในเเต่ละฉากต้องเหมือนกัน, สีสัน, อารมณ์ และ **สไตล์นิทานแนวการ์ตูน**(cartoon style, storybook illustration, soft lighting, warm colors, vibrant, highly detailed) ซึ่งต้องสื่อฉากและตัวละครให้ชัดเจน"
     )
 
     user_prompt = f"""
@@ -63,7 +63,7 @@ def summarize_to_scenes(raw_text):
 **แต่ละฉาก** ต้องประกอบด้วย:
 - `"scene"`: เลขฉาก เช่น 1, 2, 3 ...
 - `"text"`: เนื้อหานิทานในฉากนั้น ใช้ภาษาที่เข้าใจง่าย เหมาะกับเด็กประถม และเนื้อหาควรต่อเนื่องจากฉากก่อนหน้า โดยมีความยาวประมาณ 1 ย่อหน้า (40–60 คำ) ไม่เกิน 2 บรรทัด เพื่อให้กระชับและเหมาะสำหรับแสดงต่อฉากภาพประกอบ
-- `"image_prompt"`: prompt สำหรับสร้างภาพจาก DALL·E โดยต้องระบุอย่างละเอียด: ฉาก, ตัวละคร, สีสัน, อารมณ์ และ **สไตล์นิทานแนวการ์ตูน**
+- `"image_prompt"`: prompt สำหรับสร้างภาพจาก DALL·E โดยต้องระบุอย่างละเอียด: ฉาก, ตัวละคร, สีสัน, อารมณ์ และ **สไตล์นิทานแนวการ์ตูน** โดยใช้ลักษณะตัวละครหลักเหมือนเดิมทุกฉาก (ใช้ same character design as previous หรืออธิบายลักษณะซ้ำของตัวละครน้องแนน)
   (เช่น “เด็กชายกำลังถือสมุดภาพในห้องเรียนที่อบอุ่น มีครูใจดียืนข้างๆ แสงแดดส่องเข้าหน้าต่าง สไตล์การ์ตูน cartoon style, storybook illustration”)
 
 **คำเตือนสำคัญ:
@@ -73,9 +73,9 @@ def summarize_to_scenes(raw_text):
 ตัวอย่างรูปแบบ JSON:
 [
   {{
-    "scene": 1,
-    "text": "น้องมายด์เดินเข้าไปในห้องเรียนใหม่ ที่เต็มไปด้วยหนังสือเกี่ยวกับพลังงานแสงอาทิตย์...",
-    "image_prompt": "เด็กหญิงผมยาวใส่ชุดนักเรียน ยืนในห้องเรียนสว่างไสว มีแผงโซลาร์เซลล์บนผนัง สไตล์การ์ตูน cartoon style, storybook illustration"
+    "scene": 3,
+    "text": "น้องแนนเดินเข้าไปในสวนของคุณตา เธอเห็นต้นไม้ที่กำลังออกผล พร้อมกับผึ้งที่บินไปมา...",
+    "image_prompt": "น้องแนน (same character design as previous) ยืนอยู่ในสวนผลไม้ที่เต็มไปด้วยต้นไม้และผึ้งบิน สไตล์การ์ตูน cartoon style, storybook illustration"
   }},
   ...
 ]
@@ -106,7 +106,7 @@ def summarize_to_scenes(raw_text):
         return json.loads(result_text)
 
     except json.JSONDecodeError as e:
-        logger.warning("❌ JSONDecodeError: %s", str(e))
+        logger.warning(" JSONDecodeError: %s", str(e))
         if not result_text.endswith("]"):
             fixed = result_text.rsplit('{', 1)[0].rstrip(', \n') + "\n]"
             try:
@@ -117,7 +117,7 @@ def summarize_to_scenes(raw_text):
             raise ValueError("ไม่สามารถแปลง JSON ได้: " + str(e))
 
 
-# ========== 4. กรองคำต้องห้ามแบบเหมารวม ==========
+# 4. กรองคำต้องห้ามแบบเหมารวม 
 def sanitize_prompt(prompt: str) -> str:
     bad_words = [
         # คำเกี่ยวกับร่างกายและความรุนแรง
@@ -152,12 +152,12 @@ def sanitize_prompt(prompt: str) -> str:
             prompt = re.sub(pattern, "[คำปลอดภัย]", prompt, flags=re.IGNORECASE)
 
     if filtered:
-        logger.warning("⚠️ Filtered prompt due to: %s", ", ".join(filtered))
+        logger.warning(" Filtered prompt due to: %s", ", ".join(filtered))
 
     return prompt
 
 
-# ========== 5. สร้างภาพจาก DALL·E พร้อม fallback ==========
+#  5. สร้างภาพจาก DALL·E พร้อม fallback 
 def simplify_prompt(text: str) -> str:
     """
     แปลงข้อความ text ที่ใช้ไม่ได้ มาเป็น prompt ที่ปลอดภัย
@@ -189,11 +189,11 @@ def generate_dalle_image(prompt: str) -> str:
         return response.data[0].url
 
     except Exception as e:
-        logger.warning("❌ สร้างภาพจาก prompt เดิมไม่สำเร็จ: %s", str(e))
+        logger.warning("สร้างภาพจาก prompt เดิมไม่สำเร็จ: %s", str(e))
 
         # fallback
         fallback_prompt = simplify_prompt(prompt)
-        logger.info("🎨 ใช้ fallback prompt: %s", fallback_prompt)
+        logger.info("ใช้ fallback prompt: %s", fallback_prompt)
 
         try:
             response = client.images.generate(
@@ -206,18 +206,17 @@ def generate_dalle_image(prompt: str) -> str:
             return response.data[0].url
 
         except Exception as e2:
-            logger.error("❌ fallback prompt ก็ล้มเหลว: %s", str(e2))
+            logger.error("fallback prompt ก็ล้มเหลว: %s", str(e2))
             return "https://yourdomain.com/static/default_image.png"
 
 
-# ========== 6. ตัวอย่างการใช้งาน ==========
 if __name__ == "__main__":
     pdf_path = "example_lesson.pdf"
     with open(pdf_path, "rb") as f:
         raw_text = extract_text_from_pdf(f)
 
     scenes = summarize_to_scenes(raw_text)
-    logger.info("📚 รวมทั้งหมด %d ฉาก", len(scenes))
+    logger.info("รวมทั้งหมด %d ฉาก", len(scenes))
 
     for scene in scenes:
         try:
@@ -225,12 +224,12 @@ if __name__ == "__main__":
             image_url = generate_dalle_image(scene["image_prompt"])
             tts_bytes = generate_tts_audio(scene["text"])
 
-            logger.info("✅ ฉาก %d สร้างเสร็จ: ภาพ = %s, เสียง = %d bytes", scene["scene"], image_url, len(tts_bytes))
+            logger.info(" ฉาก %d สร้างเสร็จ: ภาพ = %s, เสียง = %d bytes", scene["scene"], image_url, len(tts_bytes))
 
             # อัปโหลด Supabase หรือบันทึกที่นี่ได้
 
         except Exception as e:
-            logger.error("❌ ฉาก %d มีปัญหา: %s", scene["scene"], str(e))
+            logger.error(" ฉาก %d มีปัญหา: %s", scene["scene"], str(e))
             continue
 
-    logger.info("🎉 ทุกฉากประมวลผลเสร็จสิ้น!")
+    logger.info(" ทุกฉากประมวลผลเสร็จสิ้น!")

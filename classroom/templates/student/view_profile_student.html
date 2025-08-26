@@ -18,18 +18,14 @@
             {% if user.profile_picture %}
             <img src="{{ user.profile_picture.url }}" alt="Profile" class="w-20 h-20 rounded-full object-cover" />
             {% else %}
-            <img src="https://i.pravatar.cc/100" alt="Profile" class="w-20 h-20 rounded-full object-cover" />
+            <img src="{% static 'images/default-profile.png' %}" alt="Profile" class="w-20 h-20 rounded-full object-cover" />
             {% endif %}
             <p class="text-xs text-gray-500">Current profile picture</p>
             <!-- ✅ Back & Share Buttons -->
             <div class="flex justify-end mt-6 gap-4">
               <button onclick="copyProfileLink()" type="button"
                 class="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 border border-gray-300 rounded-full shadow hover:bg-gray-100 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                  stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15 8a3 3 0 00-6 0v8a3 3 0 006 0V8zM8 12H6a2 2 0 00-2 2v2a2 2 0 002 2h2M16 12h2a2 2 0 012 2v2a2 2 0 01-2 2h-2" />
-                </svg>
+                  <i class="bi bi-share"></i>
                 Share Profile
               </button>
 
