@@ -25,11 +25,15 @@
                 <div class="md:col-span-2 flex flex-col gap-4">
                     <div class="flex gap-8 items-center">
                         <div class="flex flex-col items-center gap-2">
-                            <img src="{% if user.profile_picture %}{{ user.profile_picture.url }}
-                                    {% else %}
-                                        {% static 'images/default-profile.png' %}
-                                    {% endif %}"
-                                alt="Profile" class="w-20 h-20 rounded-full object-cover" />
+                            {% if profile_form.instance.profile_picture %}
+                                <img src="{{ profile_form.instance.profile_picture.url }}"
+                                    alt="Profile"
+                                    class="w-20 h-20 rounded-full object-cover" />
+                            {% else %}
+                                <img src="{% static 'images/default-profile.png' %}"
+                                    alt="Profile"
+                                    class="w-20 h-20 rounded-full object-cover" />
+                            {% endif %}
                             <p class="text-xs text-gray-500">นี่คือที่ที่ผู้คนจะได้เห็นใบหน้าที่แท้จริงของคุณ</p>
                         </div>
                         <div class="border border-dashed border-gray-300 rounded-lg w-full p-6 text-center">
@@ -45,8 +49,8 @@
                             <input type="file" name="profile_picture" id="id_profile_picture"
                                 accept="image/png, image/jpeg" class="hidden" onchange="updateFileName(event)" />
 
-                            {% if form.profile_picture.errors %}
-                            <p class="text-red-600 text-sm mt-2">{{ form.profile_picture.errors }}</p>
+                            {% if profile_form.profile_picture.errors %}
+                            <p class="text-red-600 text-sm mt-2">{{ profile_form.profile_picture.errors }}</p>
                             {% endif %}
 
                             <p class="text-xs text-gray-400 mt-2">รูปแบบที่รองรับ: SVG, JPG, PNG (ไฟล์ละ 10mb)</p>
@@ -68,31 +72,31 @@
                 <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-medium">ชื่อ</label>
-                        {{ form.first_name }}
+                        {{ user_form.first_name }}
                     </div>
                     <div>
                         <label class="text-sm font-medium">นามสกุล</label>
-                        {{ form.last_name }}
+                        {{ user_form.last_name }}
                     </div>
                     <div>
                         <label class="text-sm font-medium">อีเมล</label>
-                        {{ form.email }}
+                        {{ user_form.email }}
                     </div>
                     <div>
                         <label class="text-sm font-medium">หมายเลขโทรศัพท์</label>
-                        {{ form.phone }}
+                        {{ profile_form.phone }}
                     </div>
                     <div>
                         <label class="text-sm font-medium">อายุ</label>
-                        {{ form.age }}
+                        {{ profile_form.age }}
                     </div>
                     <div>
                         <label class="text-sm font-medium">เพศ</label>
-                        {{ form.gender }}
+                        {{ profile_form.gender }}
                     </div>
                     <div>
                         <label class="text-sm font-medium">ประเทศ</label>
-                        {{ form.country }}
+                        {{ profile_form.country }}
                     </div>
                 </div>
             </div>
@@ -109,15 +113,15 @@
                 <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-medium">วิชาที่สอน</label>
-                        {{ form.teaching_subjects }}
+                        {{ profile_form.teaching_subjects }}
                     </div>
                     <div>
                         <label class="text-sm font-medium">รหัสชั้นเรียน</label>
-                        {{ form.class_code }}
+                        {{ profile_form.class_code }}
                     </div>
                     <div class="md:col-span-2">
                         <label class="text-sm font-medium">ลิงค์ชั้นเรียน</label>
-                        {{ form.classroom_link }}
+                        {{ profile_form.classroom_link }}
                     </div>
                 </div>
             </div>
@@ -131,7 +135,7 @@
                     <p class="text-sm text-gray-500">นี่จะเป็นเรื่องราวหลักของคุณ เก็บไว้ให้ยาวๆ เลย</p>
                 </div>
                 <div class="md:col-span-2">
-                    {{ form.bio }}
+                    {{ profile_form.bio }}
                 </div>
             </div>
 
@@ -146,11 +150,11 @@
                 <div class="md:col-span-2 space-y-4">
                     <div>
                         <label class="text-sm font-medium">facebook.com/</label>
-                        {{ form.facebook }}
+                        {{ profile_form.facebook }}
                     </div>
                     <div>
                         <label class="text-sm font-medium">line.com/</label>
-                        {{ form.line }}
+                        {{ profile_form.line }}
                     </div>
                 </div>
             </div>

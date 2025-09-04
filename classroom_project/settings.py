@@ -130,13 +130,33 @@ CACHES = {
 }
 
 
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 465
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'sudaphornsahnguandi5488@gmail.com'
+# EMAIL_HOST_PASSWORD = 'tvzo qqoz pkxh xubd'  # App Password 16 หลัก
+
+
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False
+
+# EMAIL_HOST_USER = 'sudaphornsahnguandi5488@gmail.com'
+# EMAIL_HOST_PASSWORD = 'tvzoqqozpkxhxubd'  # 16 ตัวติดกัน
+# DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'sudaphor.sa.66@ubu.ac.th'
-EMAIL_HOST_PASSWORD = 'ksbp ypsa mvxv ikzz'  # App Password 16 หลัก
-
+EMAIL_HOST_PASSWORD = 'lrix uuhv bdmg vvui'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # แนะนำใส่
 
 
 MIDDLEWARE = [

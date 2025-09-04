@@ -1,24 +1,86 @@
-from openai import OpenAI
-from io import BytesIO
-import PyPDF2
-import json
+# utils.py (เฉพาะบล็อกหัวไฟล์ + TTS function ที่แก้)
+
+import os
 import logging
+import json
 import re
+from io import BytesIO
+
+from dotenv import load_dotenv
+from openai import OpenAI
+import PyPDF2
+
+from google import genai
+from google.genai import types
+
+from pydub import AudioSegment
+
+# --- load env ถ้าใช้ .env ---
+load_dotenv()
+
+# --- FFmpeg path for pydub ---
+FFMPEG_BIN  = os.getenv("FFMPEG_BIN",  r"C:\ffmpeg\ffmpeg-8.0-full_build\bin\ffmpeg.exe")
+FFPROBE_BIN = os.getenv("FFPROBE_BIN", r"C:\ffmpeg\ffmpeg-8.0-full_build\bin\ffprobe.exe")
+AudioSegment.converter = FFMPEG_BIN
+AudioSegment.ffprobe   = FFPROBE_BIN
+
+# --- default voice/lang ---
+DEFAULT_VOICE = os.getenv("GEMINI_TTS_VOICE", "Leda")
+DEFAULT_LANG  = os.getenv("GEMINI_TTS_LANG",  "th-TH")
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-client = OpenAI()
+client  = OpenAI()
+gclient = genai.Client()
 
-# 1. แปลงข้อความเป็นเสียง 
-def generate_tts_audio(text, voice="nova"):
-    response = client.audio.speech.create(
-        model="tts-1",
-        voice=voice,
-        input=text,
-    )
-    return response.read()  # bytes ของไฟล์ mp3
+# ---------- helpers: pitch / postprocess (ของคุณเดิม) ----------
+def pitch_shift(seg: AudioSegment, semitones: float) -> AudioSegment:
+    new_sr = int(seg.frame_rate * (2 ** (semitones / 12)))
+    shifted = seg._spawn(seg.raw_data, overrides={'frame_rate': new_sr})
+    return shifted.set_frame_rate(seg.frame_rate)
 
+def style_postprocess(mp3_bytes: bytes, *, speed=1.0, semitones=0.0, gain_db=0.0, pause_ms=0) -> bytes:
+    seg = AudioSegment.from_file(BytesIO(mp3_bytes), format="mp3")
+    if speed != 1.0:
+        seg = seg.speedup(playback_speed=speed, chunk_size=50, crossfade=10)
+    if semitones != 0.0:
+        seg = pitch_shift(seg, semitones)
+    if gain_db != 0.0:
+        seg = seg + gain_db
+    if pause_ms > 0:
+        seg = seg + AudioSegment.silent(duration=pause_ms)
+    buf = BytesIO()
+    seg.export(buf, format="mp3", bitrate="64k")
+    return buf.getvalue()
+
+# ---------- TTS (Gemini) ----------
+# 1. แปลงข้อความเป็นเสียง MP3
+def generate_tts_audio(text: str, voice_name: str = DEFAULT_VOICE, language_code: str = DEFAULT_LANG) -> bytes:
+    try:
+        resp = gclient.models.generate_content(
+            model="gemini-2.5-flash-preview-tts",
+            contents=text,
+            config=types.GenerateContentConfig(
+                response_modalities=["AUDIO"],
+                speech_config=types.SpeechConfig(
+                    voice_config=types.VoiceConfig(
+                        prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice_name)
+                    ),
+                    language_code=language_code,
+                ),
+            ),
+        )
+        # raw PCM 24kHz mono 16-bit
+        pcm = resp.candidates[0].content.parts[0].inline_data.data
+    except Exception as e:
+        logger.error("TTS error: %s", e)
+        raise
+
+    audio = AudioSegment.from_raw(BytesIO(pcm), sample_width=2, frame_rate=24000, channels=1)
+    buf = BytesIO()
+    audio.export(buf, format="mp3", bitrate="64k")
+    return buf.getvalue()
 
 # 2. ดึงข้อความจาก PDF ]
 def extract_text_from_pdf(file_obj) -> str:

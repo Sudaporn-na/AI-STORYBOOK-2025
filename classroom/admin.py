@@ -27,3 +27,15 @@ class ClassroomAdmin(admin.ModelAdmin):
     list_filter = ('is_approved', 'created_at')
     search_fields = ('name', 'code', 'teacher__email')
     readonly_fields = ('code', 'created_at')
+
+
+
+
+from django.contrib import admin
+from .models import EmailOTP
+
+@admin.register(EmailOTP)
+class EmailOTPAdmin(admin.ModelAdmin):
+    list_display = ("user", "otp_code", "created_at", "expires_at")
+    search_fields = ("user__email", "otp_code")
+    list_filter = ("created_at",)
