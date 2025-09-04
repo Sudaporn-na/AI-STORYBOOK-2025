@@ -84,6 +84,17 @@ urlpatterns = [
     path('student/lesson-history/', views.student_lesson_history_view, name='lesson_history'),
     path('student/lesson/<int:storybook_id>/detail/', views.student_lesson_detail_history, name='student_lesson_detail_history'),
 
+#notifications
+    # path("teacher/notifications/", views.teacher_notifications, name="teacher_notifications"),
+    # path("student/notifications/", views.student_notifications, name="student_notifications"),
+    path('notifications/', views.notifications_list, name='notifications_list'),
+    path('notifications/unread-count/', views.notifications_unread_count, name='notifications_unread_count'),
+    path('notifications/mark-read/<int:pk>/', views.notifications_mark_read, name='notifications_mark_read'),
+    path('notifications/mark-all-read/', views.notifications_mark_all_read, name='notifications_mark_all_read'),
+    # path('notifications/unread-count/', views.notifications_unread_count, name='notifications_unread_count'),
+    # path('notifications/mark-read/', views.notifications_mark_all_read, name='notifications_mark_all_read'),
+
+
 
     path("password/otp/request/", views.request_otp_view, name="request_otp"),
     path("password/otp/verify/", views.verify_otp_view, name="verify_otp"),

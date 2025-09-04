@@ -60,6 +60,14 @@ from .models import Storybook, Report
 from .forms import ReportForm
 
 
+from django.core.paginator import Paginator
+from django.views.decorators.http import require_POST
+from .models import Notification
+from .notify_utils import notify_user
+from django.urls import reverse
+from django.db import transaction
+
+
 @csrf_exempt
 @login_required
 def submit_report(request, storybook_id):
@@ -110,6 +118,14 @@ def upload_lesson_file(request, classroom_id):
 
             # เรียก Celery ทำงาน async
             process_storybook_async.delay(storybook.id)
+
+            # notify_user(
+            #     request.user,
+            #     event_type="lesson_uploaded",
+            #     verb="อัปโหลดสำเร็จ: คุณได้เพิ่มบทเรียนใหม่",
+            #     description=storybook.title,
+            #     target_url=reverse("teacher_view_lesson_detail", args=[storybook.id])
+            # )
 
             # redirect ไปหน้า status หรือ classroom_home ก็ได้
             return redirect('detail_lesson', storybook_id=storybook.id)
@@ -281,6 +297,15 @@ def take_post_test(request, storybook_id):
                     total_correct += 1
         submission.score = total_correct
         submission.save()
+
+        notify_user(
+            request.user,
+            event_type="test_submitted",
+            verb="ทำแบบทดสอบเสร็จ",
+            description=f"คุณทำได้ {total_correct} คะแนน",
+            target_url=reverse("quiz_result", args=[submission.id])  # path: post-test/<submission_id>/quiz-result/
+        )
+
         # **Redirect ไปหน้า quiz_result**
         return redirect('quiz_result', submission.id)
 
@@ -1242,6 +1267,15 @@ def join_classroom(request):
                 classroom = Classroom.objects.get(code=code, is_approved=True)
                 if request.user not in classroom.students.all():
                     classroom.students.add(request.user)
+
+                    notify_user(
+                        classroom.teacher,
+                        event_type="student_joined",
+                        verb="เข้าร่วมชั้นเรียน: นักเรียนเข้าสู่ห้องเรียนของคุณ",
+                        description=f"{request.user.get_full_name() or request.user.email} เข้าร่วม {classroom.name}",
+                        target_url=reverse("classroom_home", args=[classroom.id])  # classroom_id เป็น UUID → OK
+                    )
+
                     messages.success(request, f'เข้าร่วมชั้นเรียน {classroom.name} สำเร็จ')
                     return redirect('courses_enroll')
                 else:
@@ -1327,6 +1361,20 @@ def export_lesson_pdf(request, storybook_id):
     if pisa_status.err:
         return HttpResponse('เกิดข้อผิดพลาดในการสร้าง PDF', status=500)
 
+    if request.user.user_type == 'student' and not is_owner:
+        try:
+            teacher = storybook.user  # ครูเจ้าของบทเรียน
+            notify_user(
+                teacher,
+                event_type="student_downloaded",
+                verb="ดาวน์โหลด: นักเรียนดาวน์โหลดบทเรียนของคุณ",
+                description=f"{request.user.get_full_name() or request.user.email} ดาวน์โหลด {storybook.title}",
+                target_url=reverse("teacher_view_lesson_detail", args=[storybook.id]),
+            )
+        except Exception:
+            # ไม่ให้การแจ้งเตือนทำให้การดาวน์โหลดล้ม
+            pass
+
     buffer.seek(0)
     return HttpResponse(
         buffer,
@@ -1388,6 +1436,7 @@ from django.contrib import messages
 from .models import Storybook, PostTestQuestion
 
 @login_required
+@require_POST
 def final(request, storybook_id):
     storybook = get_object_or_404(Storybook, id=storybook_id, user=request.user)
 
@@ -1405,6 +1454,33 @@ def final(request, storybook_id):
         storybook.is_uploaded = True
         storybook.save()
 
+        # URLs ปลายทาง
+        teacher_url = reverse("teacher_view_lesson_detail", args=[storybook.id])
+        student_url = reverse("student_display_lesson", args=[storybook.id])
+
+    # ✅ แจ้งเตือน "หลังคอมมิตจริง" ทั้งครูและนักเรียน
+        def _notify_all():
+        # ครู
+            notify_user(
+                storybook.user,
+                event_type="lesson_uploaded",
+                verb="อัปโหลดเสร็จสิ้น: บทเรียนพร้อมแล้ว",
+                description=storybook.title,
+                target_url=teacher_url,
+            )
+        # นักเรียน (กันเผื่อครูไปอยู่ในรายชื่อนักเรียน)
+            for student in storybook.classroom.students.exclude(id=storybook.user_id).distinct():
+                notify_user(
+                    student,
+                    event_type="new_lesson",
+                    verb="คุณครูได้เพิ่มบทเรียนใหม่",
+                    description=storybook.title,
+                    target_url=student_url,
+                )
+
+        transaction.on_commit(_notify_all)
+
+        
         # ดึงข้อมูลคำถามแบบทดสอบ
         questions_json = request.POST.get('questions_json')
         if questions_json:
@@ -1769,3 +1845,43 @@ def lesson_detail_with_score(request, storybook_id):
         'total_questions': total_questions,
         'passing_score': passing_score,
     })
+
+
+# @login_required
+# def teacher_notifications(request):
+#     return render(request, "teacher/notification.html")
+
+# @login_required
+# def student_notifications(request):
+#     return render(request, "student/notification.html")
+
+@login_required
+def notifications_list(request):
+    qs = Notification.objects.filter(user=request.user).order_by("-created_at")
+    page_obj = Paginator(qs, 20).get_page(request.GET.get("page", 1))
+    unread_count = qs.filter(is_read=False).count()
+    template_name = "teacher/notification.html" if request.user.user_type == "teacher" else "student/notification.html"
+    return render(request, template_name, {"notifications": page_obj, "unread_count": unread_count})
+
+@login_required
+@require_POST
+def notifications_mark_read(request, pk):
+    n = get_object_or_404(Notification, pk=pk, user=request.user)
+    n.is_read = True
+    n.save(update_fields=["is_read"])
+    return JsonResponse({"ok": True})
+
+@login_required
+@require_POST
+def notifications_mark_all_read(request):
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    return JsonResponse({"ok": True})
+
+@login_required
+def notifications_unread_count(request):
+    c = Notification.objects.filter(user=request.user, is_read=False).count()
+    return JsonResponse({"count": c})
+
+# def notifications_unread_count(request):
+#     count = Notification.objects.filter(user=request.user, is_read=False).count()
+#     return JsonResponse({"count": count})

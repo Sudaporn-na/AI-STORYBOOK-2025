@@ -1,4 +1,5 @@
 # models.py
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
@@ -172,6 +173,29 @@ class TeacherID(models.Model):
         return f"{self.full_name} ({self.teacher_code})"
     
 
+class Notification(models.Model):
+    EVENT_CHOICES = [
+        ("student_joined", "Student joined"),
+        ("lesson_uploaded", "Lesson uploaded"),
+        ("student_downloaded", "Student downloaded"),
+        ("student_shared", "Student shared"),
+        ("test_submitted", "Test submitted"),
+    ]
+    ROLE_CHOICES = [("student","Student"),("teacher","Teacher"),("admin","Admin")]
+
+    user        = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
+    user_type   = models.CharField(max_length=10, choices=ROLE_CHOICES, blank=True, null=True)
+    event_type  = models.CharField(max_length=32, choices=EVENT_CHOICES)
+    verb        = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    target_url  = models.CharField(max_length=300, blank=True)
+    is_read     = models.BooleanField(default=False)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+=======
+
 # classroom/models.py
 from django.conf import settings
 from django.db import models
@@ -275,3 +299,4 @@ class StorybookAccess(models.Model):
 
     def __str__(self):
         return f"{self.user_id} viewed {self.storybook_id} at {self.created_at}"
+
