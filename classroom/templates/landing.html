@@ -1,0 +1,234 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI STORYBOOK</title>
+
+  <!-- Font: Bai Jamjuree -->
+  <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { jamjuree: ['"Bai Jamjuree"', 'ui-sans-serif', 'system-ui'] },
+          colors: {
+            brandDeep: '#3F2B96',   // primary deep purple
+            brandMid:  '#5B49C9',   // mid purple
+            divider:   '#2a1f5f',   // dark divider
+            yunaBg:    '#F3F9FC'    // soft bg
+          },
+          boxShadow: {
+            yunaHead: '0 -12px 40px rgba(0,0,0,.14)',
+            card: '0 12px 30px rgba(63,43,150,0.10)'
+          },
+          backgroundImage: {
+            'radial-dots': 'radial-gradient(circle at 1px 1px, rgba(91,73,201,0.18) 1px, transparent 1px)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Subtle animated blobs for hero */
+    .blob { filter: blur(32px); opacity:.55; }
+    @keyframes floaty { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-12px) } }
+  </style>
+</head>
+<body class="font-jamjuree text-slate-900 bg-gradient-to-b from-white via-[#F6F4FF] to-white antialiased selection:bg-brandMid/15">
+
+  <!-- ===== Navbar ===== -->
+  <header class="relative z-40">
+    <div class="max-w-7xl mx-auto px-5 py-5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="{% static 'images/logo.png' %}" alt="YUNA" class="w-9 h-9 rounded-xl shadow" onerror="this.style.display='none'"/>
+        <span class="text-xl md:text-2xl font-extrabold tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-brandDeep to-brandMid">AI STORYBOOK</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-6 text-sm text-slate-600">
+        <a href="#features" class="hover:text-brandDeep transition">ฟีเจอร์</a>
+        <a href="#steps" class="hover:text-brandDeep transition">วิธีทำงาน</a>
+        <a href="#cta" class="hover:text-brandDeep transition">เริ่มต้น</a>
+      </nav>
+      <div class="flex items-center gap-2">
+        <a href="{% url 'auth_view' %}" class="px-4 py-2 rounded-lg border border-brandMid/30 text-brandDeep font-semibold hover:bg-brandMid/10 transition">เข้าสู่ระบบ</a>
+        <a href="{% url 'auth_view' %}" class="px-4 py-2 rounded-lg font-bold text-white bg-gradient-to-r from-brandDeep to-brandMid shadow-[0_10px_24px_rgba(91,73,201,0.35)] hover:shadow-[0_16px_32px_rgba(91,73,201,0.45)] transition">สมัครใช้งาน</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section class="relative">
+    <!-- Background illustration layer -->
+    <div class="absolute inset-0 -z-10">
+      <div class="absolute -top-24 -left-12 w-72 h-72 rounded-full blob bg-brandMid/30 animate-[floaty_7s_ease-in-out_infinite]"></div>
+      <div class="absolute top-10 right-0 w-96 h-96 rounded-full blob bg-brandDeep/25 animate-[floaty_9s_ease-in-out_infinite]"></div>
+      <div class="absolute inset-0 opacity-[.07] bg-radial-dots bg-[length:14px_14px]"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-5 grid md:grid-cols-2 gap-10 pt-10 md:pt-16 items-center">
+      <!-- Left: Text -->
+      <div class="text-center md:text-left">
+        <span class="inline-block px-3 py-1 rounded-full bg-brandMid/10 border border-brandMid/30 text-brandDeep text-xs font-semibold">สร้างบทเรียนด้วย AI</span>
+        <h1 class="mt-3 text-[clamp(28px,5vw,48px)] font-extrabold leading-tight text-slate-900">
+          สร้างนิทานการเรียนรู้<br class="hidden sm:block"/>พร้อมภาพและเสียงแบบโต้ตอบ
+        </h1>
+        <p class="mt-3 text-slate-600 max-w-xl md:max-w-lg md:pr-6">
+          เปลี่ยนไฟล์ PDF ที่ซับซ้อนให้เป็นนิทานภาพไม่เกิน 20 ฉาก พร้อมเสียงอ่านอัตโนมัติ Flipbook สมจริง และแบบทดสอบหลังเรียนสำหรับนักเรียน
+        </p>
+        <div class="mt-6 flex flex-col sm:flex-row items-center md:items-start gap-3">
+          <a href="{% url 'auth_view' %}" class="px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brandDeep to-brandMid shadow-[0_10px_28px_rgba(63,43,150,0.35)] hover:shadow-[0_14px_34px_rgba(63,43,150,0.45)] transition">เริ่มสร้างเรื่องราวของคุณ</a>
+          <a href="#features" class="px-6 py-3 rounded-xl font-semibold text-brandDeep bg-white/70 backdrop-blur border border-brandMid/20 hover:bg-white transition">ดูฟีเจอร์</a>
+        </div>
+        <div class="mt-5 flex items-center gap-6 text-sm text-slate-500">
+          <div class="flex items-center gap-2"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>รองรับไฟล์ PDF/DOCX/ข้อความ</div>
+          <div class="flex items-center gap-2"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20l9-5-9-5-9 5 9 5z"/><path d="M12 12l9-5-9-5-9 5 9 5z"/></svg>ทำงานแบบ Real‑time</div>
+        </div>
+      </div>
+
+      <!-- Right: Hero image -->
+      <div class="relative">
+        <img src="{% static 'images/hero_full.png' %}" alt="ภาพประกอบระบบ AI Storybook" class="w-full h-auto rounded-[24px] shadow-[0_24px_60px_rgba(31,22,84,.25)]"/>
+        <div class="absolute inset-0 rounded-[24px] bg-gradient-to-tr from-brandDeep/10 to-brandMid/5 pointer-events-none"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== YUNA (หัวโค้ง + รูปเดียว) ===== -->
+  <section class="relative mt-20">
+    <!-- Curved divider using SVG -->
+    <div class="absolute -top-20 left-0 right-0 h-20 overflow-hidden" aria-hidden="true">
+      <svg class="w-full h-full" viewBox="0 0 1440 80" preserveAspectRatio="none">
+        <path d="M0,80 C360,0 1080,0 1440,80 L1440,80 L0,80 Z" fill="#F3F9FC"></path>
+      </svg>
+    </div>
+
+    <div class="relative z-10 bg-yunaBg shadow-yunaHead">
+      <div class="max-w-6xl mx-auto px-5 pt-24">
+        <div class="flex justify-center">
+          <img src="{% static 'images/yuna.png' %}" alt="YUNA Mascot" class="w-[95vw] max-w-[1100px] h-auto drop-shadow-[0_16px_40px_rgba(20,20,60,0.16)] select-none"/>
+        </div>
+
+        <div class="max-w-2xl mx-auto text-center mt-8 mb-12">
+          <p class="text-slate-400 text-sm">เรื่องราวโดยคุณ</p>
+          <h2 class="text-[clamp(22px,2.8vw,32px)] font-extrabold text-slate-800 leading-snug mt-1">
+            สร้างสรรค์นิทานของคุณ และปรับให้เหมาะกับผู้เรียนแต่ละคน
+          </h2>
+          <p class="text-slate-600 mt-3">ระบบปรับโทนภาษา ความยาว และภาพให้เหมาะกับวัย พร้อมเก็บคะแนนและพัฒนาทักษะแบบต่อเนื่อง</p>
+          <a href="{% url 'auth_view' %}" class="inline-block mb-20 mt-5 px-6 py-3 rounded-xl font-bold text-white bg-[#6C47F5] shadow-[0_10px_28px_rgba(108,71,245,0.30)] hover:shadow-[0_14px_36px_rgba(108,71,245,0.40)] transition">เริ่มสร้างเรื่องราวของคุณ</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Features ===== -->
+  <section id="features" class="max-w-7xl mx-auto px-5 py-16 md:py-24">
+    <div class="text-center mb-10">
+      <h3 class="text-2xl md:text-3xl font-extrabold text-slate-900">ครบจบในที่เดียวสำหรับครูและนักเรียน</h3>
+      <p class="mt-2 text-slate-600">สร้าง‑แสดง‑ประเมินผล ได้บนระบบเดียว</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <!-- Card 1 -->
+      <div class="rounded-2xl bg-white border border-brandMid/10 p-6 shadow-card hover:translate-y-[-3px] transition">
+        <div class="w-11 h-11 rounded-xl bg-brandMid/10 flex items-center justify-center mb-4">
+          <!-- book icon -->
+          <svg class="w-6 h-6 text-brandDeep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M20 22V6a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 6.5V22"/></svg>
+        </div>
+        <h4 class="font-bold text-lg">สรุปบทเรียนเป็นฉาก (≤ 20 ฉาก)</h4>
+        <p class="mt-2 text-slate-600">อัปโหลดไฟล์แล้วให้ AI ช่วยสรุป แบ่งฉาก วางโครงเรื่องและคำบรรยายอัตโนมัติ</p>
+      </div>
+      <!-- Card 2 -->
+      <div class="rounded-2xl bg-white border border-brandMid/10 p-6 shadow-card hover:translate-y-[-3px] transition">
+        <div class="w-11 h-11 rounded-xl bg-brandMid/10 flex items-center justify-center mb-4">
+          <!-- audio icon -->
+          <svg class="w-6 h-6 text-brandDeep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><path d="M18 12v.01"/></svg>
+        </div>
+        <h4 class="font-bold text-lg">ภาพ + เสียง + Flipbook</h4>
+        <p class="mt-2 text-slate-600">ภาพประกอบสไตล์นิทานและเสียงอ่านอัตโนมัติ พร้อม UI พลิกหน้าเหมือนหนังสือจริง</p>
+      </div>
+      <!-- Card 3 -->
+      <div class="rounded-2xl bg-white border border-brandMid/10 p-6 shadow-card hover:translate-y-[-3px] transition">
+        <div class="w-11 h-11 rounded-xl bg-brandMid/10 flex items-center justify-center mb-4">
+          <!-- checklist icon -->
+          <svg class="w-6 h-6 text-brandDeep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <h4 class="font-bold text-lg">แบบทดสอบ + คะแนนเรียลไทม์</h4>
+        <p class="mt-2 text-slate-600">สร้างแบบทดสอบหลังเรียน เก็บคะแนนทุกครั้งที่ทำ และดูประวัติย้อนหลังได้</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Steps (Timeline) ===== -->
+  <section id="steps" class="max-w-6xl mx-auto px-5 pb-20">
+    <div class="text-center mb-10">
+      <h3 class="text-2xl md:text-3xl font-extrabold text-slate-900">เริ่มต้นง่ายใน 3 ขั้นตอน</h3>
+    </div>
+    <div class="relative max-w-3xl mx-auto">
+    <!-- เส้นกลาง -->
+    <div class="absolute left-5 md:left-6 top-0 bottom-5 w-[2px] bg-gradient-to-b from-brandMid/30 to-brandDeep/30"></div>
+    
+        <div class="space-y-12">
+            <!-- Step 1 -->
+            <div class="relative pl-16">
+            <!-- วงกลมตรงกับเส้น -->
+            <div class="absolute left-5 md:left-6 top-0 transform -translate-x-1/2 w-10 h-10 rounded-full bg-white border-2 border-brandMid flex items-center justify-center text-brandDeep font-bold">
+                1
+            </div>
+            <h4 class="text-lg font-bold">อัปโหลดไฟล์บทเรียน</h4>
+            <p class="text-slate-600">รองรับ PDF/DOCX/ข้อความ ระบบจะสกัดเนื้อหาและสรุปเป็นฉากให้อัตโนมัติ</p>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="relative pl-16">
+            <div class="absolute left-5 md:left-6 top-0 transform -translate-x-1/2 w-10 h-10 rounded-full bg-white border-2 border-brandMid flex items-center justify-center text-brandDeep font-bold">
+                2
+            </div>
+            <h4 class="text-lg font-bold">สร้างภาพและเสียงแบบต่อเนื่อง</h4>
+            <p class="text-slate-600">ระบบจะสร้างภาพสไตล์เดียวกันทุกฉาก พร้อมเสียงอ่านอัตโนมัติ และอัปโหลดสู่คลังสื่อ</p>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="relative pl-16">
+            <div class="absolute left-5 md:left-6 top-0 transform -translate-x-1/2 w-10 h-10 rounded-full bg-white border-2 border-brandMid flex items-center justify-center text-brandDeep font-bold">
+                3
+            </div>
+            <h4 class="text-lg font-bold">เผยแพร่และประเมินผล</h4>
+            <p class="text-slate-600">แชร์ลิงก์ให้นักเรียนเข้าเรียนแบบ Flipbook ทำแบบทดสอบ และติดตามคะแนนแบบเรียลไทม์</p>
+            </div>
+        </div>
+    </div>
+  </section>
+
+
+  <!-- ===== CTA ===== -->
+  <section id="cta" class="relative py-16">
+    <div class="absolute inset-0 -z-10 bg-gradient-to-r from-brandDeep/10 via-brandMid/10 to-brandDeep/10"></div>
+    <div class="max-w-5xl mx-auto px-5 text-center">
+      <h3 class="text-[clamp(22px,3vw,30px)] font-extrabold text-slate-900">พร้อมเริ่มสร้างสื่อการเรียนรู้ที่นักเรียนรักแล้วหรือยัง?</h3>
+      <p class="mt-2 text-slate-600">ทดลองใช้งานฟรี สมัครภายในไม่กี่วินาที</p>
+      <div class="mt-5 flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="{% url 'auth_view' %}" class="px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brandDeep to-brandMid shadow-[0_10px_28px_rgba(63,43,150,0.35)]">สร้างบทเรียนของคุณ</a>
+        <a href="#features" class="px-6 py-3 rounded-xl font-semibold text-brandDeep bg-white border border-brandMid/20 hover:bg-white/80">ดูตัวอย่างฟีเจอร์</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer class="border-t border-brandMid/10">
+    <div class="max-w-7xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-500">
+      <div>© <span id="y"></span> AI STORYBOOK • สร้างด้วยความตั้งใจเพื่อการเรียนรู้</div>
+      <div class="flex items-center gap-4">
+        <a href="#" class="hover:text-brandDeep">นโยบายความเป็นส่วนตัว</a>
+        <a href="#" class="hover:text-brandDeep">ข้อกำหนดการใช้งาน</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById('y').textContent = new Date().getFullYear()</script>
+</body>
+</html>

@@ -59,6 +59,7 @@ from django.contrib.auth.decorators import login_required
 from .models import Storybook, Report
 from .forms import ReportForm
 
+
 @csrf_exempt
 @login_required
 def submit_report(request, storybook_id):
@@ -76,6 +77,10 @@ def submit_report(request, storybook_id):
     return JsonResponse({"status": "invalid method"})
 
 
+from django.shortcuts import render
+
+def landing_page(request):
+    return render(request, 'landing.html')
 
 
 @login_required
@@ -131,22 +136,56 @@ def teacher_view_storybook(request, storybook_id):
     return render(request, 'teacher/detail_lesson.html', context)
 
 
+# classroom/views.py
+import json
+from django.contrib.auth.decorators import login_required
+from django.core.serializers.json import DjangoJSONEncoder
+from django.shortcuts import render, get_object_or_404
+
+from .models import Storybook, Comment   # ✅ นำเข้า Comment ด้วย
+from .models import PostTestQuestion     # ถ้ามีในไฟล์นี้อยู่แล้วข้ามได้
+from django.db.models import Avg, Count
+from .models import StorybookRating
+
 @login_required
 def view_uploaded_lesson(request, storybook_id):
+    # ถ้าเป็นหน้า teacher ให้ล็อคเจ้าของงานไว้ด้วย user=request.user
     storybook = get_object_or_404(Storybook, id=storybook_id, user=request.user)
+
     posttest_questions = PostTestQuestion.objects.filter(storybook=storybook)
 
-    scenes = storybook.scenes.order_by('scene_number')
+    # scenes เหมือนเดิม
+    scenes_qs = storybook.scenes.order_by('scene_number')
+
+    # ✅ คอมเมนต์ตั้งต้น (เอาไว้โชว์ทันทีตอนรีเฟรช)
+    comments = (
+        Comment.objects
+        .filter(storybook=storybook)
+        .select_related("author")        # ให้ดึงข้อมูลผู้เขียนมาพร้อมกัน
+        .order_by("-created_at")[:200]   # จำกัดจำนวนล่าสุด 200 รายการ
+    )
+    agg = storybook.ratings.aggregate(avg=Avg("value"), count=Count("id"))
+    user_rating = None
+    if request.user.is_authenticated:
+        user_rating = (StorybookRating.objects
+                       .filter(storybook=storybook, user=request.user)
+                       .values_list("value", flat=True).first())
+
     context = {
         'storybook': storybook,
         'questions': posttest_questions,
         'scenes': json.dumps(
-            list(scenes.values('scene_number', 'text', 'image_url', 'audio_url')),
+            list(scenes_qs.values('scene_number', 'text', 'image_url', 'audio_url')),
             cls=DjangoJSONEncoder
         ),
+        'comments': comments,            # ✅ ส่งให้ template ลูปแสดง
+        'comments_count': comments.count() if hasattr(comments, 'count') else len(comments),
+        "rating_avg": (agg["avg"] or 0),
+        "rating_count": agg["count"] or 0,
+        "user_rating": user_rating or 0,
     }
-
     return render(request, 'teacher/view_uploaded_lesson.html', context)
+
 
 
 
@@ -281,18 +320,50 @@ def post_test_result(request, submission_id):
     })
 
 
+
+
+# views.py
+from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponseForbidden
+from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
+
+from .models import Storybook, StorybookAccess  # ตรวจให้มี StorybookAccess จริง
+# ถ้า classroom.students เป็น related name อื่น ให้ปรับตามจริง
+
+def _get_client_ip(request):
+    xff = request.META.get('HTTP_X_FORWARDED_FOR')
+    if xff:
+        return xff.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
 @login_required
 def student_view_storybook(request, storybook_id):
     storybook = get_object_or_404(Storybook, id=storybook_id)
 
-    # เช็คว่านักเรียนอยู่ใน classroom ของ storybook นี้ไหม
-    if request.user not in storybook.classroom.students.all():
+    # ✅ ตรวจสิทธิ์แบบเร็ว/ชัด: ผู้ใช้ต้องอยู่ใน classroom ของ storybook นี้
+    # ถ้า related name ไม่ใช่ students ให้เปลี่ยนให้ตรงกับโมเดลของคุณ
+    is_student = storybook.classroom.students.filter(id=request.user.id).exists()
+    if not is_student:
         return HttpResponseForbidden("You do not have permission to view this storybook.")
 
+    # ✅ กันนับถี่ ๆ: 1 user ต่อ storybook ต่อ 60 วินาที
+    key = f"access:{storybook.id}:{request.user.id}"
+    if not cache.get(key):
+        StorybookAccess.objects.create(
+            storybook=storybook,
+            user=request.user,
+            ip=_get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+        )
+        cache.set(key, True, timeout=60)
+
+    # ✅ ส่ง context เดียวพอ
     context = {
-        'storybook': storybook,
+        "storybook": storybook,
     }
-    return render(request, 'student/detail_lesson_student.html', context)
+    return render(request, "student/detail_lesson_student.html", context)
+
 
 
 # views.py
@@ -349,16 +420,53 @@ def view_lesson_teacher(request, storybook_id):
 
 
 
+# @login_required
+# def profile_settings_teacher(request):
+#     user = request.user
+#     if request.method == 'POST':
+#         form = ProfileUpdateForm(request.POST, request.FILES, instance=user)
+#         if form.is_valid():
+#             form.save()
+#             return redirect('profile_settings_teacher')
+#     else:
+#         form = ProfileUpdateForm(instance=user)
+
+#     # ฟิลด์ที่ไม่ต้องแสดงใน Personal Info
+#     hidden_fields = [
+#         'profile_picture', 'bio', 'facebook', 'line',
+#         'teaching_subjects', 'class_code', 'classroom_link'
+#     ]
+
+#     return render(request, 'teacher/profile_settings_teacher.html', {
+#         'form': form,
+#         'hidden_fields': hidden_fields
+#     })
+
+
+# views.py (ตัวอย่าง)
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from .forms import UserUpdateForm, ProfileUpdateForm
+
 @login_required
 def profile_settings_teacher(request):
     user = request.user
-    if request.method == 'POST':
-        form = ProfileUpdateForm(request.POST, request.FILES, instance=user)
-        if form.is_valid():
-            form.save()
-            return redirect('profile_settings_teacher')
+    profile = getattr(user, "profile", None)
+    if profile is None:
+        from .models import Profile
+        profile, _ = Profile.objects.get_or_create(user=user)
+
+    if request.method == "POST":
+        uform = UserUpdateForm(request.POST, instance=user)
+        pform = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
+        if uform.is_valid() and pform.is_valid():
+            uform.save()
+            pform.save()
+            messages.success(request, "อัปเดตโปรไฟล์เรียบร้อย")
+            return redirect("profile_settings_teacher")
     else:
-        form = ProfileUpdateForm(instance=user)
+        uform = UserUpdateForm(instance=user)
+        pform = ProfileUpdateForm(instance=profile)
 
     # ฟิลด์ที่ไม่ต้องแสดงใน Personal Info
     hidden_fields = [
@@ -367,21 +475,23 @@ def profile_settings_teacher(request):
     ]
 
     return render(request, 'teacher/profile_settings_teacher.html', {
-        'form': form,
+        "user_form": uform,
+        "profile_form": pform,
         'hidden_fields': hidden_fields
     })
 
 
 @login_required
 def view_profile_teacher(request):
-    form = ProfileUpdateForm(instance=request.user)
+    user = request.user
+    profile = getattr(user, "profile", None)
     hidden_fields = [
         'profile_picture', 'bio', 'facebook', 'line',
         'teaching_subjects', 'class_code', 'classroom_link'
     ]
     return render(request, 'teacher/view_profile_teacher.html', {
-        'form': form,
-        'user': request.user,
+        "user": user,
+        "profile": profile,
         'hidden_fields': hidden_fields,
     })
 
@@ -512,73 +622,284 @@ def select_role_view(request):
 
     return render(request, 'select_a_role.html')
 
+
+
+
+
+# classroom/views.py
+from django.contrib import messages
+from django.contrib.auth import login, authenticate
+from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.cache import never_cache
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.conf import settings
+import logging
+
+from .forms import SecureUserCreationForm, SecureAuthenticationForm
+
+logger = logging.getLogger("django.security")
+
+DEFAULT_BACKEND = settings.AUTHENTICATION_BACKENDS[0]  # ใช้ตัวแรกเป็นค่าเริ่มต้น
+
+def _get_safe_next(request):
+    nxt = request.POST.get("next") or request.GET.get("next")
+    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
+        return nxt
+    return None
+
+
 @csrf_protect
 @never_cache
 def auth_view(request):
     if request.user.is_authenticated:
-        user = request.user
-        if request.user.user_type == 'teacher':
-            return redirect('classroom_created')
-        elif request.user.user_type == 'student':
-            return redirect('courses_enroll')
-        elif request.user.user_type == 'admin':
-            return redirect('admin_lesson_dashboard') 
+        u = request.user
+        if u.user_type == "teacher":
+            return redirect("classroom_created")
+        if u.user_type == "student":
+            return redirect("courses_enroll")
+        if u.user_type == "admin":
+            return redirect("admin_lesson_dashboard")
+        return redirect("select_role")
 
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        print("🔍 action =", action)
+    login_form = SecureAuthenticationForm(request)
+    register_form = SecureUserCreationForm()
 
-        if action == 'login':
-            form = SecureAuthenticationForm(request, data=request.POST)
-            if form.is_valid():
-                user = form.get_user()
-                login(request, user)
-                logger.info(f'User {user.email} logged in.')
+    if request.method == "POST":
+        action = request.POST.get("action")
+        safe_next = _get_safe_next(request)
+
+        # ===== LOGIN =====
+        if action == "login":
+            login_form = SecureAuthenticationForm(request, data=request.POST)
+            register_form = SecureUserCreationForm()
+
+            if login_form.is_valid():
+                user = login_form.get_user()  # มาจาก authenticate() ในฟอร์มแล้ว
+                backend = getattr(user, "backend", DEFAULT_BACKEND)
+                login(request, user, backend=backend)
+                logger.info("User %s logged in.", user.email)
+
+                if safe_next:
+                    return redirect(safe_next)
 
                 if not user.user_type:
                     if user.is_superuser or user.is_staff:
-                        user.user_type = 'admin'
-                        user.save()
-                        return redirect('admin_lesson_dashboard')
-                else:
-                    return redirect('select_role')
+                        user.user_type = "admin"
+                        user.save(update_fields=["user_type"])
+                        return redirect("admin_lesson_dashboard")
+                    return redirect("select_role")
 
-                # redirect ตาม user_type
-                if user.user_type == 'teacher':
-                    return redirect('classroom_created')
-                elif user.user_type == 'student':
-                    return redirect('courses_enroll')
-                elif user.user_type == 'admin':
-                    return redirect('admin_lesson_dashboard')
+                if user.user_type == "teacher":
+                    return redirect("classroom_created")
+                if user.user_type == "student":
+                    return redirect("courses_enroll")
+                if user.user_type == "admin":
+                    return redirect("admin_lesson_dashboard")
+                return redirect("select_role")
 
-            else:
-                logger.warning("Failed login")
-                messages.error(request, 'เข้าสู่ระบบไม่สำเร็จ')
+            messages.error(request, "เข้าสู่ระบบไม่สำเร็จ โปรดตรวจสอบข้อมูลอีกครั้ง")
 
-        elif action == 'register':
-            form = SecureUserCreationForm(request.POST)
-            if form.is_valid():
-                user = form.save(commit=False)
-                user.is_approved = True  # ไม่ต้องรออนุมัติ
+        # ===== REGISTER =====
+        elif action == "register":
+            register_form = SecureUserCreationForm(request.POST)
+            login_form = SecureAuthenticationForm(request)
+
+            if register_form.is_valid():
+                user = register_form.save(commit=False)
+                user.is_approved = True
                 user.save()
-                
-                backend = get_backends()[0]
-                user.backend = get_backends()[0].__module__ + "." + get_backends()[0].__class__.__name__
 
-                login(request, user)
-                logger.info(f'✅ New user registered: {user.email}')
-                return redirect('select_role')
-            else:
-                print("REGISTER FORM ERRORS:", form.errors)
-                messages.error(request, 'เกิดข้อผิดพลาดในการสมัครสมาชิก')
+                # เอารหัสผ่านจากฟอร์มมา authenticate เพื่อให้ได้ user ที่มี backend
+                raw_password = register_form.cleaned_data.get("password1")
+                authed = authenticate(
+                    request,
+                    username=user.email,   # คุณตั้ง USERNAME_FIELD = 'email'
+                    password=raw_password,
+                )
+                if authed is not None:
+                    backend = getattr(authed, "backend", DEFAULT_BACKEND)
+                    login(request, authed, backend=backend)
+                else:
+                    # กันกรณีผิดปกติ (ไม่ควรเกิด) แต่ให้ล็อกอินได้ด้วย backend เริ่มต้น
+                    login(request, user, backend=DEFAULT_BACKEND)
 
-    login_form = SecureAuthenticationForm()
-    register_form = SecureUserCreationForm()
+                logger.info("New user registered: %s", user.email)
+                return redirect("select_role")
 
-    return render(request, 'auth.html', {
-        'login_form': login_form,
-        'register_form': register_form
+            messages.error(request, "สมัครสมาชิกไม่สำเร็จ โปรดตรวจสอบรายการที่มีข้อผิดพลาด")
+
+        else:
+            messages.error(request, "คำขอไม่ถูกต้อง")
+
+    return render(
+        request,
+        "auth.html",
+        {"login_form": login_form, "register_form": register_form},
+    )
+
+
+
+
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.cache import never_cache
+
+from .models import EmailOTP
+
+User = get_user_model()
+
+
+def _send_otp_email(to_email: str, first_name: str, code: str):
+    subject = "รหัส OTP สำหรับรีเซ็ตรหัสผ่าน (หมดอายุภายใน 5 นาที)"
+    body = (
+        f"สวัสดี {first_name or ''}\n\n"
+        f"รหัส OTP ของคุณคือ: {code}\n"
+        f"**รหัสจะหมดอายุภายใน 5 นาที**\n\n"
+        f"หากคุณไม่ได้ร้องขอ กรุณาเพิกเฉยอีเมลฉบับนี้"
+    )
+    # ใช้ DEFAULT_FROM_EMAIL ถ้าตั้งค่าไว้ ไม่งั้นใช้ EMAIL_HOST_USER
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", settings.EMAIL_HOST_USER)
+    send_mail(subject, body, from_email, [to_email], fail_silently=False)
+
+
+@csrf_protect
+@never_cache
+def request_otp_view(request):
+    """
+    หน้าที่ให้ผู้ใช้กรอกอีเมล เพื่อขอรหัส OTP
+    - ถ้าอีเมลอยู่ในระบบ → ส่ง OTP และไปหน้ากรอก OTP
+    - ถ้าไม่อยู่ → แจ้งข้อผิดพลาด
+    """
+    if request.method == "POST":
+        email = (request.POST.get("email") or "").strip()
+        if not email:
+            messages.error(request, "กรุณากรอกอีเมล")
+            return redirect("request_otp")
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            messages.error(request, "ไม่พบอีเมลนี้ในระบบ")
+            return redirect("request_otp")
+
+        # สร้าง OTP และส่งอีเมล
+        otp_obj = EmailOTP.generate_otp(user=user, minutes=5)
+        try:
+            _send_otp_email(user.email, user.first_name, otp_obj.otp_code)
+        except Exception as e:
+            messages.error(request, f"ส่งอีเมลไม่สำเร็จ: {e}")
+            return redirect("request_otp")
+
+        # เก็บ user_id ไว้ใน session สำหรับขั้นตอนถัดไป
+        request.session["otp_user_id"] = user.id
+        request.session["otp_requested_at"] = timezone.now().isoformat()
+        messages.success(request, "เราได้ส่งรหัส OTP ไปที่อีเมลของคุณแล้ว")
+        return redirect("verify_otp")
+
+    return render(request, "otp/request_otp.html")
+
+
+@csrf_protect
+@never_cache
+def verify_otp_view(request):
+    """
+    หน้ากรอกรหัส OTP → ตรวจสอบกับ OTP ล่าสุดของผู้ใช้
+    """
+    user_id = request.session.get("otp_user_id")
+    if not user_id:
+        messages.error(request, "เซสชันหมดอายุ กรุณาขอรหัสใหม่")
+        return redirect("request_otp")
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, "ไม่พบผู้ใช้")
+        return redirect("request_otp")
+
+    if request.method == "POST":
+        code = (request.POST.get("otp") or "").strip()
+        if not code:
+            messages.error(request, "กรุณากรอกรหัส OTP")
+            return redirect("verify_otp")
+
+        try:
+            otp_obj = EmailOTP.objects.filter(user=user).latest("created_at")
+        except EmailOTP.DoesNotExist:
+            messages.error(request, "ไม่พบรหัส OTP กรุณาขอรหัสใหม่")
+            return redirect("request_otp")
+
+        if otp_obj.is_valid(code):
+            request.session["otp_verified"] = True
+            messages.success(request, "ยืนยัน OTP สำเร็จ โปรดตั้งรหัสผ่านใหม่")
+            return redirect("reset_password_custom")
+        else:
+            messages.error(request, "รหัส OTP ไม่ถูกต้องหรือหมดอายุแล้ว")
+            return redirect("verify_otp")
+
+    # เผื่ออยากแสดงเวลาเหลือ (ทางเลือก)
+    # remaining_seconds = 0
+    # try:
+    #     otp_obj = EmailOTP.objects.filter(user=user).latest("created_at")
+    #     remaining_seconds = max(0, int((otp_obj.expires_at - timezone.now()).total_seconds()))
+    # except EmailOTP.DoesNotExist:
+    #     pass
+
+    return render(request, "otp/verify_otp.html", {
+        # "remaining_seconds": remaining_seconds
     })
+
+
+@csrf_protect
+@never_cache
+def reset_password_custom(request):
+    """
+    หน้าตั้งรหัสผ่านใหม่ (เข้าถึงได้เมื่อ verify OTP แล้วเท่านั้น)
+    """
+    if not request.session.get("otp_verified"):
+        messages.error(request, "ยังไม่ได้ยืนยัน OTP")
+        return redirect("request_otp")
+
+    user_id = request.session.get("otp_user_id")
+    if not user_id:
+        messages.error(request, "เซสชันหมดอายุ กรุณาขอรหัสใหม่")
+        return redirect("request_otp")
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, "ไม่พบผู้ใช้")
+        return redirect("request_otp")
+
+    if request.method == "POST":
+        new_password = request.POST.get("password") or ""
+        confirm_password = request.POST.get("confirm_password") or ""
+
+        if len(new_password) < 8:
+            messages.error(request, "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร")
+            return redirect("reset_password_custom")
+
+        if new_password != confirm_password:
+            messages.error(request, "รหัสผ่านไม่ตรงกัน")
+            return redirect("reset_password_custom")
+
+        # ตั้งรหัสผ่านใหม่
+        user.set_password(new_password)
+        user.save()
+
+        # ล้าง session ที่เกี่ยวข้องกับ OTP
+        for key in ["otp_user_id", "otp_verified", "otp_requested_at"]:
+            request.session.pop(key, None)
+
+        messages.success(request, "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว สามารถเข้าสู่ระบบได้")
+        return redirect("auth_view")
+
+    return render(request, "otp/reset_password_custom.html", {})
 
 
 from django.shortcuts import render, redirect
@@ -688,44 +1009,139 @@ def create_lesson_for_classroom(request, classroom_id):
 
 
 
+# classroom/views.py
+from collections import defaultdict
+
+from django.contrib.auth.decorators import login_required
+from django.db.models import Avg, Count, Max
+from django.shortcuts import get_object_or_404, render
+
+from .models import (
+    Storybook,
+    PostTestSubmission,
+    Comment,
+    StorybookRating,
+)
+
+# ===== โมเดลที่อาจยังไม่มี ให้ try/except ไว้ก่อน เพื่อไม่ให้พัง =====
+try:
+    from .models import StorybookDownload
+except Exception:  # noqa: BLE001
+    StorybookDownload = None
+
+try:
+    from .models import StorybookShare
+except Exception:  # noqa: BLE001
+    StorybookShare = None
+
+
 @login_required
 def teacher_view_lesson_detail(request, storybook_id):
+    """
+    หน้าแดชบอร์ดสรุปบทเรียนของครู:
+    - ภาพ/ชื่อเรื่อง/คำอธิบาย
+    - การ์ด metric: ยอดดู, คะแนนเฉลี่ยโหวต, จำนวนโหวต, ความคิดเห็น, ดาวน์โหลด, แชร์, คะแนนเฉลี่ย post-test, จำนวนคนทำ
+    - ตารางนักเรียน: คนล่าสุดที่ทำ + จำนวนครั้งที่ทำ
+    """
     storybook = get_object_or_404(Storybook, id=storybook_id, user=request.user)
 
-    # ดึงเฉพาะ submission ทั้งหมดของ storybook นี้
-    submissions = PostTestSubmission.objects.filter(storybook=storybook).select_related('user')
-
-    # นับจำนวนครั้งที่แต่ละ user ทำ
-    submission_counts = defaultdict(int)
-    for s in submissions:
-        submission_counts[s.user_id] += 1
-
-    # เก็บเฉพาะ submission ล่าสุดของแต่ละ user (เพื่อใช้แสดงข้อมูล)
-    latest_submissions = {}
-    for s in submissions.order_by('-submitted_at'):
-        if s.user_id not in latest_submissions:
-            latest_submissions[s.user_id] = s
-
-    # เตรียมข้อมูล list สำหรับ template
-    students = []
-    for user_id, latest_submission in latest_submissions.items():
-        students.append({
-            'user': latest_submission.user,
-            'submitted_at': latest_submission.submitted_at,
-            'count': submission_counts[user_id],  # จำนวนครั้งที่ทำ
-        })
+    # ------------------------------
+    # 1) สถิติแบบทดสอบ (PostTest)
+    # ------------------------------
+    submissions = (
+        PostTestSubmission.objects
+        .filter(storybook=storybook)
+        .select_related("user")
+    )
 
     total_submissions = submissions.count()
-    average_score = submissions.aggregate(avg=Avg('score'))['avg'] or 0
-    total_shares = 0
+    average_score = submissions.aggregate(avg=Avg("score"))["avg"] or 0
+    total_views = StorybookAccess.objects.filter(storybook=storybook).count()
 
-    return render(request, 'teacher/lesson_detail_stats.html', {
-        'storybook': storybook,
-        'students': students,
-        'total_submissions': total_submissions,
-        'average_score': average_score,
-        'total_shares': total_shares,
-    })
+    # นับจำนวนครั้งที่แต่ละ user ทำ
+    counts_map = {
+        row["user_id"]: row["c"]
+        for row in submissions.values("user_id").annotate(c=Count("id"))
+    }
+
+    # เอา submission ล่าสุดของแต่ละ user (PostgreSQL: distinct on)
+    latest_submissions = (
+        submissions.order_by("user_id", "-submitted_at").distinct("user_id")
+    )
+
+    students = [
+        {
+            "user": s.user,
+            "submitted_at": s.submitted_at,
+            "count": counts_map.get(s.user_id, 1),
+        }
+        for s in latest_submissions
+    ]
+
+    learners_count = (
+    StorybookAccess.objects
+    .filter(storybook=storybook)
+    .values("user_id")
+    .distinct()
+    .count()
+)
+
+
+    # ------------------------------
+    # 2) ความคิดเห็น / คอมเมนต์
+    # ------------------------------
+    feedback_count = Comment.objects.filter(
+        storybook=storybook,
+        is_deleted=False
+    ).count()
+
+    # ------------------------------
+    # 3) เรตติ้ง (1–5)
+    # ------------------------------
+    rating_info = StorybookRating.objects.filter(storybook=storybook).aggregate(
+        avg=Avg("value"),
+        count=Count("id"),
+    )
+    rating_avg = round(rating_info["avg"] or 0, 1)
+    rating_count = rating_info["count"] or 0
+
+    # ------------------------------
+    # 4) ดาวน์โหลด / แชร์ (ถ้ามีโมเดล)
+    # ------------------------------
+    if StorybookDownload:
+        downloads_count = StorybookDownload.objects.filter(storybook=storybook).count()
+    else:
+        downloads_count = 0
+
+    if StorybookShare:
+        shares_count = StorybookShare.objects.filter(storybook=storybook).count()
+    else:
+        shares_count = 0
+
+    # ------------------------------
+    # 5) วิว (ถ้ามีฟิลด์ views ใน Storybook)
+    # ------------------------------
+    views_count = getattr(storybook, "views", 0)
+
+    context = {
+        "storybook": storybook,
+
+        # metrics บนการ์ด
+        "views_count": views_count,
+        "rating_avg": rating_avg,
+        "rating_count": rating_count,
+        "feedback_count": feedback_count,
+        "downloads_count": downloads_count,
+        "shares_count": shares_count,
+        "total_submissions": total_submissions,
+        "average_score": average_score,
+        "total_views": total_views,
+        "learners_count": learners_count,
+        # ตารางนักเรียนล่าสุด + จำนวนครั้งที่ทำ
+        "students": students,
+    }
+    return render(request, "teacher/lesson_detail_stats.html", context)
+
 
 
 

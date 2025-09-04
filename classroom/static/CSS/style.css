@@ -1,252 +1,141 @@
-@import url(https://fonts.googleapis.com/css?family=Inter:100,200,300,regular,500,600,700,800,900);
-/* Reset CSS */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Inter", sans-serif;
-}
-body {
-  background-color: #dbe2f4;
-}
-.container {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 100vh;
-}
-.sidebar {
-  position: relative;
-  width: 256px;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  background-color: #fff;
-  padding: 24px;
-  border-radius: 0px;
-  transition: all 0.3s;
-}
-.sidebar .head {
-  display: flex;
-  gap: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #f6f6f6;
-}
-.user-img {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  overflow: hidden;
-}
-.user-img img {
-  width: 100%;
-  object-fit: cover;
-}
-.user-details .title,
-.menu .title {
-  font-size: 12px;
-  font-weight: bold;
-  color: #757575;
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-.user-details .name {
-  font-size: 14px;
-  font-weight: 500;
-}
-.nav {
-  flex: 1;
-}
-.menu ul li {
-  position: relative;
-  list-style: none;
-  margin-bottom: 5px;
-}
-.menu ul li a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #757575;
-  text-decoration: none;
-  padding: 12px 8px;
-  border-radius: 8px;
-  transition: all 0.3s;
-}
-.menu ul li > a:hover,
-.menu ul li.active > a {
-  color: #000;
-  background-color: #f6f6f6;
-}
-.menu ul li .icon {
-  font-size: 20px;
-}
-.menu ul li .text {
-  flex: 1;
-}
-.menu ul li .arrow {
-  font-size: 14px;
-  transition: all 0.3s;
-}
-.menu ul li.active .arrow {
-  transform: rotate(180deg);
-}
-.menu .sub-menu {
-  display: none;
-  margin-left: 20px;
-  padding-left: 20px;
-  padding-top: 5px;
-  border-left: 1px solid #f6f6f6;
-
-  /* จำกัดความสูงไว้พอดีกับ 4 รายการ */
-  max-height: 130px; /* ประมาณ 4 x 45px */
-  overflow-y: auto;
-}
-.menu .sub-menu li a {
-  padding: 10px 8px;
-  font-size: 12px;
-}
-
-/* เพิ่ม scrollbar แบบสวยงาม (optional) */
-.menu .sub-menu::-webkit-scrollbar {
-  width: 6px;
-}
-
-.menu .sub-menu::-webkit-scrollbar-thumb {
-  background-color: #ccc;
-  border-radius: 3px;
-}
-
-.menu ul li.active .sub-menu {
-  display: block;
-}
+@import url(https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap);
 
 
-
-.menu:not(:last-child) {
-  padding-bottom: 10px;
-  margin-bottom: 20px;
-  border-bottom: 2px solid #f6f6f6;
-}
-.menu-btn {
-  position: absolute;
-  right: -14px;
-  top: 3.5%;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #757575;
-  border: 2px solid #f6f6f6;
-  background-color: #fff;
-}
-.menu-btn:hover i {
-  color: #000;
-}
-.menu-btn i {
-  transition: all 0.3s;
-}
-.sidebar.active {
-  width: 92px;
-}
-.sidebar.active .menu-btn i {
-  transform: rotate(180deg);
-}
-.sidebar.active .user-details {
-  display: none;
-}
-.sidebar.active .menu .title {
-  text-align: center;
-}
-.sidebar.active .menu ul li .arrow {
-  display: none;
-}
-.sidebar.active .menu > ul > li > a {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.sidebar.active .menu > ul > li > a .text {
-  position: absolute;
-  left: 70px;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 10px;
-  border-radius: 4px;
-  color: #fff;
-  background-color: #000;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s;
-}
-.sidebar.active .menu > ul > li > a .text::after {
-  content: "";
-  position: absolute;
-  left: -5px;
-  top: 20%;
-  width: 20px;
-  height: 20px;
-  border-radius: 2px;
-  background-color: #000;
-  transform: rotate(45deg);
-  z-index: -1;
-}
-.sidebar.active .menu > ul > li > a:hover .text {
-  left: 50px;
-  opacity: 1;
-  visibility: visible;
-}
-.sidebar.active .menu .sub-menu {
-  position: absolute;
-  top: 0;
-  left: 20px;
-  width: 200px;
-  border-radius: 20px;
-  padding: 10px 20px;
-  border: 1px solid #f6f6f6;
-  background-color: #fff;
-  box-shadow: 0px 10px 8px rgba(0, 0, 0, 0.1);
+/* ===== Brand Variables (match Landing) ===== */
+:root{
+  --brandDeep: #3F2B96;
+  --brandMid:  #5B49C9;
+  --brandBg:   #F6F4FF;   /* ฉากหลังโทนอ่อน */
+  --ink-1:     #0f172a;   /* ข้อความเข้ม */
+  --ink-2:     #475569;   /* ข้อความกลาง */
+  --line:      #ecebff;   /* เส้น/ขอบอ่อนม่วง */
 }
 
-.main-content {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  color: #fff;
-  text-align: center;
-  font-size: 2rem;
-  background-color: #1f2937; /* สีเทาเข้ม */
-  border-radius: 0.5rem;
+/* Reset */
+*{ margin:0; padding:0; box-sizing:border-box; font-family: 'Bai Jamjuree', ui-sans-serif, system-ui; }
+
+body{
+  /* ไล่เฉดอ่อนแบบ Landing */
+  background: radial-gradient(1200px 600px at 10% -10%, rgba(91,73,201,.14), transparent 56%),
+              radial-gradient(1000px 500px at 90% 0%, rgba(63,43,150,.12), transparent 50%),
+              linear-gradient(180deg, #ffffff 0%, var(--brandBg) 100%);
+  min-height:100vh;
+  color: var(--ink-1);
 }
 
+/* ===== Layout ===== */
+.container{ display:flex; align-items:stretch; width:100%; min-height:100vh; }
 
-
-.profile-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.profile-item img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-}
-.profile-item .name {
-  font-size: 14px;
-  font-weight: 500;
+/* ===== Sidebar ===== */
+.sidebar{
+  position:relative;
+  width:256px; height:100vh; display:flex; flex-direction:column; gap:20px;
+  background: linear-gradient(180deg, #fff 0%, #faf9ff 100%);
+  padding:24px; border-right:1px solid var(--line);
+  transition: all .3s ease;
+  box-shadow: 0 8px 28px rgba(63,43,150,0.08);
 }
 
+/* Header in sidebar */
+.sidebar .head{ display:flex; gap:16px; padding-bottom:16px; border-bottom:1px solid var(--line); }
+.user-img{ width:44px; height:44px; border-radius:50%; overflow:hidden; }
+.user-img img{ width:100%; height:100%; object-fit:cover; }
+.user-details .title, .menu .title{
+  font-size:11px; font-weight:700; color:#7c7a99; text-transform:uppercase; margin-bottom:10px; letter-spacing:.04em;
+}
+.user-details .name{ font-size:14px; font-weight:600; color:var(--ink-1); }
 
+/* ===== Nav / Menu ===== */
+.nav{ flex:1; }
 
+/* แถบเมนู */
+.menu{ }
+.menu:not(:last-child){ padding-bottom:12px; margin-bottom:18px; border-bottom:1px dashed var(--line); }
 
+.menu ul li{ position:relative; list-style:none; margin-bottom:4px; }
+.menu ul li > a{
+  display:flex; align-items:center; gap:10px;
+  font-size:14px; font-weight:600; color:#6b6a88; text-decoration:none;
+  padding:10px 10px; border-radius:10px; transition:all .2s ease;
+  border:1px solid transparent;
+}
+.menu ul li > a .icon{ font-size:20px; color:var(--brandDeep); opacity:.9; }
+.menu ul li > a .text{ flex:1; }
 
+/* Hover/Active tone เหมือน Landing */
+.menu ul li > a:hover{
+  color: var(--brandDeep);
+  background: linear-gradient(180deg, rgba(91,73,201,.08), rgba(63,43,150,.06));
+  border-color: var(--line);
+}
+.menu ul li.active > a{
+  color:#1b1840;
+  background: linear-gradient(180deg, rgba(91,73,201,.14), rgba(63,43,150,.10));
+  border-color: rgba(63,43,150,.18);
+  box-shadow: 0 8px 16px rgba(63,43,150,.12) inset;
+}
 
+.menu ul li .arrow{ font-size:14px; transition:transform .2s ease; color:#7c7a99; }
+.menu ul li.active .arrow{ transform: rotate(180deg); }
 
+/* Sub-menu พร้อมสกรอลล์สวย ๆ */
+.menu .sub-menu{
+  display:none; margin-left:20px; padding-left:18px; padding-top:8px;
+  border-left:2px solid var(--line);
+  max-height: 140px; overflow-y:auto;
+}
+.menu .sub-menu li a{
+  padding:8px 8px; font-size:13px; font-weight:500; color:#6b6a88; border-radius:8px;
+}
+.menu .sub-menu li a:hover{ color:var(--brandDeep); background:rgba(91,73,201,.08); }
 
+.menu .sub-menu::-webkit-scrollbar{ width:6px; }
+.menu .sub-menu::-webkit-scrollbar-thumb{ background:rgba(63,43,150,.25); border-radius:3px; }
 
+/* Toggle (ย่อ sidebar) */
+.menu-btn{
+  position:absolute; right:-14px; top:14px; width:28px; height:28px;
+  border-radius:10px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; color:var(--brandDeep);
+  border:2px solid var(--line); background:#fff; box-shadow:0 4px 10px rgba(63,43,150,.10);
+}
+.menu-btn:hover i{ color:#1b1840; }
+.menu-btn i{ transition: all .3s; }
+
+.sidebar.active{ width:92px; }
+.sidebar.active .menu-btn i{ transform: rotate(180deg); }
+.sidebar.active .user-details{ display:none; }
+.sidebar.active .menu .title{ text-align:center; }
+.sidebar.active .menu ul li .arrow{ display:none; }
+.sidebar.active .menu > ul > li > a{
+  position:relative; display:flex; align-items:center; justify-content:center;
+}
+.sidebar.active .menu > ul > li > a .text{
+  position:absolute; left:70px; top:50%; transform:translateY(-50%);
+  padding:8px 10px; border-radius:6px; color:#fff; background:linear-gradient(180deg, var(--brandDeep), var(--brandMid));
+  opacity:0; visibility:hidden; transition: all .2s;
+  box-shadow:0 10px 18px rgba(63,43,150,.25);
+}
+.sidebar.active .menu > ul > li > a .text::after{
+  content:\"\"; position:absolute; left:-6px; top:18%; width:12px; height:12px; border-radius:2px;
+  background: linear-gradient(180deg, var(--brandDeep), var(--brandMid)); transform:rotate(45deg); z-index:-1;
+}
+.sidebar.active .menu > ul > li > a:hover .text{ left:56px; opacity:1; visibility:visible; }
+
+.sidebar.active .menu .sub-menu{
+  position:absolute; top:0; left:20px; width:220px; border-radius:12px; padding:10px 12px;
+  border:1px solid var(--line); background:#fff; box-shadow:0 10px 18px rgba(0,0,0,.08);
+}
+
+/* ===== Main Content ===== */
+.main-content{
+  max-width: 960px; margin: 0 auto; padding: 2rem;
+  color: var(--ink-1); text-align: left; font-size: 1rem;
+  background: #ffffff; border:1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(63,43,150,.08);
+}
+
+/* แถบข้อมูลโปรไฟล์ด้านล่าง */
+.profile-item{ display:flex; align-items:center; gap:8px; }
+.profile-item img{ width:36px; height:36px; border-radius:50%; }
+.profile-item .name{ font-size:14px; font-weight:600; color:var(--ink-1); }

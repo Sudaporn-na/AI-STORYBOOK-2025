@@ -1,6 +1,6 @@
 # classroom/forms.py
 from django import forms
-from .models import Lesson, User, Report, Classroom
+from .models import Lesson, User, Report, Classroom, Profile
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
@@ -16,39 +16,84 @@ class LessonUploadForm(forms.ModelForm):
         model = Lesson
         fields = ['file']
 
-class ProfileUpdateForm(forms.ModelForm):
+# class ProfileUpdateForm(forms.ModelForm):
+#     class Meta:
+#         model = User
+#         fields = ['first_name', 'last_name', 'email', 'phone', 'age', 'gender', 'country',
+#                   'profile_picture', 'bio', 'facebook', 'line',
+#                   'teaching_subjects', 'class_code', 'classroom_link']
+
+#         widgets = {
+#             'bio': forms.Textarea(attrs={'rows': 4, 'class': 'w-full rounded-xl border px-4 py-3 text-sm resize-none'}),
+#             'facebook': forms.TextInput(attrs={'class': 'w-full mt-1 rounded-full border px-4 py-2'}),
+#             'line': forms.TextInput(attrs={'class': 'w-full mt-1 rounded-full border px-4 py-2'}),
+#         }
+
+
+# class ProfileUpdateForm(forms.ModelForm):
+#     class Meta:
+#         model = User
+#         fields = [
+#             'first_name', 'last_name', 'email', 'phone', 'age', 'gender', 'country',
+#             'bio', 'profile_picture', 'facebook', 'line',
+#             'teaching_subjects', 'class_code', 'classroom_link'
+#         ]
+
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         for name, field in self.fields.items():
+#             field.widget.attrs.update({
+#                 'class': 'w-full mt-1 rounded-full border px-4 py-2'
+#             })
+#         self.fields['bio'].widget.attrs.update({
+#             'class': 'w-full rounded-xl border px-4 py-3 text-sm resize-none',
+#             'rows': 4,
+#         })
+
+# ฟอร์มสำหรับแก้ข้อมูลบน User เท่านั้น
+class UserUpdateForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'phone', 'age', 'gender', 'country',
-                  'profile_picture', 'bio', 'facebook', 'line',
-                  'teaching_subjects', 'class_code', 'classroom_link']
-
+        fields = ["first_name", "last_name", "email"]
         widgets = {
-            'bio': forms.Textarea(attrs={'rows': 4, 'class': 'w-full rounded-xl border px-4 py-3 text-sm resize-none'}),
-            'facebook': forms.TextInput(attrs={'class': 'w-full mt-1 rounded-full border px-4 py-2'}),
-            'line': forms.TextInput(attrs={'class': 'w-full mt-1 rounded-full border px-4 py-2'}),
+            "first_name": forms.TextInput(attrs={"class": "w-full mt-1 rounded-full border px-4 py-2"}),
+            "last_name":  forms.TextInput(attrs={"class": "w-full mt-1 rounded-full border px-4 py-2"}),
+            "email":      forms.EmailInput(attrs={"class": "w-full mt-1 rounded-full border px-4 py-2"}),
         }
 
 
+# ฟอร์มสำหรับฟิลด์บน Profile ทั้งหมด
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
-        model = User
+        model = Profile
         fields = [
-            'first_name', 'last_name', 'email', 'phone', 'age', 'gender', 'country',
-            'bio', 'profile_picture', 'facebook', 'line',
-            'teaching_subjects', 'class_code', 'classroom_link'
+            "profile_picture",
+            "bio",
+            "phone",
+            "age",
+            "gender",
+            "country",
+            "facebook",
+            "line",
+            "teaching_subjects",
+            "class_code",
+            "classroom_link",
         ]
+        widgets = {
+            "bio":       forms.Textarea(attrs={"rows": 4, "class": "w-full rounded-xl border px-4 py-3 text-sm resize-none"}),
+            "facebook":  forms.TextInput(attrs={"class": "w-full mt-1 rounded-full border px-4 py-2"}),
+            "line":      forms.TextInput(attrs={"class": "w-full mt-1 rounded-full border px-4 py-2"}),
+            "phone":     forms.TextInput(attrs={"class": "w-full mt-1 rounded-full border px-4 py-2"}),
+            "age":       forms.NumberInput(attrs={"class": "w-full mt-1 rounded-full border px-4 py-2"}),
+            "gender":    forms.TextInput(attrs={"class": "w-full mt-1 rounded-full border px-4 py-2"}),
+            "country":   forms.TextInput(attrs={"class": "w-full mt-1 rounded-full border px-4 py-2"}),
+            "teaching_subjects": forms.TextInput(attrs={"class": "w-full mt-1 rounded-full border px-4 py-2"}),
+            "class_code":     forms.TextInput(attrs={"class": "w-full mt-1 rounded-full border px-4 py-2"}),
+            "classroom_link": forms.URLInput(attrs={"class": "w-full mt-1 rounded-full border px-4 py-2"}),
+        }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for name, field in self.fields.items():
-            field.widget.attrs.update({
-                'class': 'w-full mt-1 rounded-full border px-4 py-2'
-            })
-        self.fields['bio'].widget.attrs.update({
-            'class': 'w-full rounded-xl border px-4 py-3 text-sm resize-none',
-            'rows': 4,
-        })
+
+
 
 
 class SecureUserCreationForm(UserCreationForm):

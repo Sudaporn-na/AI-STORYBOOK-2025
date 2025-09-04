@@ -3,166 +3,206 @@
 {% load socialaccount %}
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="{{ csrf_token }}">
-  <title>Authentication</title>
+  <title>Sign in AI STORYBOOK</title>
 
-
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet" />
+  <!-- Tailwind CDN v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { jamjuree: ['"Bai Jamjuree"', 'ui-sans-serif', 'system-ui'] },
+          colors: {
+            brandDeep: '#3F2B96',
+            brandMid:  '#5B49C9',
+            yunaBg:    '#F3F9FC'
+          },
+          boxShadow: {
+            yunaHead: '0 -12px 40px rgba(0,0,0,.14)',
+            card: '0 18px 42px rgba(63,43,150,0.15)'
+          },
+          backgroundImage: {
+            'radial-dots': 'radial-gradient(circle at 1px 1px, rgba(91,73,201,0.18) 1px, transparent 1px)'
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
   <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      background-image: url("{% static 'images/bg-login.jpg' %}");
-      background-size: 100% auto;
-
-    }
+    .blob{filter:blur(30px);opacity:.55}
+    @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
   </style>
 </head>
+<body class="font-jamjuree text-slate-900 bg-gradient-to-b from-white via-[#F6F4FF] to-white min-h-screen antialiased">
 
-<body class="flex items-center justify-center min-h-screen px-4">
-  <div
-    class="bg-white/80 backdrop-blur-md shadow-2xl rounded-3xl p-8 w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
-    <div class="text-center mb-6">
-      <h2 class="text-3xl font-semibold text-gray-800">Welcome</h2>
-      <p class="text-sm text-gray-600">Sign in or create a new account</p>
-    </div>
-
-    {% if messages %}
-    {% for message in messages %}
-    <div class="mb-4 px-4 py-2 rounded bg-{{ message.tags }}-100 text-{{ message.tags }}-700">
-      {{ message }}
-    </div>
-    {% endfor %}
-    {% endif %}
-
-
-    <form method="POST" id="loginForm" class="space-y-4" autocomplete="off">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="login">
-
-      <a href="{% provider_login_url 'google' %}"
-        class="w-full flex items-center justify-center border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium py-2 rounded-xl mb-6 transition duration-300">
-        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5 mr-3" />
-        Sign in with Google
-      </a>
-
-      {% if login_form.errors %}
-      <div class="text-sm text-red-600 bg-red-100 rounded p-2">
-        {{ login_form.errors }}
-      </div>
-      {% endif %}
-
-      <div>
-        <label class="text-sm font-medium text-gray-700">Email</label>
-        {{ login_form.username|add_class:"w-full px-4 py-2 border border-gray-300 rounded-xl" }}
-      </div>
-
-      <div class="relative">
-        <label class="text-sm font-medium text-gray-700">Password</label>
-        {{ login_form.password|add_class:"w-full px-4 py-2 border border-gray-300 rounded-xl pr-10" }}
-        <i class="fa-solid fa-eye absolute top-9 right-4 text-gray-500 cursor-pointer"
-          onclick="togglePassword('id_password', this)"></i>
-      </div>
-
-      <button type="submit"
-        class="w-full py-3 bg-gradient-to-r from-pink-500 to-red-400 text-white font-semibold rounded-xl hover:shadow-lg transition">
-        Sign In
-      </button>
-      <div class="flex justify-center mt-4">
-        <a href="{% url 'password_reset' %}"
-          class="text-sm text-pink-600 font-medium hover:underline hover:text-pink-800 transition">
-          <i class="fas fa-unlock-alt mr-1"></i> Forgot password?
-        </a>
-      </div>
-      <div class="flex justify-center mt-4 text-sm text-gray-700 flex-wrap">
-        No account
-        <a id="showRegister" href="#"
-          class="ml-1 text-pink-600 font-medium hover:underline hover:text-pink-800 transition">
-          Create account
-        </a>
-      </div>
-
-    </form>
-
-    <form method="POST" id="registerForm" class="space-y-4 hidden" autocomplete="off">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="register">
-
-      {% if register_form.errors %}
-      <div class="text-sm text-red-600 bg-red-100 rounded p-2">
-        {{ register_form.errors }}
-      </div>
-      {% endif %}
-
-      <a href="{% provider_login_url 'google' %}"
-        class="w-full flex items-center justify-center border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium py-2 rounded-xl transition duration-300">
-        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5 mr-3" />
-        Sign in with Google
-      </a>
-
-      <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0">
-        <div class="flex-1">
-          <label class="text-sm font-medium text-gray-700">First Name</label>
-          {{ register_form.first_name|add_class:"w-full px-4 py-2 border border-gray-300 rounded-xl" }}
-        </div>
-        <div class="flex-1">
-          <label class="text-sm font-medium text-gray-700">Last Name</label>
-          {{ register_form.last_name|add_class:"w-full px-4 py-2 border border-gray-300 rounded-xl" }}
-        </div>
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-gray-700">Username</label>
-        {{ register_form.username|add_class:"w-full px-4 py-2 border border-gray-300 rounded-xl" }}
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-gray-700">Email</label>
-        {{ register_form.email|add_class:"w-full px-4 py-2 border border-gray-300 rounded-xl" }}
-      </div>
-
-      <!-- <div>
-        <label class="text-sm font-medium text-gray-700">User Type</label>
-        {{ register_form.user_type|add_class:"w-full px-4 py-2 border border-gray-300 rounded-xl" }}
-      </div> -->
-
-      <div class="relative">
-        <label class="text-sm font-medium text-gray-700">Password</label>
-        {{ register_form.password1|add_class:"w-full px-4 py-2 border border-gray-300 rounded-xl pr-10" }}
-        <i class="fa-solid fa-eye absolute top-9 right-4 text-gray-500 cursor-pointer"
-          onclick="togglePassword('id_password1', this)"></i>
-      </div>
-
-      <div class="relative">
-        <label class="text-sm font-medium text-gray-700">Confirm Password</label>
-        {{ register_form.password2|add_class:"w-full px-4 py-2 border border-gray-300 rounded-xl pr-10" }}
-        <i class="fa-solid fa-eye absolute top-9 right-4 text-gray-500 cursor-pointer"
-          onclick="togglePassword('id_password2', this)"></i>
-        <p class="text-xs text-gray-600 mt-1">Use 12 or more characters with a mix of letters, numbers & symbols.</p>
-      </div>
-
-      <button type="submit"
-        class="w-full py-3 bg-gradient-to-r from-pink-500 to-red-400 text-white font-semibold rounded-xl hover:shadow-lg transition">
-        Create Account
-      </button>
-      <p id="showLogin" class="mt-6 text-center text-sm text-gray-700">Already have an account?
-        <a href="#" class="text-pink-600 font-semibold hover:underline">Sign in</a>
-      </p>
-
-    </form>
+  <!-- Background decorations to match landing -->
+  <div class="fixed inset-0 -z-10">
+    <div class="absolute -top-24 -left-12 w-72 h-72 rounded-full blob bg-brandMid/30 animate-[floaty_7s_ease-in-out_infinite]"></div>
+    <div class="absolute top-6 right-0 w-96 h-96 rounded-full blob bg-brandDeep/25 animate-[floaty_9s_ease-in-out_infinite]"></div>
+    <div class="absolute inset-0 opacity-[.06] bg-radial-dots bg-[length:14px_14px]"></div>
   </div>
+
+  <main class="relative min-h-screen flex items-center justify-center px-4 py-10">
+    <div class="w-full max-w-4xl">
+      <!-- Card -->
+      <div class="bg-white/80 backdrop-blur rounded-3xl shadow-card ring-1 ring-brandMid/10 overflow-hidden">
+        <!-- Top brand bar -->
+        <div class="h-2 bg-gradient-to-r from-brandDeep via-brandMid to-brandDeep"></div>
+
+        <div class="grid md:grid-cols-2">
+          <!-- Left panel -->
+          <div class="hidden md:flex flex-col justify-center gap-6 p-10 bg-gradient-to-br from-brandDeep/5 to-brandMid/5">
+            <div class="flex items-center gap-3">
+              <img src="{% static 'images/logo.png' %}" alt="user" class="w-11 h-11 object-cover rounded-full" onerror="this.style.display='none'"/>
+              <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brandDeep to-brandMid">AI STORYBOOK</h1>
+            </div>
+            <p class="text-slate-700">เข้าสู่ระบบเพื่อสร้างนิทานภาพพร้อมเสียงแบบโต้ตอบ แบ่งฉากอัตโนมัติ และประเมินผลการเรียนรู้ได้ทันที</p>
+            <ul class="space-y-3 text-slate-700">
+              <li class="flex items-start gap-3"><i class="fa-solid fa-circle-check mt-1 text-brandMid"></i> สร้างฉาก ≤ 20 ฉาก พร้อมภาพโทนเดียวกัน</li>
+              <li class="flex items-start gap-3"><i class="fa-solid fa-circle-check mt-1 text-brandMid"></i> เสียงอ่านอัตโนมัติ + Flipbook สมจริง</li>
+              <li class="flex items-start gap-3"><i class="fa-solid fa-circle-check mt-1 text-brandMid"></i> แบบทดสอบ + คะแนนเรียลไทม์</li>
+            </ul>
+          </div>
+
+          <!-- Right panel: Forms -->
+          <div class="p-8 md:p-10">
+            <div class="text-center mb-6">
+              <h2 class="text-3xl font-extrabold text-slate-900">ยินดีต้อนรับ</h2>
+              <p class="text-sm text-slate-600">ลงชื่อเข้าใช้หรือสร้างบัญชีใหม่</p>
+            </div>
+
+            {% if messages %}
+              {% for message in messages %}
+                <div class="mb-4 px-4 py-2 rounded bg-{{ message.tags }}-100 text-{{ message.tags }}-700">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+
+            <!-- LOGIN FORM -->
+            <form method="POST" id="loginForm" class="space-y-4" autocomplete="off">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="login">
+
+              <a href="{% provider_login_url 'google' %}"
+                 class="w-full flex items-center justify-center border border-brandMid/30 hover:bg-white text-slate-700 font-medium py-2 rounded-xl transition">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5 mr-3" />
+                ดำเนินการต่อด้วย Google
+              </a>
+
+              {% if login_form.errors %}
+              <div class="text-sm text-red-600 bg-red-100 rounded p-2">
+                {{ login_form.errors }}
+              </div>
+              {% endif %}
+
+              <div>
+                <label class="text-sm font-medium text-slate-700">อีเมล</label>
+                {{ login_form.username|add_class:"w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brandMid/40" }}
+              </div>
+
+              <div class="relative">
+                <label class="text-sm font-medium text-slate-700">รหัสผ่าน</label>
+                {{ login_form.password|add_class:"w-full px-4 py-2 border border-slate-300 rounded-xl pr-10 focus:outline-none focus:ring-2 focus:ring-brandMid/40" }}
+                <i class="fa-solid fa-eye absolute top-9 right-4 text-slate-500 cursor-pointer" onclick="togglePassword('id_password', this)"></i>
+              </div>
+
+              <button type="submit"
+                class="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brandDeep to-brandMid shadow-[0_10px_28px_rgba(63,43,150,0.35)] hover:shadow-[0_14px_36px_rgba(63,43,150,0.45)] transition">
+                เข้าสู่ระบบ
+              </button>
+
+              <div class="flex justify-center mt-2">
+                <a href="{% url 'request_otp' %}" class="text-sm text-brandMid font-medium hover:underline">ลืมรหัสผ่าน?</a>
+              </div>
+
+              <div class="flex justify-center mt-2 text-sm text-slate-700 flex-wrap">
+                ไม่มีบัญชี
+                <a id="showRegister" href="#" class="ml-1 text-brandMid font-semibold hover:underline">สร้างบัญชี</a>
+              </div>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form method="POST" id="registerForm" class="space-y-4 hidden" autocomplete="off">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="register">
+
+              {% if register_form.errors %}
+              <div class="text-sm text-red-600 bg-red-100 rounded p-2">
+                {{ register_form.errors }}
+              </div>
+              {% endif %}
+
+              <a href="{% provider_login_url 'google' %}"
+                 class="w-full flex items-center justify-center border border-brandMid/30 hover:bg-white text-slate-700 font-medium py-2 rounded-xl transition">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5 mr-3" />
+                ดำเนินการต่อด้วย Google
+              </a>
+
+              <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0">
+                <div class="flex-1">
+                  <label class="text-sm font-medium text-slate-700">ชื่อ</label>
+                  {{ register_form.first_name|add_class:"w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brandMid/40" }}
+                </div>
+                <div class="flex-1">
+                  <label class="text-sm font-medium text-slate-700">นามสกุล</label>
+                  {{ register_form.last_name|add_class:"w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brandMid/40" }}
+                </div>
+              </div>
+
+              <div>
+                <label class="text-sm font-medium text-slate-700">ชื่อผู้ใช้</label>
+                {{ register_form.username|add_class:"w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brandMid/40" }}
+              </div>
+
+              <div>
+                <label class="text-sm font-medium text-slate-700">อีเมล</label>
+                {{ register_form.email|add_class:"w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brandMid/40" }}
+              </div>
+
+              <div class="relative">
+                <label class="text-sm font-medium text-slate-700">รหัสผ่าน</label>
+                {{ register_form.password1|add_class:"w-full px-4 py-2 border border-slate-300 rounded-xl pr-10 focus:ring-2 focus:ring-brandMid/40" }}
+                <i class="fa-solid fa-eye absolute top-9 right-4 text-slate-500 cursor-pointer" onclick="togglePassword('id_password1', this)"></i>
+              </div>
+
+              <div class="relative">
+                <label class="text-sm font-medium text-slate-700">ยืนยันรหัสผ่าน</label>
+                {{ register_form.password2|add_class:"w-full px-4 py-2 border border-slate-300 rounded-xl pr-10 focus:ring-2 focus:ring-brandMid/40" }}
+                <i class="fa-solid fa-eye absolute top-9 right-4 text-slate-500 cursor-pointer" onclick="togglePassword('id_password2', this)"></i>
+                <p class="text-xs text-slate-500 mt-1">ใช้ตัวอักษร 8 ตัวขึ้นไป โดยผสมผสานตัวอักษร ตัวเลข และสัญลักษณ์.</p>
+              </div>
+
+              <button type="submit"
+                class="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brandDeep to-brandMid shadow-[0_10px_28px_rgba(63,43,150,0.35)] hover:shadow-[0_14px_36px_rgba(63,43,150,0.45)] transition">
+                สร้างบัญชี
+              </button>
+
+              <p id="showLogin" class="mt-6 text-center text-sm text-slate-700">มีบัญชีอยู่แล้วใช่ไหม?
+                <a href="#" class="text-brandMid font-semibold hover:underline">เข้าสู่ระบบ</a>
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Small footer -->
+      <div class="text-center text-xs text-slate-500 mt-6">© <span id="y"></span> AI STORYBOOK</div>
+    </div>
+  </main>
 
   <script>
     function togglePassword(id, icon) {
       const input = document.getElementById(id);
       if (input) {
-        input.type = input.type === "password" ? "text" : "password";
+        input.type = input.type === 'password' ? 'text' : 'password';
         icon.classList.toggle('fa-eye');
         icon.classList.toggle('fa-eye-slash');
       }
@@ -170,26 +210,27 @@
 
     function refreshCSRFToken() {
       const token = document.querySelector('meta[name="csrf-token"]').content;
-      document.querySelectorAll('input[name="csrfmiddlewaretoken"]').forEach(input => {
-        input.value = token;
-      });
+      document.querySelectorAll('input[name="csrfmiddlewaretoken"]').forEach(input => { input.value = token; });
     }
 
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
 
-    document.getElementById('showLogin').onclick = () => {
+    document.getElementById('showLogin').onclick = (e) => {
+      e.preventDefault();
       loginForm.classList.remove('hidden');
       registerForm.classList.add('hidden');
       refreshCSRFToken();
     };
 
-    document.getElementById('showRegister').onclick = () => {
+    document.getElementById('showRegister').onclick = (e) => {
+      e.preventDefault();
       registerForm.classList.remove('hidden');
       loginForm.classList.add('hidden');
       refreshCSRFToken();
     };
+
+    document.getElementById('y').textContent = new Date().getFullYear();
   </script>
 </body>
-
 </html>

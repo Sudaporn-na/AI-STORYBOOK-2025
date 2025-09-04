@@ -368,6 +368,566 @@
 <!-- ฝังค่าจาก Django -->
 <div id="storybook-meta" data-storybook-id="{{ storybook.id }}" data-csrf="{{ csrf_token }}"></div>
 
+
+<!-- <script>
+document.addEventListener("DOMContentLoaded", () => {
+  // ===== helpers =====
+  function formatTime(sec){
+    const m = Math.floor(sec / 60);
+    const s = String(Math.floor(sec % 60)).padStart(2, "0");
+    return `${m}:${s}`;
+  }
+
+  // ===== DOM =====
+  const meta = document.getElementById("storybook-meta");
+  const wsScheme = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${wsScheme}://${window.location.host}/ws/storybook/${meta.dataset.storybookId}/`);
+
+  const frameRoot = document.querySelector(".relative.bg-black"); // กรอบใหญ่สีดำ
+  const container = document.querySelector(".grid.grid-cols-2");  // ช่องแสดง 2 หน้า
+
+  const playBtn = document.getElementById("player-toggle");
+  const prevBtn = document.getElementById("prev-btn");
+  const nextBtn = document.getElementById("next-btn");
+  const muteBtn = document.getElementById("mute-btn");
+  const iconPlay = document.getElementById("icon-play");
+  const iconPause = document.getElementById("icon-pause");
+  const iconOn = document.getElementById("icon-sound-on");
+  const iconOff = document.getElementById("icon-sound-off");
+
+  const totalBar = document.getElementById("total-progress-bar");
+  const timeLabel = document.getElementById("global-time-display");
+
+  // ===== สถานะมุมบนซ้าย =====
+  const statusEl = document.createElement("div");
+  statusEl.id = "build-status";
+  statusEl.className = "absolute top-2 left-2 z-40 bg-black/60 text-white text-xs px-3 py-1.5 rounded-md";
+  statusEl.textContent = "กำลังสร้างฉากที่ 1 และ 2…";
+  frameRoot.appendChild(statusEl);
+  const showStatus = (t)=> statusEl.textContent = t;
+  const hideStatus = ()=> statusEl.classList.add("hidden");
+
+  // ===== state =====
+  const scenesMap = new Map(); // key: scene_number, val: {scene_number,text,image_url,audio_url}
+  let currentIndex = 0;        // ชี้ซ้ายของคู่หน้าใน "รายการที่เรียงแล้ว"
+  let isPlaying = false;
+  let isMuted = false;
+  let currentAudios = [];
+  let currentAudioIndex = 0;
+  let durations = [];          // durations[i] = ความยาววินาทีของฉากที่ i+1
+  let totalDuration = 0;
+  let waitingNextPair = false; // กำลังรอคู่หน้าใหม่ (ยังไม่เรนเดอร์จนกว่าจะได้ครบ 2 ฉาก)
+
+  function sortedScenes(){
+    return Array.from(scenesMap.values()).sort((a,b)=> a.scene_number - b.scene_number);
+  }
+
+  function computeTotalDuration(){
+    totalDuration = durations.reduce((s,d)=> s + (d||0), 0);
+    timeLabel.textContent = `00:00 / ${formatTime(totalDuration)}`;
+  }
+
+  function updateGlobalProgress(elapsed){
+    if (!totalDuration) return;
+    const pct = Math.min(elapsed / totalDuration * 100, 100);
+    totalBar.style.width = pct + "%";
+    timeLabel.textContent = `${formatTime(elapsed)} / ${formatTime(totalDuration)}`;
+  }
+
+  function applyMute(){
+    document.querySelectorAll("audio").forEach(a => a.muted = isMuted);
+  }
+
+  function toggleIcons(){
+    iconPlay.classList.toggle("hidden", isPlaying);
+    iconPause.classList.toggle("hidden", !isPlaying);
+  }
+
+  function preloadDuration(sceneNumber, url){
+    const a = new Audio(url);
+    a.preload = "metadata";
+    a.addEventListener("loadedmetadata", () => {
+      durations[sceneNumber - 1] = a.duration;
+      computeTotalDuration();
+    }, { once: true });
+  }
+
+  function renderScenePair(left, right){
+    waitingNextPair = false;
+    currentAudioIndex = 0;
+    container.innerHTML = "";
+
+    [left, right].forEach((scene, idx) => {
+      const div = document.createElement("div");
+      div.className = "relative flex items-end justify-center p-4 border-r border-gray-300";
+      if (scene) {
+        const audioTag = scene.audio_url ? `<audio id="scene-audio-${idx}" src="${scene.audio_url}"></audio>` : "";
+        div.innerHTML = `
+          ${scene.image_url ? `<img src="${scene.image_url}" class="absolute inset-0 w-full h-full object-cover">` : ``}
+          <div class="relative z-10 flex flex-col items-center space-y-2">
+            <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded max-w-[90%] text-center shadow">${scene.text || ""}</p>
+            ${audioTag}
+          </div>`;
+      } else {
+        // ถ้าฉากขวายังไม่มา และเป็นฉากสุดท้ายแบบคี่ ให้ปล่อยว่าง
+        div.innerHTML = `<div class="text-gray-400 italic">Empty Page</div>`;
+      }
+      container.appendChild(div);
+    });
+
+    // หลังแทรก DOM เสร็จ ค่อยเริ่มเล่น
+    setTimeout(() => {
+      applyMute();
+      if (isPlaying) {
+        playInOrder(
+          document.getElementById("scene-audio-0"),
+          document.getElementById("scene-audio-1")
+        );
+      }
+    }, 50);
+  }
+
+  async function playInOrder(left, right){
+    currentAudios = [left, right].filter(Boolean);
+    // คำนวณ offset จากฉากก่อนหน้า
+    const list = sortedScenes();
+    let offset = 0;
+    for (let i = 0; i < currentIndex; i++){
+      const sn = list[i].scene_number;
+      offset += (durations[sn - 1] || 0);
+    }
+
+    currentAudios.forEach(a => a && a.addEventListener("timeupdate", () => {
+      updateGlobalProgress(offset + a.currentTime);
+    }));
+
+    for (let i = currentAudioIndex; i < currentAudios.length; i++){
+      if (!isPlaying) return;
+      try{
+        await currentAudios[i].play();
+        await new Promise(res => currentAudios[i].onended = res);
+        offset += currentAudios[i].duration;
+        currentAudioIndex = i + 1;
+      }catch{}
+    }
+
+    // จบคู่ปัจจุบัน → ไปคู่ถัดไป
+    const nextLeftIdx = currentIndex + 2;
+    const s = sortedScenes();
+
+    if (isPlaying) {
+      if (nextLeftIdx < s.length) {
+        // ถ้าคู่ถัดไป “พร้อมครบ 2 ฉาก” แล้ว → แสดงเลย
+        const nextLeft = s[nextLeftIdx];
+        const nextRight = s[nextLeftIdx + 1] || null;
+        if (nextLeft && nextRight) {
+          currentIndex = nextLeftIdx;
+          renderScenePair(nextLeft, nextRight);
+        } else {
+          // ยังได้มาไม่ครบคู่ → รอ
+          currentIndex = nextLeftIdx;
+          waitingNextPair = true;
+          const wantL = (nextLeft ? nextLeft.scene_number : s[s.length-1].scene_number + 1);
+          const wantR = wantL + 1;
+          showStatus(`กำลังสร้างฉากที่ ${wantL} และ ${wantR}…`);
+        }
+      } else {
+        // ไม่มีคู่ถัดไปแล้ว
+        showStatus("สร้างครบแล้ว ✓");
+        setTimeout(hideStatus, 1500);
+      }
+    }
+  }
+
+  // ===== WebSocket: รับฉากที่พร้อมแล้ว (ภาพ+เสียง+ข้อความ) ค่อยโชว์เลย =====
+  ws.addEventListener("message", e => {
+    const d = JSON.parse(e.data);
+
+    // รองรับทั้งแบบมี evt และไม่มี
+    const payload = (d && d.evt === "scene_update") ? d : d;
+
+    if (payload && (payload.scene_number || payload.scene_number === 0)) {
+      const ns = {
+        scene_number: payload.scene_number,
+        text: payload.text,
+        image_url: payload.image_url,
+        audio_url: payload.audio_url
+      };
+
+      // เฉพาะฉากที่ "พร้อมจริง" เท่านั้น (มีทั้งภาพ+เสียง หรืออย่างน้อยเสียงเพื่อเล่นต่อได้)
+      // ในระบบคุณ scene_update จะส่งตอนพร้อมแล้วอยู่แล้ว จึง set ได้เลย
+      scenesMap.set(ns.scene_number, ns);
+
+      if (ns.audio_url) preloadDuration(ns.scene_number, ns.audio_url);
+
+      const s = sortedScenes();
+
+      // เรนเดอร์คู่แรกเมื่อมีครบ 2 ฉากแรก
+      if (s.length >= 2 && currentIndex === 0 && container.children.length === 0) {
+        renderScenePair(s[0], s[1]);
+        hideStatus(); // มีภาพ/เสียงแล้ว ไม่ต้องโชว์กำลังสร้าง
+        return;
+      }
+
+      // ถ้ากำลัง "รอคู่หน้า" อยู่ และตอนนี้คู่ถัดไปมา "ครบ 2 ฉาก" แล้ว → แสดงทันที
+      if (waitingNextPair) {
+        const left = s[currentIndex];
+        const right = s[currentIndex + 1] || null;
+        if (left && right) {
+          renderScenePair(left, right);
+          hideStatus();
+        }
+      }
+    } else if (d && d.evt === "story_status") {
+      // ถ้ามีอีเวนต์สถานะรวมจากฝั่งเซิร์ฟเวอร์ก็อัปเดตข้อความได้
+      if (d.phase === "START") {
+        showStatus(`เริ่มสร้างนิทาน (ทั้งหมด ${d.total_scenes || "?"} ฉาก)`);
+      } else if (d.phase === "ALL_DONE") {
+        showStatus("สร้างครบแล้ว ✓");
+        setTimeout(hideStatus, 1500);
+      } else if (d.phase === "ERROR") {
+        showStatus(`เกิดข้อผิดพลาด: ${d.message || ""}`);
+      }
+    }
+  });
+
+  // ===== Controls =====
+  playBtn.addEventListener("click", () => {
+    isPlaying = !isPlaying;
+    toggleIcons();
+
+    if (isPlaying) {
+      const left = document.getElementById("scene-audio-0");
+      const right = document.getElementById("scene-audio-1");
+      if (!left && !right) {
+        // ยังไม่มีฉาก → แจ้งกำลังรอ
+        const s = sortedScenes();
+        const want = (s.length ? s[s.length-1].scene_number + 1 : 1);
+        showStatus(`กำลังสร้างฉากที่ ${want} และ ${want+1}…`);
+        return;
+      }
+      playInOrder(left, right);
+    } else {
+      currentAudios.forEach(a => a && a.pause());
+    }
+  });
+
+  muteBtn.addEventListener("click", () => {
+    isMuted = !isMuted;
+    iconOn.classList.toggle("hidden", isMuted);
+    iconOff.classList.toggle("hidden", !isMuted);
+    applyMute();
+  });
+
+  prevBtn.addEventListener("click", () => {
+    const s = sortedScenes();
+    if (currentIndex >= 2) {
+      currentIndex -= 2;
+      currentAudioIndex = 0;
+      renderScenePair(s[currentIndex], s[currentIndex + 1] || null);
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    const s = sortedScenes();
+    const nextLeftIdx = currentIndex + 2;
+
+    if (nextLeftIdx < s.length) {
+      // ถ้าคู่ถัดไปครบ 2 ฉากแล้ว → แสดงเลย
+      if (s[nextLeftIdx] && s[nextLeftIdx + 1]) {
+        currentIndex = nextLeftIdx;
+        currentAudioIndex = 0;
+        renderScenePair(s[currentIndex], s[currentIndex + 1]);
+      } else {
+        // ยังไม่ครบ → รอ
+        waitingNextPair = true;
+        currentIndex = nextLeftIdx;
+        const wantL = s[nextLeftIdx]?.scene_number || (s[s.length-1].scene_number + 1);
+        showStatus(`กำลังสร้างฉากที่ ${wantL} และ ${wantL + 1}…`);
+      }
+    }
+  });
+
+});
+</script> -->
+
+
+<!-- <script>
+document.addEventListener("DOMContentLoaded", () => {
+  // ===== helpers =====
+  const durations = [];
+  let totalDuration = 0;
+  const meta = document.getElementById("storybook-meta");
+  const ws = new WebSocket(`ws://${window.location.host}/ws/storybook/${meta.dataset.storybookId}/`);
+  const frameRoot = document.querySelector(".relative.bg-black"); // กรอบใหญ่
+  const container = document.querySelector(".grid.grid-cols-2");
+
+  const playBtn = document.getElementById("player-toggle");
+  const prevBtn = document.getElementById("prev-btn");
+  const nextBtn = document.getElementById("next-btn");
+  const muteBtn = document.getElementById("mute-btn");
+  const iconPlay = document.getElementById("icon-play");
+  const iconPause = document.getElementById("icon-pause");
+  const iconOn = document.getElementById("icon-sound-on");
+  const iconOff = document.getElementById("icon-sound-off");
+
+  // ===== สถานะด้านบนซ้าย =====
+  const statusEl = document.createElement("div");
+  statusEl.id = "build-status";
+  statusEl.className = "absolute top-2 left-2 z-40 bg-black/60 text-white text-xs px-3 py-1.5 rounded-md";
+  statusEl.textContent = "กำลังเตรียมงาน…";
+  frameRoot.appendChild(statusEl);
+
+  function showStatus(text){ statusEl.textContent = text; statusEl.classList.remove("hidden"); }
+  function hideStatus(){ statusEl.classList.add("hidden"); }
+
+  function formatTime(sec){
+    const m = Math.floor(sec / 60);
+    const s = String(Math.floor(sec % 60)).padStart(2, "0");
+    return `${m}:${s}`;
+  }
+
+  function computeTotalDuration(){
+    totalDuration = durations.reduce((s, d) => s + (d || 0), 0);
+    document.getElementById("global-time-display").textContent = `00:00 / ${formatTime(totalDuration)}`;
+  }
+
+  function updateGlobalProgress(elapsed){
+    if (!totalDuration) return;
+    const pct = Math.min(elapsed / totalDuration * 100, 100);
+    document.getElementById("total-progress-bar").style.width = pct + "%";
+    document.getElementById("global-time-display").textContent = `${formatTime(elapsed)} / ${formatTime(totalDuration)}`;
+  }
+
+  // ===== state =====
+  let scenesList = [];                 // [{scene_number, text, image_url, audio_url}, ...] (เรียงแล้ว)
+  let totalScenes = 20;                // server จะส่งมาปรับอีกที
+  let currentIndex = 0;                // index ใน scenesList (ซ้ายของคู่หน้า)
+  let currentAudioIndex = 0;
+  let currentAudios = [];
+  let isPlaying = false;
+  let isMuted = false;
+  let waitingForNextPair = false;      // เฝ้ารอฉากใหม่ (คู่หน้า) อยู่
+
+  function toggleIcons(){
+    iconPlay.classList.toggle("hidden", isPlaying);
+    iconPause.classList.toggle("hidden", !isPlaying);
+  }
+
+  function applyMute() {
+    document.querySelectorAll("audio").forEach(a => a.muted = isMuted);
+  }
+
+  function preloadDuration(sceneNumber, url){
+    const a = new Audio(url);
+    a.preload = "metadata";
+    a.addEventListener("loadedmetadata", () => {
+      durations[sceneNumber - 1] = a.duration;
+      computeTotalDuration();
+    }, { once: true });
+  }
+
+  // ====== Skeleton placeholder (คู่หน้า) ======
+  function skeletonCard(labelText){
+    const div = document.createElement("div");
+    div.className = "relative flex items-end justify-center p-4 border-r border-gray-300";
+    div.innerHTML = `
+      <div class="absolute inset-0">
+        <div class="w-full h-full bg-gray-200 animate-pulse"></div>
+      </div>
+      <div class="relative z-10 flex flex-col items-center space-y-2">
+        <p class="bg-gray-700 text-white text-sm px-4 py-2 rounded shadow">${labelText}</p>
+      </div>
+    `;
+    return div;
+  }
+
+  function renderPlaceholderPair(startSceneNo){
+    container.innerHTML = "";
+    const leftLabel = `กำลังสร้างฉากที่ ${startSceneNo}…`;
+    const rightNo = startSceneNo + 1;
+    const rightLabel = rightNo <= totalScenes ? `กำลังสร้างฉากที่ ${rightNo}…` : "หน้าว่าง";
+    container.appendChild(skeletonCard(leftLabel));
+    container.appendChild(skeletonCard(rightLabel));
+  }
+
+  // ====== Render 2 หน้า ======
+  function renderScenePair(left, right){
+    waitingForNextPair = false;
+    currentAudioIndex = 0;
+    container.innerHTML = "";
+
+    [left, right].forEach((scene, idx) => {
+      const div = document.createElement("div");
+      div.className = "relative flex items-end justify-center p-4 border-r border-gray-300";
+      if (scene) {
+        const audioTag = scene.audio_url ? `<audio id="scene-audio-${idx}" src="${scene.audio_url}"></audio>` : "";
+        div.innerHTML = `
+          ${scene.image_url ? `<img src="${scene.image_url}" class="absolute inset-0 w-full h-full object-cover">` : ``}
+          <div class="relative z-10 flex flex-col items-center space-y-2">
+            <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded max-w-[90%] text-center shadow">${scene.text || ""}</p>
+            ${audioTag}
+          </div>`;
+      } else {
+        // ถ้าไม่มี scene จริง ให้ Skeleton
+        const label = `กำลังสร้างฉากที่ ${left ? left.scene_number + 1 : currentIndex + 1}…`;
+        div.appendChild(skeletonCard(label));
+      }
+      container.appendChild(div);
+    });
+
+    setTimeout(() => {
+      applyMute();
+      if (isPlaying) {
+        playInOrder(
+          document.getElementById("scene-audio-0"),
+          document.getElementById("scene-audio-1")
+        );
+      }
+    }, 50);
+  }
+
+  // ====== เล่นเสียงตามลำดับ + auto-advance ======
+  async function playInOrder(left, right){
+    currentAudios = [left, right].filter(Boolean);
+    let offset = durations.slice(0, currentIndex).reduce((s, d) => s + (d || 0), 0);
+    currentAudios.forEach(a => a && a.addEventListener("timeupdate", () => {
+      updateGlobalProgress(offset + a.currentTime);
+    }));
+
+    for (let i = currentAudioIndex; i < currentAudios.length; i++){
+      if (!isPlaying) return;
+      try{
+        await currentAudios[i].play();
+        await new Promise(res => currentAudios[i].onended = res);
+        offset += currentAudios[i].duration;
+        currentAudioIndex = i + 1;
+      }catch{}
+    }
+
+    // ไปคู่ถัดไป ถ้ามี
+    const nextLeftIdx = currentIndex + 2;
+    if (isPlaying) {
+      if (nextLeftIdx < scenesList.length) {
+        currentIndex = nextLeftIdx;
+        renderScenePair(scenesList[currentIndex], scenesList[currentIndex + 1]);
+      } else if (nextLeftIdx < totalScenes) {
+        // ยังไม่มี scene จริง → แสดง placeholder และรอ
+        currentIndex = nextLeftIdx;
+        waitingForNextPair = true;
+        renderPlaceholderPair((scenesList[currentIndex - 1]?.scene_number || 0) + 1);
+        showStatus(`กำลังสร้างฉากที่ ${currentIndex + 1} และ ${currentIndex + 2}…`);
+      }
+    }
+  }
+
+  // ====== WebSocket handling ======
+  ws.addEventListener("message", e => {
+    const d = JSON.parse(e.data);
+    // d.evt: story_status | scene_status | scene_update
+    if (d.evt === "story_status") {
+      if (d.phase === "START") {
+        totalScenes = d.total_scenes || 20;
+        showStatus(`เริ่มสร้างนิทาน (ทั้งหมด ${totalScenes} ฉาก)`);
+      } else if (d.phase === "ALL_DONE") {
+        showStatus(d.message || "สร้างครบแล้ว ✓");
+        setTimeout(hideStatus, 1500);
+      } else if (d.phase === "ERROR") {
+        showStatus(`เกิดข้อผิดพลาด: ${d.message || ""}`);
+      }
+      return;
+    }
+
+    if (d.evt === "scene_status") {
+      // แสดงข้อความสถานะละเอียดของฉาก
+      showStatus(d.message || `ฉาก ${d.scene_number}: ${d.stage}`);
+      // ถ้ากำลังรอคู่ถัดไปและเป็นฉากที่ตรงกับคู่หน้า placeholder → เก็บไว้ก่อน
+      return;
+    }
+
+    if (d.evt === "scene_update") {
+      // ได้ฉากจริงมาแล้ว → เพิ่ม/แทนที่, เรียง, preload duration
+      const ns = {
+        scene_number: d.scene_number,
+        text: d.text,
+        image_url: d.image_url,
+        audio_url: d.audio_url
+      };
+      scenesList = scenesList.filter(s => s.scene_number !== ns.scene_number);
+      scenesList.push(ns);
+      scenesList.sort((a, b) => a.scene_number - b.scene_number);
+
+      if (ns.audio_url) preloadDuration(ns.scene_number, ns.audio_url);
+
+      // ถ้ายังไม่เคยเรนเดอร์ 2 หน้าแรก → เริ่มเลย
+      if (scenesList.length === 2 && currentIndex === 0) {
+        renderScenePair(scenesList[0], scenesList[1]);
+      }
+
+      // ถ้ากำลังรอคู่ถัดไป (placeholder) และฉากที่รอครบแล้ว → แสดงจริงแทน
+      if (waitingForNextPair) {
+        const left = scenesList[currentIndex];
+        const right = scenesList[currentIndex + 1];
+        if (left && (currentIndex + 1 >= totalScenes || right)) {
+          renderScenePair(left, right);
+        }
+      }
+    }
+  });
+
+  // ====== Controls ======
+  playBtn.addEventListener("click", () => {
+    isPlaying = !isPlaying;
+    toggleIcons();
+    if (isPlaying) {
+      playInOrder(
+        document.getElementById("scene-audio-0"),
+        document.getElementById("scene-audio-1")
+      );
+    } else {
+      currentAudios.forEach(a => a && a.pause());
+    }
+  });
+
+  muteBtn.addEventListener("click", () => {
+    isMuted = !isMuted;
+    iconOn.classList.toggle("hidden", isMuted);
+    iconOff.classList.toggle("hidden", !isMuted);
+    applyMute();
+  });
+
+  prevBtn.addEventListener("click", () => {
+    if (currentIndex >= 2) {
+      currentIndex -= 2;
+      currentAudioIndex = 0;
+      renderScenePair(scenesList[currentIndex], scenesList[currentIndex + 1]);
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    const nextLeftIdx = currentIndex + 2;
+    if (nextLeftIdx < scenesList.length) {
+      currentIndex = nextLeftIdx;
+      currentAudioIndex = 0;
+      renderScenePair(scenesList[currentIndex], scenesList[currentIndex + 1]);
+    } else if (nextLeftIdx < totalScenes) {
+      currentIndex = nextLeftIdx;
+      waitingForNextPair = true;
+      renderPlaceholderPair((scenesList[currentIndex - 1]?.scene_number || 0) + 1);
+      showStatus(`กำลังสร้างฉากที่ ${currentIndex + 1} และ ${currentIndex + 2}…`);
+    }
+  });
+
+  // ====== ข้อความเริ่มต้นตอนยังไม่มีฉาก ======
+  const loading = document.createElement("div");
+  loading.id = "loading-message";
+  loading.className = "absolute inset-0 flex items-center justify-center text-gray-400 text-sm";
+  loading.innerText = "กำลังเตรียมฉากแรก…";
+  container.appendChild(loading);
+});
+</script> -->
+
+<!-- ================== แบบเก่า ================== -->
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         // 1) Helpers for formatting & calculating
@@ -565,5 +1125,1219 @@
         });
     });
 </script>
+
+
+<!-- <script>
+document.addEventListener("DOMContentLoaded", () => {
+  // ===== Helpers =====
+  function formatTime(sec){
+    const m = Math.floor(sec / 60);
+    const s = String(Math.floor(sec % 60)).padStart(2, "0");
+    return `${m}:${s}`;
+  }
+
+  // ===== DOM =====
+  const meta = document.getElementById("storybook-meta");
+  const wsScheme = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${wsScheme}://${window.location.host}/ws/storybook/${meta.dataset.storybookId}/`);
+
+  const frameRoot = document.querySelector(".relative.bg-black");     // กรอบใหญ่สีดำ
+  const container = document.querySelector(".grid.grid-cols-2");      // โซน 2 หน้า
+
+  const playBtn = document.getElementById("player-toggle");
+  const prevBtn = document.getElementById("prev-btn");
+  const nextBtn = document.getElementById("next-btn");
+  const muteBtn = document.getElementById("mute-btn");
+  const iconPlay = document.getElementById("icon-play");
+  const iconPause = document.getElementById("icon-pause");
+  const iconOn = document.getElementById("icon-sound-on");
+  const iconOff = document.getElementById("icon-sound-off");
+
+  const totalBar = document.getElementById("total-progress-bar");
+  const timeLabel = document.getElementById("global-time-display");
+
+  // ===== สถานะมุมบนซ้าย =====
+  const statusEl = document.createElement("div");
+  statusEl.id = "build-status";
+  statusEl.className = "absolute top-2 left-2 z-40 bg-black/60 text-white text-xs px-3 py-1.5 rounded-md";
+  statusEl.textContent = "กำลังสร้างพรอมต์อยู่…";
+  frameRoot.appendChild(statusEl);
+  const showStatus = (t)=> { statusEl.textContent = t; statusEl.classList.remove("hidden"); };
+  const hideStatus = ()=> statusEl.classList.add("hidden");
+
+  // ปิดปุ่มควบคุมไว้ก่อนจนกว่าจะพร้อม
+  playBtn.disabled = true; prevBtn.disabled = true; nextBtn.disabled = true;
+
+  // ===== State =====
+  const scenesMap = new Map();      // scene_number -> {scene_number,text,image_url,audio_url}
+  let currentIndex = 0;             // ชี้ซ้ายของคู่หน้าในลิสต์ที่เรียงแล้ว
+  let isPlaying = false;
+  let isMuted = false;
+  let currentAudios = [];
+  let currentAudioIndex = 0;
+  let durations = [];               // durations[i] = วินาทีของฉากที่ i+1
+  let totalDuration = 0;
+
+  let totalScenes = 20;             // ปกติ 20; ถ้า backend ส่งจำนวนมาจะอัปเดต
+  let builtCount = 0;               // นับฉากที่ “พร้อมจริง” (มีภาพ/เสียง) ที่รับมาแล้ว
+  let allReady = false;             // จะเป็น true เมื่อ builtCount >= totalScenes
+
+  // ===== Functions =====
+  function sortedScenes(){
+    return Array.from(scenesMap.values()).sort((a,b)=> a.scene_number - b.scene_number);
+  }
+
+  function computeTotalDuration(){
+    totalDuration = durations.reduce((s,d)=> s + (d||0), 0);
+    timeLabel.textContent = `00:00 / ${formatTime(totalDuration)}`;
+  }
+
+  function updateGlobalProgress(elapsed){
+    if (!totalDuration) return;
+    const pct = Math.min(elapsed / totalDuration * 100, 100);
+    totalBar.style.width = pct + "%";
+    timeLabel.textContent = `${formatTime(elapsed)} / ${formatTime(totalDuration)}`;
+  }
+
+  function applyMute(){
+    document.querySelectorAll("audio").forEach(a => a.muted = isMuted);
+  }
+
+  function toggleIcons(){
+    iconPlay.classList.toggle("hidden", isPlaying);
+    iconPause.classList.toggle("hidden", !isPlaying);
+  }
+
+  function preloadDuration(sceneNumber, url){
+    const a = new Audio(url);
+    a.preload = "metadata";
+    a.addEventListener("loadedmetadata", () => {
+      durations[sceneNumber - 1] = a.duration;
+      computeTotalDuration();
+    }, { once: true });
+  }
+
+  function renderScenePair(left, right){
+    currentAudioIndex = 0;
+    container.innerHTML = "";
+
+    [left, right].forEach((scene, idx) => {
+      const div = document.createElement("div");
+      div.className = "relative flex items-end justify-center p-4 border-r border-gray-300";
+      if (scene) {
+        const audioTag = scene.audio_url ? `<audio id="scene-audio-${idx}" src="${scene.audio_url}"></audio>` : "";
+        div.innerHTML = `
+          ${scene.image_url ? `<img src="${scene.image_url}" class="absolute inset-0 w-full h-full object-cover">` : ``}
+          <div class="relative z-10 flex flex-col items-center space-y-2">
+            <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded max-w-[90%] text-center shadow">${scene.text || ""}</p>
+            ${audioTag}
+          </div>`;
+      } else {
+        div.innerHTML = `<div class="text-gray-400 italic">Empty Page</div>`;
+      }
+      container.appendChild(div);
+    });
+
+    setTimeout(() => {
+      applyMute();
+      if (isPlaying) {
+        playInOrder(
+          document.getElementById("scene-audio-0"),
+          document.getElementById("scene-audio-1")
+        );
+      }
+    }, 50);
+  }
+
+  async function playInOrder(left, right){
+    currentAudios = [left, right].filter(Boolean);
+
+    // คำนวณ offset จากฉากก่อนหน้า
+    const list = sortedScenes();
+    let offset = 0;
+    for (let i = 0; i < currentIndex; i++){
+      const sn = list[i].scene_number;
+      offset += (durations[sn - 1] || 0);
+    }
+
+    currentAudios.forEach(a => a && a.addEventListener("timeupdate", () => {
+      updateGlobalProgress(offset + a.currentTime);
+    }));
+
+    for (let i = currentAudioIndex; i < currentAudios.length; i++){
+      if (!isPlaying) return;
+      try{
+        await currentAudios[i].play();
+        await new Promise(res => currentAudios[i].onended = res);
+        offset += currentAudios[i].duration;
+        currentAudioIndex = i + 1;
+      }catch{}
+    }
+
+    const nextLeftIdx = currentIndex + 2;
+    const s = sortedScenes();
+    if (isPlaying && nextLeftIdx < s.length) {
+      currentIndex = nextLeftIdx;
+      renderScenePair(s[currentIndex], s[currentIndex + 1] || null);
+    }
+  }
+
+  // ===== WebSocket =====
+  ws.addEventListener("message", e => {
+    const d = JSON.parse(e.data);
+
+    // ถ้า backend ส่งสถานะรวมมา ช่วยทำให้ข้อความละเอียดขึ้น
+    if (d && d.evt === "story_status") {
+      if (d.phase === "START") {
+        totalScenes = d.total_scenes || 20;
+        showStatus(`กำลังสร้างพรอมต์อยู่…`);
+      } else if (d.phase === "PROMPTING_START") {
+        showStatus("กำลังสร้างพรอมต์อยู่…");
+      } else if (d.phase === "PROMPTING_DONE") {
+        totalScenes = d.total_scenes || totalScenes;
+        showStatus(`เริ่มสร้างภาพ+เสียง (ทั้งหมด ${totalScenes} ฉาก)…`);
+      } else if (d.phase === "ALL_DONE") {
+        // จะถูกจับอีกครั้งตอน builtCount ครบ แต่ถ้ามามุมนี้ก่อนก็พร้อมเริ่ม
+        showStatus("เตรียมแสดงฉาก…");
+      } else if (d.phase === "ERROR") {
+        showStatus(`เกิดข้อผิดพลาด: ${d.message || ""}`);
+      }
+      return;
+    }
+
+    // โหมดหลัก: รับฉากที่ “พร้อมจริง” ทีละฉาก (ภาพ+เสียงพร้อม) แต่ยังไม่แสดงจนกว่าจะครบ 20
+    if (d && (d.scene_number || d.scene_number === 0)) {
+      const ns = {
+        scene_number: d.scene_number,
+        text: d.text,
+        image_url: d.image_url,
+        audio_url: d.audio_url
+      };
+
+      // เก็บฉาก
+      if (!scenesMap.has(ns.scene_number)) {
+        builtCount += 1;
+      }
+      scenesMap.set(ns.scene_number, ns);
+
+      // preload duration เพื่อพร้อมคำนวณ progress ทีหลัง
+      if (ns.audio_url) preloadDuration(ns.scene_number, ns.audio_url);
+
+      // อัปเดตข้อความความคืบหน้า
+      showStatus(`กำลังสร้างฉากที่ ${Math.min(builtCount + 1, totalScenes)}/${totalScenes} … (สร้างแล้ว ${builtCount}/${totalScenes})`);
+
+      // ถ้าครบทั้งหมดแล้ว → เริ่มเรนเดอร์คู่แรกและเปิดปุ่ม
+      if (builtCount >= totalScenes && !allReady) {
+        allReady = true;
+        const s = sortedScenes();
+        showStatus("สร้างครบแล้ว ✓ กำลังเริ่มแสดง…");
+        // เปิดปุ่มควบคุม
+        playBtn.disabled = false; prevBtn.disabled = false; nextBtn.disabled = false;
+        // แสดงคู่แรก
+        currentIndex = 0;
+        renderScenePair(s[0], s[1] || null);
+        // ซ่อนสถานะหลังหน่วงนิดหน่อย
+        setTimeout(hideStatus, 1200);
+      }
+    }
+  });
+
+  // ===== Controls =====
+  playBtn.addEventListener("click", () => {
+    if (playBtn.disabled) return;
+    isPlaying = !isPlaying;
+    toggleIcons();
+
+    if (isPlaying) {
+      const left = document.getElementById("scene-audio-0");
+      const right = document.getElementById("scene-audio-1");
+      if (!left && !right) return;
+      playInOrder(left, right);
+    } else {
+      currentAudios.forEach(a => a && a.pause());
+    }
+  });
+
+  muteBtn.addEventListener("click", () => {
+    isMuted = !isMuted;
+    iconOn.classList.toggle("hidden", isMuted);
+    iconOff.classList.toggle("hidden", !isMuted);
+    applyMute();
+  });
+
+  prevBtn.addEventListener("click", () => {
+    if (prevBtn.disabled) return;
+    const s = sortedScenes();
+    if (currentIndex >= 2) {
+      currentIndex -= 2;
+      currentAudioIndex = 0;
+      renderScenePair(s[currentIndex], s[currentIndex + 1] || null);
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    if (nextBtn.disabled) return;
+    const s = sortedScenes();
+    const nextLeftIdx = currentIndex + 2;
+
+    if (nextLeftIdx < s.length) {
+      currentIndex = nextLeftIdx;
+      currentAudioIndex = 0;
+      renderScenePair(s[currentIndex], s[currentIndex + 1] || null);
+    }
+  });
+
+});
+</script> -->
+
+
+
+
+
+<!-- <script>
+document.addEventListener("DOMContentLoaded", () => {
+  // ===== Helpers =====
+  function formatTime(sec){
+    const m = Math.floor(sec / 60);
+    const s = String(Math.floor(sec % 60)).padStart(2, "0");
+    return `${m}:${s}`;
+  }
+
+  // ===== DOM =====
+  const meta = document.getElementById("storybook-meta");
+  const wsProto = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${wsProto}://${location.host}/ws/storybook/${meta.dataset.storybookId}/`);
+
+  const frameRoot = document.querySelector(".relative.bg-black");
+  const container = document.querySelector(".grid.grid-cols-2");
+
+  const playBtn = document.getElementById("player-toggle");
+  const prevBtn = document.getElementById("prev-btn");
+  const nextBtn = document.getElementById("next-btn");
+  const muteBtn = document.getElementById("mute-btn");
+  const iconPlay = document.getElementById("icon-play");
+  const iconPause = document.getElementById("icon-pause");
+  const iconOn = document.getElementById("icon-sound-on");
+  const iconOff = document.getElementById("icon-sound-off");
+
+  const totalBar = document.getElementById("total-progress-bar");
+  const timeLabel = document.getElementById("global-time-display");
+
+  // ===== Status badge =====
+  const statusEl = document.createElement("div");
+  statusEl.className = "absolute top-2 left-2 z-40 bg-black/60 text-white text-xs px-3 py-1.5 rounded-md";
+  statusEl.textContent = "กำลังสร้างฉากที่ 1 และ 2…";
+  frameRoot.appendChild(statusEl);
+  const showStatus = (t)=> { statusEl.textContent = t; statusEl.classList.remove("hidden"); };
+  const hideStatus = ()=> statusEl.classList.add("hidden");
+
+  // ===== State =====
+  const totalScenes = 20;                 // กำหนด 20 ฉาก (ถ้าคุณส่งจำนวนจาก backend มาค่อยปรับ)
+  const scenes = new Map();               // scene_number -> {scene_number,text,image_url,audio_url}
+
+  let currentIndex = 0;                   // ชี้ “ซ้าย” ของคู่ปัจจุบัน: 0->ฉาก1/2, 2->3/4, ...
+  let isPlaying = false;
+  let isMuted = false;
+  let durations = [];                     // durations[i] = วินาทีของฉาก i+1 (index 0 = scene 1)
+  let totalDuration = 0;
+
+  // ตัวแปรรอเสียง: ถ้าไม่มีฉากฝั่งนั้นตอนต้องเล่น ให้จำไว้ พอฉากมาถึงจะเล่นทันที
+  let waitingLeftScene = null;            // หมายเลขฉากที่รอเล่นฝั่งซ้าย
+  let waitingRightScene = null;           // หมายเลขฉากที่รอเล่นฝั่งขวา
+
+  // ===== Page skeleton (ไม่ใช่ภาพปลอม แค่ข้อความสถานะ) =====
+  function expectedLeftNo(){ return currentIndex + 1; }
+  function expectedRightNo(){ return Math.min(currentIndex + 2, totalScenes); }
+
+  function pageHTML(side, data) {
+    if (!data) {
+      const no = side === "left" ? expectedLeftNo() : expectedRightNo();
+      return `
+        <div class="relative flex items-end justify-center p-4 border-r border-gray-300">
+          <div class="absolute inset-0 bg-white"></div>
+          <div class="relative z-10 flex flex-col items-center space-y-2">
+            <p class="bg-gray-700 text-white text-sm px-4 py-2 rounded shadow">กำลังสร้างฉากที่ ${no}…</p>
+          </div>
+        </div>`;
+    }
+    const audioId = side === "left" ? "audio-left" : "audio-right";
+    return `
+      <div class="relative flex items-end justify-center p-4 border-r border-gray-300">
+        ${data.image_url ? `<img src="${data.image_url}" class="absolute inset-0 w-full h-full object-cover">` : ``}
+        <div class="relative z-10 flex flex-col items-center space-y-2">
+          <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded max-w-[90%] text-center shadow">${data.text || ""}</p>
+          ${data.audio_url ? `<audio id="${audioId}" src="${data.audio_url}"></audio>` : ``}
+        </div>
+      </div>`;
+  }
+
+  function renderCurrentPair(){
+    const leftScene = scenes.get(expectedLeftNo()) || null;
+    const rightScene = (expectedRightNo() <= totalScenes) ? (scenes.get(expectedRightNo()) || null) : null;
+    container.innerHTML = pageHTML("left", leftScene) + pageHTML("right", rightScene);
+    applyMute();
+  }
+
+  // อัปเดตเฉพาะฝั่ง (ถ้ามีฉากมาถึงภายหลัง)
+  function updatePageSide(side){
+    const el = container.children[ side === "left" ? 0 : 1 ];
+    if (!el) return;
+    const data = side === "left" ? scenes.get(expectedLeftNo()) : scenes.get(expectedRightNo());
+    el.outerHTML = pageHTML(side, data || null);
+    applyMute();
+  }
+
+  // ===== Duration / Progress =====
+  function computeTotalDuration(){
+    totalDuration = durations.reduce((s,d)=> s + (d||0), 0);
+    timeLabel.textContent = `00:00 / ${formatTime(totalDuration)}`;
+  }
+
+  function preloadDuration(sceneNo, url){
+    const a = new Audio(url);
+    a.preload = "metadata";
+    a.addEventListener("loadedmetadata", () => {
+      durations[sceneNo - 1] = a.duration;
+      computeTotalDuration();
+    }, { once: true });
+  }
+
+  function updateGlobalProgress(elapsed){
+    if (!totalDuration) return;
+    const pct = Math.min(elapsed / totalDuration * 100, 100);
+    totalBar.style.width = pct + "%";
+    timeLabel.textContent = `${formatTime(elapsed)} / ${formatTime(totalDuration)}`;
+  }
+
+  function sumDurationBefore(sceneNo){
+    let sum = 0;
+    for (let i = 1; i < sceneNo; i++){
+      sum += (durations[i - 1] || 0);
+    }
+    return sum;
+  }
+
+  // ===== Playback (ฉากไหนพร้อม เล่นเลย) =====
+  function applyMute(){
+    document.querySelectorAll("audio").forEach(a => a.muted = isMuted);
+  }
+
+  function toggleIcons(){
+    iconPlay.classList.toggle("hidden", isPlaying);
+    iconPause.classList.toggle("hidden", !isPlaying);
+  }
+
+  function playSide(side){
+    const audio = document.getElementById(side === "left" ? "audio-left" : "audio-right");
+    if (!audio) return false;
+
+    const sceneNo = side === "left" ? expectedLeftNo() : expectedRightNo();
+    const baseOffset = sumDurationBefore(sceneNo);
+    audio.addEventListener("timeupdate", () => {
+      updateGlobalProgress(baseOffset + audio.currentTime);
+    });
+    audio.addEventListener("ended", () => {
+      if (side === "left") {
+        // พอซ้ายจบ → ถ้าขวาพร้อมเล่นเลย, ไม่งั้น "รอขวา"
+        const rightHas = !!document.getElementById("audio-right");
+        if (rightHas) {
+          playSide("right");
+        } else {
+          waitingRightScene = expectedRightNo();
+          showStatus(`กำลังสร้างฉากที่ ${waitingRightScene}…`);
+        }
+      } else {
+        // ขวาจบ → ไปคู่ถัดไป
+        goNextPair(true);
+      }
+    });
+
+    // เริ่มเล่น
+    audio.play().catch(()=>{});
+    return true;
+  }
+
+  function startPlaybackForCurrentPair(){
+    // ลองเล่นซ้ายก่อน ถ้าไม่มี ให้รอซ้าย
+    if (!playSide("left")) {
+      waitingLeftScene = expectedLeftNo();
+      showStatus(`กำลังสร้างฉากที่ ${waitingLeftScene}…`);
+    }
+  }
+
+  function goNextPair(auto=false){
+    // ไปฉากถัดไป (เลื่อนทีละ 2)
+    if (currentIndex + 2 >= totalScenes) {
+      showStatus("สร้างครบแล้ว ✓");
+      setTimeout(hideStatus, 1200);
+      return;
+    }
+    currentIndex += 2;
+    waitingLeftScene = null;
+    waitingRightScene = null;
+    renderCurrentPair();
+    showStatus(`กำลังสร้างฉากที่ ${expectedLeftNo()} และ ${expectedRightNo()}…`);
+
+    if (isPlaying && auto) startPlaybackForCurrentPair();
+  }
+
+  function goPrevPair(){
+    if (currentIndex >= 2) {
+      currentIndex -= 2;
+      waitingLeftScene = null;
+      waitingRightScene = null;
+      renderCurrentPair();
+      if (isPlaying) startPlaybackForCurrentPair();
+    }
+  }
+
+  // ===== Initial render =====
+  renderCurrentPair();
+
+  // ===== WebSocket: รับฉาก “พร้อมจริง” แล้วแสดงทันที =====
+  ws.addEventListener("message", (e) => {
+    const d = JSON.parse(e.data);
+
+    // รองรับทั้งรูปแบบ {evt:'scene_update', ...} หรือส่ง payload ตรง ๆ
+    const isSceneUpdate = d.evt ? d.evt === "scene_update" : (typeof d.scene_number !== "undefined");
+    if (!isSceneUpdate) return;
+
+    const sn = Number(d.scene_number);
+    const ns = {
+      scene_number: sn,
+      text: d.text,
+      image_url: d.image_url,
+      audio_url: d.audio_url
+    };
+
+    scenes.set(sn, ns);
+    if (ns.audio_url) preloadDuration(sn, ns.audio_url);
+
+    // ถ้าเป็นฉากที่กำลังแสดงอยู่ (ซ้าย/ขวา) → อัปเดตฝั่งนั้นทันที
+    if (sn === expectedLeftNo()) {
+      updatePageSide("left");
+      // ถ้ากำลังเล่นและเรากำลัง "รอซ้าย" อยู่ → เล่นเลย
+      if (isPlaying && waitingLeftScene === sn) {
+        waitingLeftScene = null;
+        playSide("left");
+      }
+    }
+    if (sn === expectedRightNo()) {
+      updatePageSide("right");
+      // ถ้ากำลังเล่นและเรากำลัง "รอขวา" อยู่ → เล่นเลย
+      if (isPlaying && waitingRightScene === sn) {
+        waitingRightScene = null;
+        playSide("right");
+      }
+    }
+
+    // อัปเดตข้อความสถานะให้บอกฉากที่กำลังสร้างถัดไป
+    const nextWant = (() => {
+      // หาฉากถัดไปที่ยังไม่มี
+      for (let i = 1; i <= totalScenes; i++){
+        if (!scenes.has(i)) return i;
+      }
+      return null;
+    })();
+    if (nextWant) {
+      // ถ้าคู่ปัจจุบันแสดงครบแล้วและขวาจบแล้ว จะมี goNextPair() เอง
+      showStatus(`กำลังสร้างฉากที่ ${nextWant}…`);
+    }
+  });
+
+  // ===== Controls =====
+  playBtn.addEventListener("click", () => {
+    isPlaying = !isPlaying;
+    toggleIcons();
+    if (isPlaying) {
+      startPlaybackForCurrentPair();
+    } else {
+      document.querySelectorAll("audio").forEach(a => a.pause());
+    }
+  });
+
+  muteBtn.addEventListener("click", () => {
+    isMuted = !isMuted;
+    iconOn.classList.toggle("hidden", isMuted);
+    iconOff.classList.toggle("hidden", !isMuted);
+    applyMute();
+  });
+
+  prevBtn.addEventListener("click", () => goPrevPair());
+  nextBtn.addEventListener("click", () => goNextPair(false));
+});
+</script> -->
+
+
+
+
+
+<!-- <script>
+document.addEventListener("DOMContentLoaded", () => {
+  // ===== Utils =====
+  const pad2 = (n)=> String(Math.floor(n)).padStart(2, "0");
+  const fmt = (s)=> `${Math.floor(s/60)}:${pad2(s%60)}`;
+
+  // ===== Elements =====
+  const meta = document.getElementById("storybook-meta");
+  const wsProto = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${wsProto}://${location.host}/ws/storybook/${meta.dataset.storybookId}/`);
+
+  const frameRoot = document.querySelector(".relative.bg-black") || document.body;
+  const container = document.querySelector(".grid.grid-cols-2");
+
+  const playBtn = document.getElementById("player-toggle");
+  const prevBtn = document.getElementById("prev-btn");
+  const nextBtn = document.getElementById("next-btn");
+  const muteBtn = document.getElementById("mute-btn");
+  const iconPlay = document.getElementById("icon-play");
+  const iconPause = document.getElementById("icon-pause");
+  const iconOn = document.getElementById("icon-sound-on");
+  const iconOff = document.getElementById("icon-sound-off");
+  const totalBar = document.getElementById("total-progress-bar");
+  const timeLabel = document.getElementById("global-time-display");
+
+  // ===== Global status (มุมซ้ายบน) =====
+  const statusEl = document.createElement("div");
+  statusEl.className = "absolute top-2 left-2 z-40 bg-black/60 text-white text-xs px-3 py-1.5 rounded-md";
+  statusEl.textContent = "กำลังสร้างพรอมต์อยู่…";
+  frameRoot.appendChild(statusEl);
+  const showStatus = (t)=> { statusEl.textContent = t; statusEl.classList.remove("hidden"); };
+  const hideStatus = ()=> statusEl.classList.add("hidden");
+
+  // ===== Create persistent page nodes once =====
+  function createPage(side, initialLabel){
+    const root = document.createElement("div");
+    root.id = `page-${side}`;
+    root.className = "relative flex items-end justify-center p-4" + (side==="left" ? " border-r border-gray-300" : "");
+
+    const img = document.createElement("img");
+    img.className = "page-img absolute inset-0 w-full h-full object-cover hidden";
+    img.alt = "";
+
+    const wrap = document.createElement("div");
+    wrap.className = "relative z-10 flex flex-col items-center space-y-2";
+
+    const text = document.createElement("p");
+    text.className = "page-text bg-gray-600 text-white text-sm px-4 py-2 rounded max-w-[90%] text-center shadow";
+    text.textContent = "";
+
+    const audio = document.createElement("audio");
+    audio.className = "page-audio w-full max-w-xs hidden";
+
+    const badge = document.createElement("div");
+    badge.className = "page-badge absolute bottom-3 left-1/2 -translate-x-1/2 bg-gray-700 text-white text-xs px-3 py-1 rounded";
+    badge.textContent = initialLabel;
+
+    wrap.appendChild(text);
+    wrap.appendChild(audio);
+    root.appendChild(img);
+    root.appendChild(wrap);
+    root.appendChild(badge);
+
+    return {root, img, text, audio, badge};
+  }
+
+  function ensurePages(){
+    if (!document.getElementById("page-left") || !document.getElementById("page-right")){
+      // เคลียร์ครั้งเดียวตอนเริ่ม เพื่อเซ็ตโครงคงที่
+      container.replaceChildren();
+      const left = createPage("left",  "กำลังสร้างฉากที่ 1…");
+      const right = createPage("right", "กำลังสร้างฉากที่ 2…");
+      container.appendChild(left.root);
+      container.appendChild(right.root);
+    }
+  }
+  ensurePages();
+
+  function pickPage(side){
+    const root = document.getElementById(`page-${side}`);
+    return {
+      root,
+      img: root.querySelector(".page-img"),
+      text: root.querySelector(".page-text"),
+      audio: root.querySelector(".page-audio"),
+      badge: root.querySelector(".page-badge")
+    };
+  }
+
+  const left  = pickPage("left");
+  const right = pickPage("right");
+
+  // ===== State =====
+  let totalScenes = 20;                 // อัปเดตได้จาก story_status ถ้ามี
+  const scenes = new Map();             // sn -> {scene_number,text,image_url,audio_url}
+  let currentIndex = 0;                 // 0=ฉาก1/2, 2=3/4, ...
+  let isPlaying = false;
+  let isMuted = false;
+  let durations = [];                   // durations[sn-1] = sec
+  let totalDuration = 0;
+
+  // รอเล่นถ้ายังไม่มา
+  let waitLeft = false;
+  let waitRight = false;
+
+  // ===== Helpers =====
+  const expectedLeft  = ()=> currentIndex + 1;
+  const expectedRight = ()=> Math.min(currentIndex + 2, totalScenes);
+
+  function nextWanted(){
+    for (let i=1; i<=totalScenes; i++){
+      if (!scenes.has(i)) return i;
+    }
+    return null;
+  }
+
+  function setBadge(side, text){
+    const p = side==="left" ? left : right;
+    p.badge.textContent = text;
+    p.badge.classList.remove("hidden");
+  }
+  function hideBadge(side){
+    const p = side==="left" ? left : right;
+    p.badge.classList.add("hidden");
+  }
+  function setImg(side, url){
+    const p = side==="left" ? left : right;
+    if (url){ p.img.src = url; p.img.classList.remove("hidden"); }
+    else { p.img.classList.add("hidden"); p.img.removeAttribute("src"); }
+  }
+  function setText(side, v){
+    const p = side==="left" ? left : right;
+    p.text.textContent = v || "";
+  }
+  function setAudio(side, url){
+    const p = side==="left" ? left : right;
+    if (url){
+      if (p.audio.src !== url){ p.audio.src = url; p.audio.load(); }
+      p.audio.classList.remove("hidden");
+      p.audio.muted = isMuted;
+    } else {
+      p.audio.classList.add("hidden");
+      p.audio.removeAttribute("src");
+    }
+  }
+
+  function fillSide(side, sn){
+    const sc = scenes.get(sn);
+    if (!sc){
+      setImg(side, null);
+      setText(side, "");
+      setAudio(side, null);
+      setBadge(side, `กำลังสร้างฉากที่ ${sn}…`);
+      return false;
+    }
+    hideBadge(side);
+    setImg(side, sc.image_url);
+    setText(side, sc.text);
+    setAudio(side, sc.audio_url);
+    return true;
+  }
+
+  function renderCurrentPairOnce(){
+    // ไม่รี DOM — แค่อัปเดตค่าของ element เดิม
+    fillSide("left", expectedLeft());
+    fillSide("right", expectedRight());
+  }
+
+  function toggleIcons(){
+    iconPlay.classList.toggle("hidden", isPlaying);
+    iconPause.classList.toggle("hidden", !isPlaying);
+  }
+
+  function applyMute(){
+    [left.audio, right.audio].forEach(a => a.muted = isMuted);
+    iconOn.classList.toggle("hidden", isMuted);
+    iconOff.classList.toggle("hidden", !isMuted);
+  }
+
+  function computeTotalDuration(){
+    totalDuration = durations.reduce((s,d)=> s + (d||0), 0);
+    timeLabel.textContent = `00:00 / ${fmt(totalDuration)}`;
+  }
+
+  function preloadDuration(sn, url){
+    const a = new Audio(url);
+    a.preload = "metadata";
+    a.addEventListener("loadedmetadata", () => {
+      durations[sn - 1] = a.duration;
+      computeTotalDuration();
+    }, { once: true });
+  }
+
+  function sumBefore(sn){
+    let sum = 0;
+    for (let i=1; i<sn; i++) sum += (durations[i-1] || 0);
+    return sum;
+  }
+
+  function attachProgress(audio, sn){
+    const base = sumBefore(sn);
+    if (audio._tuh) audio.removeEventListener("timeupdate", audio._tuh);
+    const h = ()=> {
+      const elapsed = base + audio.currentTime;
+      const pct = Math.min((elapsed / Math.max(totalDuration,1))*100, 100);
+      totalBar.style.width = `${pct}%`;
+      timeLabel.textContent = `${fmt(elapsed)} / ${fmt(totalDuration)}`;
+    };
+    audio._tuh = h;
+    audio.addEventListener("timeupdate", h);
+  }
+
+  function startPlayRight(){
+    if (!right.audio.src) return;
+    attachProgress(right.audio, expectedRight());
+    right.audio.onended = () => goNextPair(true);
+    right.audio.play().catch(()=>{});
+  }
+
+  function startPlayLeft(){
+    if (!left.audio.src) { waitLeft = true; setBadge("left", `กำลังสร้างฉากที่ ${expectedLeft()}…`); return; }
+    attachProgress(left.audio, expectedLeft());
+    left.audio.onended = () => {
+      if (right.audio.src) startPlayRight();
+      else { waitRight = true; setBadge("right", `กำลังสร้างฉากที่ ${expectedRight()}…`); }
+    };
+    left.audio.play().catch(()=>{});
+  }
+
+  function startPlaybackIfNeeded(){
+    if (!isPlaying) return;
+    startPlayLeft();
+  }
+
+  function goNextPair(auto=false){
+    if (currentIndex + 2 >= totalScenes) {
+      showStatus("สร้างครบแล้ว ✓");
+      setBadge("left", "สร้างครบแล้ว ✓");
+      setBadge("right", "สร้างครบแล้ว ✓");
+      setTimeout(()=>{ hideStatus(); hideBadge("left"); hideBadge("right"); }, 1200);
+      return;
+    }
+    currentIndex += 2;
+    waitLeft = waitRight = false;
+    renderCurrentPairOnce();
+    if (auto) startPlaybackIfNeeded();
+    const want = nextWanted();
+    if (want) showStatus(`กำลังสร้างฉากที่ ${want}…`);
+  }
+
+  function goPrevPair(){
+    if (currentIndex >= 2){
+      currentIndex -= 2;
+      waitLeft = waitRight = false;
+      renderCurrentPairOnce();
+      if (isPlaying) startPlaybackIfNeeded();
+    }
+  }
+
+  // ===== Init view =====
+  renderCurrentPairOnce();
+  applyMute();
+
+  // ===== WebSocket =====
+  ws.addEventListener("message", (e) => {
+    const d = JSON.parse(e.data);
+
+    // อัปเดตสถานะรวมถ้ามี
+    if (d && d.evt === "story_status") {
+      if (d.phase === "START") {
+        totalScenes = d.total_scenes || totalScenes;
+        showStatus("กำลังสร้างพรอมต์อยู่…");
+      } else if (d.phase === "PROMPTING_START") {
+        showStatus("กำลังสร้างพรอมต์อยู่…");
+      } else if (d.phase === "PROMPTING_DONE") {
+        totalScenes = d.total_scenes || totalScenes;
+        showStatus(`เริ่มสร้างภาพ+เสียง (ทั้งหมด ${totalScenes} ฉาก)…`);
+      } else if (d.phase === "ALL_DONE") {
+        showStatus("สร้างครบแล้ว ✓");
+        setTimeout(hideStatus, 1500);
+      } else if (d.phase === "ERROR") {
+        showStatus(`เกิดข้อผิดพลาด: ${d.message || ""}`);
+      }
+      return;
+    }
+
+    // รับฉากพร้อมจริง (ภาพ+เสียง) — แสดงทันที, ไม่รี DOM
+    const isScene = d.evt ? d.evt === "scene_update" : typeof d.scene_number !== "undefined";
+    if (!isScene) return;
+
+    const sn = Number(d.scene_number);
+    const sc = { scene_number: sn, text: d.text, image_url: d.image_url, audio_url: d.audio_url };
+    scenes.set(sn, sc);
+    if (sc.audio_url) preloadDuration(sn, sc.audio_url);
+
+    // ครั้งแรกที่ได้ฉาก → เปลี่ยนข้อความจาก "กำลังสร้างพรอมต์"
+    if (!nextWanted() || nextWanted() > 1) {
+      const want = nextWanted();
+      if (want) showStatus(`กำลังสร้างฉากที่ ${want}…`);
+      else hideStatus();
+    }
+
+    // ถ้าเป็นฉากที่กำลังแสดงอยู่ตอนนี้ ให้เติมเฉพาะค่าของ element ฝั่งนั้น
+    if (sn === expectedLeft()) {
+      fillSide("left", sn);
+      if (isPlaying && waitLeft) { waitLeft = false; startPlayLeft(); }
+    }
+    if (sn === expectedRight()) {
+      fillSide("right", sn);
+      if (isPlaying && waitRight) { waitRight = false; startPlayRight(); }
+    }
+  });
+
+  // ===== Controls =====
+  playBtn.addEventListener("click", () => {
+    isPlaying = !isPlaying;
+    toggleIcons();
+    if (isPlaying) startPlaybackIfNeeded();
+    else [left.audio, right.audio].forEach(a => a.pause());
+  });
+
+  muteBtn.addEventListener("click", () => {
+    isMuted = !isMuted;
+    applyMute();
+  });
+
+  prevBtn.addEventListener("click", goPrevPair);
+  nextBtn.addEventListener("click", () => goNextPair(false));
+});
+</script> -->
+
+
+
+<!-- 
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // ===== Config =====
+  const AUTO_PLAY_ON_FIRST_PAIR = true; // ให้เล่นอัตโนมัติเมื่อฉาก 1 และ 2 พร้อม
+
+  // ===== Utils =====
+  const pad2 = n => String(Math.floor(n)).padStart(2,"0");
+  const fmt  = s => `${Math.floor(s/60)}:${pad2(s%60)}`;
+
+  // ===== Elements =====
+  const meta = document.getElementById("storybook-meta");
+  const wsProto = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${wsProto}://${location.host}/ws/storybook/${meta.dataset.storybookId}/`);
+
+  const frameRoot = document.querySelector(".relative.bg-black") || document.body;
+  const container = document.querySelector(".grid.grid-cols-2");
+
+  const playBtn = document.getElementById("player-toggle");
+  const prevBtn = document.getElementById("prev-btn");
+  const nextBtn = document.getElementById("next-btn");
+  const muteBtn = document.getElementById("mute-btn");
+  const iconPlay = document.getElementById("icon-play");
+  const iconPause = document.getElementById("icon-pause");
+  const iconOn = document.getElementById("icon-sound-on");
+  const iconOff = document.getElementById("icon-sound-off");
+  const totalBar = document.getElementById("total-progress-bar");
+  const timeLabel = document.getElementById("global-time-display");
+
+  // ===== Global status (มุมซ้ายบน) =====
+  const statusEl = document.createElement("div");
+  statusEl.className = "absolute top-2 left-2 z-40 bg-black/60 text-white text-xs px-3 py-1.5 rounded-md";
+  statusEl.textContent = "กำลังสร้างพรอมต์อยู่…";
+  frameRoot.appendChild(statusEl);
+  const showStatus = t => { statusEl.textContent = t; statusEl.classList.remove("hidden"); };
+  const hideStatus = () => statusEl.classList.add("hidden");
+
+  // ===== Create fixed page nodes once (ไม่รีเรนเดอร์ทั้งก้อน) =====
+  function createPage(side, initialLabel){
+    const root = document.createElement("div");
+    root.id = `page-${side}`;
+    root.className = "relative flex items-end justify-center p-4" + (side==="left" ? " border-r border-gray-300" : "");
+
+    const img = document.createElement("img");
+    img.className = "page-img absolute inset-0 w-full h-full object-cover hidden";
+    img.alt = "";
+
+    const wrap = document.createElement("div");
+    wrap.className = "relative z-10 flex flex-col items-center space-y-2";
+
+    const text = document.createElement("p");
+    text.className = "page-text bg-gray-600 text-white text-sm px-4 py-2 rounded max-w-[90%] text-center shadow";
+    text.textContent = "";
+
+    const audio = document.createElement("audio");
+    audio.className = "page-audio w-full max-w-xs hidden";
+
+    const badge = document.createElement("div");
+    badge.className = "page-badge absolute bottom-3 left-1/2 -translate-x-1/2 bg-gray-700 text-white text-xs px-3 py-1 rounded";
+    badge.textContent = initialLabel;
+
+    wrap.appendChild(text);
+    wrap.appendChild(audio);
+    root.appendChild(img);
+    root.appendChild(wrap);
+    root.appendChild(badge);
+    return {root, img, text, audio, badge};
+  }
+
+  function ensurePages(){
+    if (!document.getElementById("page-left") || !document.getElementById("page-right")){
+      container.replaceChildren(); // ทำครั้งเดียวตอนเริ่ม
+      const L = createPage("left",  "กำลังสร้างฉากที่ 1…");
+      const R = createPage("right", "กำลังสร้างฉากที่ 2…");
+      container.appendChild(L.root);
+      container.appendChild(R.root);
+    }
+  }
+  ensurePages();
+
+  function pickPage(side){
+    const root = document.getElementById(`page-${side}`);
+    return {
+      img: root.querySelector(".page-img"),
+      text: root.querySelector(".page-text"),
+      audio: root.querySelector(".page-audio"),
+      badge: root.querySelector(".page-badge")
+    };
+  }
+  const left  = pickPage("left");
+  const right = pickPage("right");
+
+  // ===== State =====
+  let totalScenes = 20;                    // ถ้า backend ส่งมาใน story_status จะอัปเดต
+  const scenes = new Map();                // sn -> {scene_number,text,image_url,audio_url}
+  let currentIndex = 0;                    // 0 = (1,2), 2 = (3,4), ...
+  let isPlaying = false;
+  let isMuted = false;
+  let durations = [];                      // durations[sn-1]
+  let totalDuration = 0;
+  let waitLeft = false, waitRight = false; // รอเล่นเมื่ออีกฝั่งยังไม่มา
+
+  // ===== Helpers (ไม่แตะ innerHTML/outerHTML) =====
+  const expectedLeft  = () => currentIndex + 1;
+  const expectedRight = () => Math.min(currentIndex + 2, totalScenes);
+
+  function nextWanted(){
+    for (let i=1; i<=totalScenes; i++){
+      if (!scenes.has(i)) return i;
+    }
+    return null;
+  }
+
+  function setBadge(side, text){
+    const p = side==="left" ? left : right;
+    p.badge.textContent = text;
+    p.badge.classList.remove("hidden");
+  }
+  function hideBadge(side){
+    const p = side==="left" ? left : right;
+    p.badge.classList.add("hidden");
+  }
+  function setImg(side, url){
+    const p = side==="left" ? left : right;
+    if (url){ if (p.img.src !== url) p.img.src = url; p.img.classList.remove("hidden"); }
+    else { p.img.classList.add("hidden"); p.img.removeAttribute("src"); }
+  }
+  function setText(side, v){
+    const p = side==="left" ? left : right;
+    p.text.textContent = v || "";
+  }
+  function setAudio(side, url){
+    const p = side==="left" ? left : right;
+    if (url){
+      if (p.audio.src !== url){ p.audio.src = url; p.audio.load(); }
+      p.audio.classList.remove("hidden");
+      p.audio.muted = isMuted;
+    } else {
+      p.audio.classList.add("hidden");
+      p.audio.removeAttribute("src");
+    }
+  }
+
+  function fillSide(side, sn){
+    const sc = scenes.get(sn);
+    if (!sc){
+      setImg(side, null);
+      setText(side, "");
+      setAudio(side, null);
+      setBadge(side, `กำลังสร้างฉากที่ ${sn}…`);
+      return false;
+    }
+    hideBadge(side);
+    setImg(side, sc.image_url);
+    setText(side, sc.text);
+    setAudio(side, sc.audio_url);
+    return true;
+  }
+
+  function renderPairOnce(){
+    // อัปเดตเฉพาะค่า element เดิมเท่านั้น
+    fillSide("left", expectedLeft());
+    fillSide("right", expectedRight());
+  }
+
+  function toggleIcons(){
+    iconPlay.classList.toggle("hidden", isPlaying);
+    iconPause.classList.toggle("hidden", !isPlaying);
+  }
+
+  function applyMute(){
+    [left.audio, right.audio].forEach(a => a.muted = isMuted);
+    iconOn.classList.toggle("hidden", isMuted);
+    iconOff.classList.toggle("hidden", !isMuted);
+  }
+
+  function computeTotalDuration(){
+    totalDuration = durations.reduce((s,d)=> s + (d||0), 0);
+    timeLabel.textContent = `00:00 / ${fmt(totalDuration)}`;
+  }
+
+  function preloadDuration(sn, url){
+    const a = new Audio(url);
+    a.preload = "metadata";
+    a.addEventListener("loadedmetadata", () => {
+      durations[sn - 1] = a.duration;
+      computeTotalDuration();
+    }, { once: true });
+  }
+
+  function sumBefore(sn){
+    let sum = 0;
+    for (let i=1; i<sn; i++) sum += (durations[i-1] || 0);
+    return sum;
+  }
+
+  function attachProgress(audio, sn){
+    const base = sumBefore(sn);
+    if (audio._tuh) audio.removeEventListener("timeupdate", audio._tuh);
+    const h = ()=> {
+      const elapsed = base + audio.currentTime;
+      const pct = Math.min((elapsed / Math.max(totalDuration,1))*100, 100);
+      totalBar.style.width = `${pct}%`;
+      timeLabel.textContent = `${fmt(elapsed)} / ${fmt(totalDuration)}`;
+    };
+    audio._tuh = h;
+    audio.addEventListener("timeupdate", h);
+  }
+
+  function startPlayRight(){
+    if (!right.audio.src) return;
+    attachProgress(right.audio, expectedRight());
+    right.audio.onended = () => goNextPair(true);
+    right.audio.play().catch(()=>{});
+  }
+
+  function startPlayLeft(){
+    if (!left.audio.src) { waitLeft = true; setBadge("left", `กำลังสร้างฉากที่ ${expectedLeft()}…`); return; }
+    attachProgress(left.audio, expectedLeft());
+    left.audio.onended = () => {
+      if (right.audio.src) startPlayRight();
+      else { waitRight = true; setBadge("right", `กำลังสร้างฉากที่ ${expectedRight()}…`); }
+    };
+    left.audio.play().catch(()=>{});
+  }
+
+  function startPlaybackIfNeeded(){
+    if (!isPlaying) return;
+    startPlayLeft();
+  }
+
+  function goNextPair(auto=false){
+    if (currentIndex + 2 >= totalScenes) {
+      showStatus("สร้างครบแล้ว ✓");
+      setBadge("left","สร้างครบแล้ว ✓");
+      setBadge("right","สร้างครบแล้ว ✓");
+      setTimeout(()=>{ hideStatus(); hideBadge("left"); hideBadge("right"); }, 1200);
+      return;
+    }
+    currentIndex += 2;
+    waitLeft = waitRight = false;
+    renderPairOnce();
+    if (auto) startPlaybackIfNeeded();
+    const want = nextWanted();
+    if (want) showStatus(`กำลังสร้างฉากที่ ${want}…`);
+  }
+
+  function goPrevPair(){
+    if (currentIndex >= 2){
+      currentIndex -= 2;
+      waitLeft = waitRight = false;
+      renderPairOnce();
+      if (isPlaying) startPlaybackIfNeeded();
+    }
+  }
+
+  // ===== Init =====
+  renderPairOnce();
+  applyMute();
+
+  // ===== WebSocket =====
+  ws.addEventListener("message", (e) => {
+    const d = JSON.parse(e.data);
+
+    // สถานะรวม (ถ้าฝั่ง server ส่งมา)
+    if (d && d.evt === "story_status") {
+      if (d.phase === "START" || d.phase === "PROMPTING_START") {
+        if (d.total_scenes) totalScenes = d.total_scenes;
+        showStatus("กำลังสร้างพรอมต์อยู่…");
+      } else if (d.phase === "PROMPTING_DONE") {
+        if (d.total_scenes) totalScenes = d.total_scenes;
+        showStatus(`เริ่มสร้างภาพ+เสียง (ทั้งหมด ${totalScenes} ฉาก)…`);
+      } else if (d.phase === "ALL_DONE") {
+        showStatus("สร้างครบแล้ว ✓");
+        setTimeout(hideStatus, 1500);
+      } else if (d.phase === "ERROR") {
+        showStatus(`เกิดข้อผิดพลาด: ${d.message || ""}`);
+      }
+      return;
+    }
+
+    // ฉากพร้อมจริง (ภาพ+เสียง) → อัปเดตทันที (ไม่รี DOM)
+    const isScene = d.evt ? d.evt === "scene_update" : typeof d.scene_number !== "undefined";
+    if (!isScene) return;
+
+    const sn = Number(d.scene_number);
+    const sc = { scene_number: sn, text: d.text, image_url: d.image_url, audio_url: d.audio_url };
+    scenes.set(sn, sc);
+    if (sc.audio_url) preloadDuration(sn, sc.audio_url);
+
+    const want = nextWanted();
+    if (want) showStatus(`กำลังสร้างฉากที่ ${want}…`);
+    else hideStatus();
+
+    // ถ้าฉากนี้คือหน้าที่กำลังโชว์อยู่ → เติมค่านั้นเข้า element
+    if (sn === expectedLeft()) {
+      fillSide("left", sn);
+      if (isPlaying && waitLeft) { waitLeft = false; startPlayLeft(); }
+    }
+    if (sn === expectedRight()) {
+      fillSide("right", sn);
+      if (isPlaying && waitRight) { waitRight = false; startPlayRight(); }
+    }
+
+    // Auto play เมื่อคู่แรกพร้อม
+    if (AUTO_PLAY_ON_FIRST_PAIR && scenes.has(1) && scenes.has(2) && !isPlaying) {
+      isPlaying = true;
+      toggleIcons();
+      startPlaybackIfNeeded();
+    }
+  });
+
+  // ===== Controls =====
+  function toggleIcons(){
+    iconPlay.classList.toggle("hidden", isPlaying);
+    iconPause.classList.toggle("hidden", !isPlaying);
+  }
+
+  playBtn.addEventListener("click", () => {
+    isPlaying = !isPlaying;
+    toggleIcons();
+    if (isPlaying) startPlaybackIfNeeded();
+    else [left.audio, right.audio].forEach(a => a.pause());
+  });
+
+  muteBtn.addEventListener("click", () => {
+    isMuted = !isMuted;
+    applyMute();
+  });
+
+  prevBtn.addEventListener("click", goPrevPair);
+  nextBtn.addEventListener("click", () => goNextPair(false));
+});
+</script> -->
 
 {% endblock %}

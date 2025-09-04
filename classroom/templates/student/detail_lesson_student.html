@@ -118,6 +118,20 @@
                 <i class="fa-solid fa-bookmark mr-2"></i> รายการโปรด
             </button>
 
+            {# ใช้ Font Awesome: fa-regular / fa-solid #}
+            <button
+                class="favorite-btn flex items-center px-4 py-2 rounded-xl bg-white border shadow-sm text-gray-700 text-sm hover:bg-gray-100 transition"
+                data-id="{{ storybook.id }}"
+                data-favorited="{% if request.user in storybook.favorites.all %}true{% else %}false{% endif %}"
+                aria-pressed="{% if request.user in storybook.favorites.all %}true{% else %}false{% endif %}">
+                <i
+                    class="fa-heart {% if request.user in storybook.favorites.all %}fa-solid text-red-500{% else %}fa-regular text-gray-400{% endif %} mr-2 transition-colors"></i>
+                <span>รายการโปรด</span>
+                <span class="ml-2 text-xs text-gray-500" data-fav-count>{{ storybook.favorites.count }}</span>
+            </button>
+
+
+
             <!-- ปุ่ม ... เมนู -->
             <div class="relative">
                 <button id="menu-toggle-btn"
@@ -215,35 +229,192 @@
 
     </div>
 
+  {# === Comments (Realtime) === #}
+    <div id="comments-section" class="mt-12">
+        <h3 class="text-2xl font-bold text-gray-800 mt-12 mb-4">ความคิดเห็น</h3>
+
+        <!-- Composer: รูปของคนที่กำลังพิมพ์ = request.user -->
+        <form id="c-form" class="flex items-start gap-3">
+        <!-- avatar ผู้พิมพ์ -->
+        <img
+            src="{% if request.user.profile and request.user.profile.profile_picture %}{{ request.user.profile.profile_picture.url }}{% elif request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}"
+            class="w-10 h-10 rounded-full object-cover ring-2 ring-white" alt="avatar">
+
+        <!-- ช่องพิมพ์ -->
+        <textarea id="c-input" rows="3" required
+            class="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+            placeholder="ส่งความคิดเห็นของคุณที่นี่..."></textarea>
+
+        <!-- ปุ่มส่ง -->
+        <button class="shrink-0 rounded-2xl p-3 bg-gray-900 text-white hover:bg-black" title="ส่ง">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M3 11L21 3L13 21L11 13L3 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        </button>
+
+        <!-- ⭐️ เลือกดาว -->
+        <div id="c-stars" class="ml-3 flex items-center gap-1 select-none" aria-label="ให้คะแนน">
+            {% for i in "12345"|make_list %}
+            <button type="button" data-star="{{ forloop.counter }}"
+                    class="star-btn text-gray-300 hover:text-amber-400 transition">
+                <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.803 2.037a1 1 0 00-.364 1.118l1.07 3.292c.3.92-.755 1.688-1.54 1.118L10.5 13.347a1 1 0 00-1.175 0L5.716 16.284c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.08 8.72c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
+                </svg>
+            </button>
+            {% endfor %}
+        </div>
+
+        <span class="ml-2 text-sm text-gray-500">
+            <span id="rating-avg">{{ rating_avg|floatformat:1 }}</span>
+            (<span id="rating-count">{{ rating_count }}</span>)
+        </span>
+
+        </form>
+        
+        <!-- List: รูปของ “ผู้คอมเมนต์” = c.author -->
+        {# ฝังข้อมูลให้ JS รู้ user และสิทธิ #}
+        <div id="storybook-meta"
+            data-storybook-id="{{ storybook.id }}"
+            data-user-id="{{ request.user.id }}"
+            data-can-moderate="{% if request.user.is_superuser or request.user.is_staff or request.user.id == storybook.user_id %}1{% else %}0{% endif %}">
+        </div>
+
+        {# ในลิสต์คอมเมนต์ SSR #}
+        <ul id="c-list" class="mt-6 divide-y divide-gray-100">
+        {% for c in comments %}
+        <li class="group py-3" data-cid="{{ c.id }}" data-author-id="{{ c.author_id }}">
+        <div class="flex items-start gap-3">
+
+            <!-- avatar -->
+            <div class="relative shrink-0">
+            {% if c.author.profile and c.author.profile.profile_picture %}
+                <img src="{{ c.author.profile.profile_picture.url }}" class="w-9 h-9 rounded-full object-cover" alt="">
+            {% elif c.author.profile_picture %}
+                <img src="{{ c.author.profile_picture.url }}" class="w-9 h-9 rounded-full object-cover" alt="">
+            {% else %}
+                <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">
+                {{ c.author.get_full_name|default:c.author.email|first }}
+                </div>
+            {% endif %}
+            <span class="absolute -bottom-0 -right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+            </div>
+
+            <!-- body -->
+            <div class="min-w-0 flex-1">
+            <div class="flex items-start justify-between gap-2">
+
+                <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="font-semibold text-gray-900 truncate">
+                    {{ c.author.get_full_name|default:c.author.email }}
+                    </span>
+                    <span class="text-gray-400 text-sm">แสดงความคิดเห็นในโพสต์ของคุณ</span>
+                </div>
+
+                <p class="mt-1 text-sm text-gray-700 leading-relaxed" data-role="msg">
+                    {% if c.is_deleted %}
+                    <em class="text-gray-500">ข้อความถูกลบ</em>
+                    {% else %}
+                    {{ c.message }}
+                    {% if c.edited_at %}<span class="text-xs text-gray-500 ml-1">(แก้ไขแล้ว)</span>{% endif %}
+                    {% endif %}
+                </p>
+
+                <div class="text-xs text-gray-400 mt-1">{{ c.created_at|date:"H:i น. j F Y" }}</div>
+                </div>
+
+                <!-- เมนู 3 จุด: โชว์เฉพาะผู้มีสิทธิ -->
+                {% if request.user.id == c.author_id or request.user.is_staff or request.user.is_superuser %}
+                <div class="relative shrink-0">
+                <button class="c-menu-btn p-1.5 rounded-full text-gray-400 hover:bg-gray-100" aria-expanded="false" aria-haspopup="true">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="c-menu hidden absolute right-0 mt-2 w-36 overflow-hidden rounded-lg border bg-white shadow-lg z-10">
+                    {% if not c.is_deleted %}
+                    <button class="c-edit block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"  data-cid="{{ c.id }}">แก้ไข</button>
+                    <button class="c-del  block w-full px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50" data-cid="{{ c.id }}">ลบ</button>
+                    {% endif %}
+                </div>
+                </div>
+                {% endif %}
+
+            </div>
+            </div>
+
+        </div>
+        </li>
+
+        {% empty %}
+        <li class="py-10 text-center text-gray-500">ยังไม่มีความคิดเห็น</li>
+        {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Lesson Details Form (Read-Only) -->
     <form id="lesson-details" class="mt-8 hidden">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Lesson Name</label>
-            <p class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
-                {{ storybook.title }}
-            </p>
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Creator</label>
-            <p class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
-                {{ storybook.user.get_full_name|default:storybook.user.email }}
-            </p>
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <div class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
-                บทเรียน AI ที่สร้างจาก PDF/DOCX
+            <!-- Lesson Name -->
+            <h3 class="text-2xl font-bold text-gray-800 mt-12 mb-4">รายละเอียดบทเรียน</h3>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Lesson Name</label>
+                <input id="lesson-name" type="text" value="{{ storybook.title }}"
+                    class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
+                    placeholder="Lesson Name" readonly>
             </div>
-        </div>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Additional Content</label>
-            <div class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
-                -
+            <!-- Creator -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Creator</label>
+                <input id="lesson-creator" type="text"
+                    value="{{ storybook.user.get_full_name|default:storybook.user.email }}"
+                    class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
+                    placeholder="Creator Name" readonly>
             </div>
-        </div>
+
+            <!-- Description -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Description</label>
+                <textarea id="lesson-description"
+                    class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
+                    placeholder="Description" readonly>{{ storybook.description }}</textarea>
+            </div>
+
+            <!-- Additional Content -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Additional Content</label>
+                <textarea id="lesson-additional"
+                    class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
+                    placeholder="Additional Content" readonly>{{ storybook.additional_content }}</textarea>
+            </div>
+        
+    
+
+
+
+
+            <!-- 📥 Download Permission Section -->
+            <div class="space-y-2 mt-10">
+                <h3 class="text-lg font-semibold text-gray-900">Downloading</h3>
+                <p class="text-sm text-gray-500">Lesson Recording</p>
+
+                <div class="flex flex-col space-y-4 mt-2">
+                    <label class="flex items-start gap-3 cursor-default">
+                        <input type="radio" name="download_permission" value="public" class="accent-blue-600 mt-1 w-4 h-4"
+                            {% if storybook.download_permission == "public" %}checked{% endif %} disabled>
+                        <span class="text-gray-800 text-sm leading-5">
+                            <strong>Public</strong><br>
+                            Anyone can download your Lessons
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-default">
+                        <input type="radio" name="download_permission" value="private" class="accent-gray-400 mt-1 w-4 h-4"
+                            {% if storybook.download_permission == "private" %}checked{% endif %} disabled>
+                        <span class="text-gray-500 text-sm leading-5">
+                            <strong>Private</strong><br>
+                            Anyone can’t download your Lessons
+                        </span>
+                    </label>
+                </div>
+            </div>
     </form>
+
 
 </div>
 
@@ -311,19 +482,24 @@
 </script>
 
 <script>
-    // สำหรับแสดง/ปิด รายละเอียดบทเรียน
-    const detailsToggleBtn = document.getElementById("details-toggle-btn");
-    const lessonDetailBox = document.getElementById("lesson-details");
+document.addEventListener("DOMContentLoaded", () => {
+  const detailsToggleBtn = document.getElementById("details-toggle-btn");
+  const lessonDetailBox  = document.getElementById("lesson-details");
+  const commentsSection  = document.getElementById("comments-section");
 
-    detailsToggleBtn.addEventListener("click", () => {
-        const isHidden = lessonDetailBox.classList.contains("hidden");
-        lessonDetailBox.classList.toggle("hidden");
+  if (!detailsToggleBtn || !lessonDetailBox || !commentsSection) return;
 
-        // เปลี่ยนข้อความปุ่ม
-        detailsToggleBtn.innerText = isHidden ? "ปิดรายละเอียดบทเรียน" : "แสดงรายละเอียดบทเรียน";
-    });
+  detailsToggleBtn.addEventListener("click", () => {
+    const willShowDetails = lessonDetailBox.classList.contains("hidden"); // ตอนนี้กำลังจะโชว์รายละเอียดไหม?
+    lessonDetailBox.classList.toggle("hidden");               // สลับรายละเอียด
+    commentsSection.classList.toggle("hidden", willShowDetails); // ถ้าโชว์รายละเอียด → ซ่อนคอมเมนต์
+
+    detailsToggleBtn.innerText = willShowDetails
+      ? "ปิดรายละเอียดบทเรียน"
+      : "แสดงรายละเอียดบทเรียน";
+  });
+});
 </script>
-
 
 <!-- ฝังค่าจาก Django -->
 <div id="storybook-meta" data-storybook-id="{{ storybook.id }}" data-csrf="{{ csrf_token }}"></div>
@@ -586,5 +762,407 @@
     };
 
 </script>
+
+
+<script>
+  (function () {
+    const meta = document.getElementById("storybook-meta");
+    if (!meta) { console.warn("storybook-meta not found; skip comments WS"); return; }
+
+    const storybookId  = meta.dataset.storybookId;
+    const myId         = parseInt(meta.dataset.userId || "0", 10);
+    const canModerate  = meta.dataset.canModerate === "1";
+    const wsScheme     = location.protocol === "https:" ? "wss" : "ws";
+    const wsComments   = new WebSocket(`${wsScheme}://${location.host}/ws/storybook/${storybookId}/comments/`);
+
+    const form  = document.getElementById("c-form");
+    const input = document.getElementById("c-input");
+    const list  = document.getElementById("c-list");
+
+    // กันซ้ำด้วย SSR ids
+    const seen = new Set(Array.from(list.querySelectorAll("li[data-cid]")).map(li => String(li.dataset.cid)));
+
+    // util
+    const hasAvatar = (url) => {
+      return typeof url === "string" && url.trim() !== "" && url.trim().toLowerCase() !== "null";
+    };
+    const firstChar = (name) => ((name || "").trim() || "U").charAt(0).toUpperCase();
+
+    function ensureActions(li, d) {
+      // แสดงปุ่มแก้/ลบถ้าเป็นของตัวเอง หรือมีสิทธิ์ moderate และยังไม่ถูกลบ
+      const authorId = parseInt(li.getAttribute("data-author-id") || "0", 10);
+      const allowed  = canModerate || authorId === myId;
+      if (!allowed || d.is_deleted) return;
+
+      let right = li.querySelector(".c-actions");
+      if (!right) {
+        right = document.createElement("div");
+        right.className = "c-actions shrink-0 flex gap-3";
+        const header = li.querySelector(".flex.items-start.justify-between.gap-3");
+        header && header.appendChild(right);
+      }
+      if (!right.querySelector(`[data-cid="${d.id}"].c-edit`)) {
+        right.innerHTML = `
+          <button class="c-edit text-xs text-indigo-600 hover:underline" data-cid="${d.id}">แก้ไข</button>
+          <button class="c-del text-xs text-rose-600 hover:underline" data-cid="${d.id}">ลบ</button>
+        `;
+      }
+    }
+
+    function appendComment(d, prepend) {
+    if (!d || d.id == null) return;
+    const id = String(d.id);
+    if (seen.has(id)) return;
+
+    const allow = (meta.dataset.canModerate === "1") || (parseInt(d.author_id || 0, 10) === parseInt(meta.dataset.userId || "0", 10));
+    const hasAvatar = typeof d.avatar_url === "string" && d.avatar_url.trim() !== "" && d.avatar_url.trim().toLowerCase() !== "null";
+    const initial   = ((d.author || "").trim() || "U").charAt(0).toUpperCase();
+    const editedTag = d.edited ? `<span class="text-xs text-gray-500 ml-1">(แก้ไขแล้ว)</span>` : "";
+    const msgHtml   = d.is_deleted ? `<em class="text-gray-500">ข้อความถูกลบ</em>` : (d.message || "");
+
+    const li = document.createElement("li");
+    li.className = "group py-3";
+    li.setAttribute("data-cid", id);
+    if (d.author_id != null) li.setAttribute("data-author-id", String(d.author_id));
+
+    li.innerHTML = `
+        <div class="flex items-start gap-3">
+        <div class="relative shrink-0">
+            ${
+            hasAvatar
+                ? `<img src="${d.avatar_url}" class="w-9 h-9 rounded-full object-cover" alt="${d.author || "ผู้ใช้"}">`
+                : `<div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">${initial}</div>`
+            }
+            <span class="absolute -bottom-0 -right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+        </div>
+
+        <div class="min-w-0 flex-1">
+            <div class="flex items-start justify-between gap-2">
+
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                <span class="font-semibold text-gray-900 truncate">${d.author || "ผู้ใช้"}</span>
+                <span class="text-gray-400 text-sm">แสดงความคิดเห็นในโพสต์ของคุณ</span>
+                </div>
+
+                <p class="mt-1 text-sm text-gray-700 leading-relaxed" data-role="msg">${msgHtml}${editedTag}</p>
+                <div class="text-xs text-gray-400 mt-1">${d.created_at || ""}</div>
+            </div>
+
+            ${
+                allow ? `
+                <div class="relative shrink-0">
+                <button class="c-menu-btn p-1.5 rounded-full text-gray-400 hover:bg-gray-100" aria-expanded="false" aria-haspopup="true">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="c-menu hidden absolute right-0 mt-2 w-36 overflow-hidden rounded-lg border bg-white shadow-lg z-10">
+                    ${!d.is_deleted ? `
+                    <button class="c-edit block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"  data-cid="${d.id}">แก้ไข</button>
+                    <button class="c-del  block w-full px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50" data-cid="${d.id}">ลบ</button>
+                    ` : ``}
+                </div>
+                </div>` : ``
+            }
+
+            </div>
+        </div>
+        </div>
+    `;
+
+    prepend ? list.prepend(li) : list.appendChild(li);
+    seen.add(id);
+    }
+    // toggle เมนู 3 จุด
+    document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".c-menu-btn");
+    const anyMenu = document.querySelectorAll(".c-menu");
+    // ปิดเมนูทั้งหมดก่อน
+    anyMenu.forEach(m => m.classList.add("hidden"));
+
+    if (btn) {
+        const wrap = btn.parentElement;
+        const menu = wrap.querySelector(".c-menu");
+        if (menu) menu.classList.toggle("hidden");
+        e.stopPropagation();
+    }
+    });
+    // ปิดเมนูถ้าคลิกนอก
+
+    // สร้างคอมเมนต์
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const text = (input.value || "").trim();
+      if (!text || wsComments.readyState !== WebSocket.OPEN) return;
+      wsComments.send(JSON.stringify({ type: "create", message: text }));
+      input.value = "";
+    });
+
+    // แก้ไข/ลบ (delegation)
+    list.addEventListener("click", function (e) {
+      const editBtn = e.target.closest(".c-edit");
+      const delBtn  = e.target.closest(".c-del");
+      if (!editBtn && !delBtn) return;
+
+      const cid = (editBtn || delBtn).dataset.cid;
+      const li  = list.querySelector(`li[data-cid="${cid}"]`);
+      if (!li) return;
+
+      const authorId = parseInt(li.getAttribute("data-author-id") || "0", 10);
+      const allowed  = canModerate || authorId === myId;
+      if (!allowed) return;
+
+      const p = li.querySelector('[data-role="msg"]');
+      if (!p) return;
+
+      if (editBtn) {
+        // ถ้ามี editor อยู่แล้ว ไม่ต้องซ้อน
+        if (li.querySelector(".c-editor")) return;
+
+        const currentText = p.textContent.replace("(แก้ไขแล้ว)", "").trim();
+
+        const wrap = document.createElement("div");
+        wrap.className = "c-editor mt-2";
+        wrap.innerHTML = `
+          <textarea class="w-full rounded border border-gray-300 px-3 py-2">${currentText}</textarea>
+          <div class="mt-2 flex gap-2">
+            <button class="c-save px-3 py-1 rounded bg-indigo-600 text-white" data-cid="${cid}">บันทึก</button>
+            <button class="c-cancel px-3 py-1 rounded bg-gray-200" data-cid="${cid}">ยกเลิก</button>
+          </div>
+        `;
+        p.after(wrap);
+
+        wrap.addEventListener("click", (ev) => {
+          const save   = ev.target.closest(".c-save");
+          const cancel = ev.target.closest(".c-cancel");
+          if (!save && !cancel) return;
+
+          if (cancel) {
+            wrap.remove();
+            return;
+          }
+          if (save) {
+            const newText = wrap.querySelector("textarea").value.trim();
+            if (!newText) return;
+            wsComments.send(JSON.stringify({ type: "update", id: parseInt(cid, 10), message: newText }));
+            wrap.remove(); // รอ server broadcast
+          }
+        });
+        return;
+      }
+
+      if (delBtn) {
+        if (!confirm("ลบความคิดเห็นนี้?")) return;
+        wsComments.send(JSON.stringify({ type: "delete", id: parseInt(cid, 10) }));
+        return;
+      }
+    });
+
+    // รับ event จาก server
+    wsComments.addEventListener("message", function (e) {
+      const msg = JSON.parse(e.data);
+
+      if (msg.event === "init_comments") {
+        const arr = msg.data || [];
+        // เซิร์ฟเวอร์ส่งเก่า->ใหม่ เรา prepend เพื่อให้ใหม่สุดอยู่บน
+        for (const d of arr) appendComment(d, true);
+        return;
+      }
+
+      if (msg.event === "comment") {
+        appendComment(msg.data, true); // ใหม่สุดอยู่บน
+        return;
+      }
+
+      if (msg.event === "updated") {
+        const d  = msg.data;
+        const li = list.querySelector(`li[data-cid="${String(d.id)}"]`);
+        if (!li) { appendComment(d, true); return; }
+        const p = li.querySelector('[data-role="msg"]');
+        if (p) {
+          p.textContent = d.message || "";
+          if (d.edited) {
+            const tag = document.createElement("span");
+            tag.className = "text-xs text-gray-500 ml-2";
+            tag.textContent = "(แก้ไขแล้ว)";
+            p.appendChild(tag);
+          }
+        }
+        ensureActions(li, d);
+        return;
+      }
+
+      if (msg.event === "deleted") {
+        const d  = msg.data;
+        const li = list.querySelector(`li[data-cid="${String(d.id)}"]`);
+        if (!li) return;
+        const p = li.querySelector('[data-role="msg"]');
+        if (p) p.innerHTML = `<em class="text-gray-500">ข้อความถูกลบ</em>`;
+        li.querySelectorAll(".c-edit, .c-del").forEach(btn => btn.remove());
+        return;
+      }
+    });
+  })();
+</script>
+
+
+<script>
+    (function () {
+        const meta = document.getElementById("storybook-meta");
+        if (!meta) return;
+
+        const wsScheme = location.protocol === "https:" ? "wss" : "ws";
+        const storybookId = meta.dataset.storybookId;
+        const myId = parseInt(meta.dataset.userId || "0", 10);
+
+        // ใช้ช่อง rating แยกจากคอมเมนต์
+        const wsRating = new WebSocket(`${wsScheme}://${location.host}/ws/storybook/${storybookId}/rating/`);
+
+        // อ้างอิง element
+        const starsBox = document.getElementById("c-stars");
+        const starBtns = starsBox ? starsBox.querySelectorAll(".star-btn") : [];
+        const avgEl = document.getElementById("rating-avg");
+        const cntEl = document.getElementById("rating-count");
+
+        let myRating = 0;
+
+        function paintStars(val) {
+            starBtns.forEach((btn, i) => {
+                const svg = btn.querySelector("svg");
+                const on = i < val;
+                svg.classList.toggle("text-amber-400", on);
+                svg.classList.toggle("text-gray-300", !on);
+            });
+        }
+
+        // hover preview
+        starBtns.forEach(btn => {
+            btn.addEventListener("mouseenter", () => {
+                const v = parseInt(btn.dataset.star, 10);
+                paintStars(v);
+            });
+        });
+        starsBox?.addEventListener("mouseleave", () => paintStars(myRating));
+
+        // click เพื่อให้คะแนน
+        starsBox?.addEventListener("click", (e) => {
+            const btn = e.target.closest(".star-btn");
+            if (!btn || wsRating.readyState !== WebSocket.OPEN) return;
+            const value = parseInt(btn.dataset.star, 10);
+            wsRating.send(JSON.stringify({ type: "rate", value }));
+
+            // feedback ทันที
+            myRating = value;
+            paintStars(myRating);
+        });
+
+        // ฟังข้อความจาก server
+        wsRating.addEventListener("message", (e) => {
+            let msg;
+            try { msg = JSON.parse(e.data); } catch { return; }
+
+            if (msg.event === "rating_init") {
+                myRating = msg.data.user_value || 0;
+                paintStars(myRating);
+                if (avgEl) avgEl.textContent = (msg.data.avg || 0).toFixed(1);
+                if (cntEl) cntEl.textContent = msg.data.count || 0;
+                return;
+            }
+
+            if (msg.event === "rating") {
+                if (avgEl) avgEl.textContent = (msg.data.avg || 0).toFixed(1);
+                if (cntEl) cntEl.textContent = msg.data.count || 0;
+
+                // ถ้าเป็นของเราเอง ให้ทาสีตามค่าที่เพิ่งให้
+                if (parseInt(msg.data.user_id, 10) === myId) {
+                    myRating = msg.data.value || 0;
+                    paintStars(myRating);
+                }
+                return;
+            }
+        });
+    })();
+</script>
+
+<script>
+(function () {
+  function getCSRF() {
+    const m = document.querySelector('meta[name="csrf-token"]');
+    if (m) return m.content;
+    const ck = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+    return ck ? ck[1] : "";
+  }
+
+  function applyFavStateFA(icon, on) {
+    if (!icon) return;
+
+    // ตรวจเวอร์ชันจากคลาสปัจจุบันของไอคอน
+    const isV5 = icon.classList.contains('fas') || icon.classList.contains('far');
+
+    // 1) ลบคลาส style ทั้งหมดก่อน (กันชนกัน)
+    ['fa-solid','fa-regular','fas','far'].forEach(c => icon.classList.remove(c));
+
+    // 2) ใส่คลาส style ให้ตรงเวอร์ชัน
+    if (isV5) {
+      icon.classList.add(on ? 'fas' : 'far');       // FA v5
+    } else {
+      icon.classList.add(on ? 'fa-solid' : 'fa-regular'); // FA v6
+    }
+
+    // 3) ให้แน่ใจว่ามี fa-heart เสมอ
+    if (!icon.classList.contains('fa-heart')) icon.classList.add('fa-heart');
+
+    // 4) ลบคลาสสีเก่าที่ขึ้นต้นด้วย text-
+    [...icon.classList].forEach(c => c.startsWith('text-') && icon.classList.remove(c));
+
+    // 5) ใส่สีใหม่
+    icon.classList.add(on ? 'text-red-500' : 'text-gray-400');
+  }
+
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.favorite-btn');
+    if (!btn) return;
+
+    if (btn.dataset.busy === '1') return;
+    btn.dataset.busy = '1';
+
+    const id   = btn.dataset.id;
+    const was  = btn.dataset.favorited === 'true';
+    const icon = btn.querySelector('i.fa-heart');
+    const cnt  = btn.querySelector('[data-fav-count]');
+
+    // Optimistic UI
+    applyFavStateFA(icon, !was);
+    btn.dataset.favorited = (!was).toString();
+    btn.setAttribute('aria-pressed', (!was).toString());
+
+    try {
+      const res = await fetch(`/storybook/${id}/toggle-favorite/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRF(), 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin',
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+
+      // Sync ตามผลจริงจากเซิร์ฟเวอร์
+      applyFavStateFA(icon, !!data.favorited);
+      btn.dataset.favorited = data.favorited ? 'true' : 'false';
+      btn.setAttribute('aria-pressed', data.favorited ? 'true' : 'false');
+      if (cnt && typeof data.count === 'number') cnt.textContent = data.count;
+    } catch (err) {
+      // Rollback ถ้าพลาด
+      applyFavStateFA(icon, was);
+      btn.dataset.favorited = was.toString();
+      btn.setAttribute('aria-pressed', was.toString());
+      console.error('Toggle favorite failed:', err);
+    } finally {
+      btn.dataset.busy = '0';
+    }
+  });
+})();
+</script>
+
+
+
 
 {% endblock %}
