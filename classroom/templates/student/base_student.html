@@ -84,6 +84,19 @@
                 <span class="text">รายการโปรด</span>
               </a>
             </li>
+            <li>
+              <a href="{% url 'notifications_list' %}" class="flex items-center gap-2">
+                <span class="relative inline-flex w-6 h-6 items-center justify-center">
+                  <i class="icon ph-bold ph-bell text-[20px] leading-none"></i>              
+                  <span id="notif-badge"
+                    class="absolute -top-0 -right-0 -translate-y-1/4 translate-x-1/5
+                          w-2.5 h-2.5 rounded-full bg-red-600 hidden"></span>
+                </span>
+
+                <span class="text">การแจ้งเตือน</span>
+              </a>
+            </li>
+          </ul>
         </div>
         <div class="menu">
           <p class="title">เกี่ยวกับ</p>
@@ -147,5 +160,29 @@
   <!-- Custom JS -->
   <script src="{% static 'js/script.js' %}"></script>
 </body>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  function updateBadge() {
+    fetch("{% url 'notifications_unread_count' %}")
+      .then(res => res.json())
+      .then(data => {
+        const badge = document.getElementById("notif-badge");
+        if (!badge) return;
+        if (data.count > 0) {
+          badge.classList.remove("hidden");
+        } else {
+          badge.classList.add("hidden");
+        }
+      })
+      .catch(err => console.error("Badge error", err));
+  }
+
+  // โหลดครั้งแรก
+  updateBadge();
+  // อัปเดตทุก 30 วินาที
+  setInterval(updateBadge, 30000);
+});
+</script>
 
 </html>

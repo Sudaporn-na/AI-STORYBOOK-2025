@@ -247,7 +247,10 @@
 
 </div>
 
-
+<div id="storybook-meta"
+     data-storybook-id="{{ storybook.id }}"
+     data-csrf="{{ csrf_token }}">
+</div>
 
 
 
@@ -258,6 +261,24 @@
     document.getElementById('share-btn').addEventListener('click', async () => {
         const btn = document.getElementById('share-btn');
         const url = btn.dataset.url;
+        
+        const meta = document.getElementById("storybook-meta");
+        const storybookId = meta.dataset.storybookId;
+        const csrfToken = meta.dataset.csrf;
+
+        // ยิงไป backend เพื่อบันทึก Notification
+        fetch(`/storybook/${storybookId}/share/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken,
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.ok) {
+                console.log("ส่งแจ้งเตือนให้ครูเรียบร้อย");
+            }
+        });
 
         // ถ้าเบราว์เซอร์รองรับ Web Share API (มือถือ/บาง desktop)
         if (navigator.share) {

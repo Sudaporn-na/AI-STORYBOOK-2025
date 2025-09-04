@@ -1,0 +1,129 @@
+{% extends "teacher/base_teacher.html" %}
+{% load humanize %}
+{% block content %}
+<div class="w-full px-6 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-3xl font-bold">แจ้งเตือน</h1>
+    <div class="flex items-center gap-3">
+      <span class="text-sm text-gray-500">ยังไม่อ่าน: {{ unread_count }}</span>
+      <button id="markAllRead" class="px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50">ทำทั้งหมดเป็นอ่านแล้ว</button>
+    </div>
+  </div>
+
+  <ul class="divide-y divide-gray-100" id="notifList">
+    {% for n in notifications %}
+    <li class="flex items-start p-6 pr-8 bg-white border rounded-xl shadow-sm w-full {{ n.is_read|yesno:'opacity-70,opacity-100' }}">
+      <!-- ไอคอน+สีตาม event_type -->
+      <div class="w-12 h-12 flex items-center justify-center shrink-0 ml-1 mr-4 rounded-2xl ring-1
+      {% if n.event_type == 'lesson_uploaded' or n.event_type == 'new_lesson' %}
+        bg-emerald-100 ring-emerald-200 text-emerald-700
+      {% elif n.event_type == 'test_submitted' %}
+        bg-fuchsia-100 ring-fuchsia-200 text-fuchsia-700
+      {% elif n.event_type == 'student_joined' %}
+        bg-slate-200 ring-slate-300 text-slate-700
+      {% elif n.event_type == 'student_downloaded' %}
+        bg-amber-100 ring-amber-200 text-amber-700
+      {% elif n.event_type == 'student_shared' %}
+        bg-violet-100 ring-violet-200 text-violet-700
+      {% else %}
+        bg-slate-100 ring-slate-200 text-slate-700
+      {% endif %}
+    ">
+      {% if n.event_type == 'lesson_uploaded' or n.event_type == 'new_lesson' %}
+        <i class="fa-solid fa-book-open text-base"></i>
+      {% elif n.event_type == 'test_submitted' %}
+        <i class="fa-solid fa-flask text-base"></i>
+      {% elif n.event_type == 'student_joined' %}
+        <i class="fa-solid fa-user-plus text-base"></i>
+      {% elif n.event_type == 'student_downloaded' %}
+        <i class="fa-solid fa-download text-base"></i>
+      {% elif n.event_type == 'student_shared' %}
+        <i class="fa-solid fa-share-nodes text-base"></i>
+      {% else %}
+        <i class="fa-solid fa-bell text-base"></i>
+      {% endif %}
+    </div>
+
+      <div class="flex-1 min-w-0">
+        <div class="flex items-baseline justify-between">
+          <h3 class="font-semibold text-gray-900 truncate">{{ n.verb }}</h3>
+          <div class="text-xs text-gray-500 whitespace-nowrap mr-2">{{ n.created_at|naturaltime }}</div>
+        </div>
+        {% if n.description %}
+          <p class="text-sm text-gray-600 mt-0.5 truncate">{{ n.description }}</p>
+        {% endif %}
+        <div class="mt-2 flex gap-3">
+          {% if n.target_url %}
+            <a href="{{ n.target_url }}" class="text-xs text-indigo-600 underline">ดูรายละเอียด</a>
+          {% endif %}
+          {% if not n.is_read %}
+            <button data-id="{{ n.id }}" class="mark-read text-xs text-gray-500 hover:text-gray-800">ทำเป็นอ่านแล้ว</button>
+          {% endif %}
+        </div>
+      </div>
+    </li>
+    {% empty %}
+    <li class="py-10 text-center text-gray-500">ยังไม่มีการแจ้งเตือน</li>
+    {% endfor %}
+  </ul>
+
+  {% if notifications.paginator.num_pages > 1 %}
+  <div class="flex items-center justify-between mt-6">
+    <div class="text-sm text-gray-500">หน้า {{ notifications.number }} / {{ notifications.paginator.num_pages }}</div>
+    <div class="flex gap-2">
+      {% if notifications.has_previous %}
+        <a href="?page={{ notifications.previous_page_number }}" class="px-3 py-1 border rounded-md text-sm">ก่อนหน้า</a>
+      {% endif %}
+      {% if notifications.has_next %}
+        <a href="?page={{ notifications.next_page_number }}" class="px-3 py-1 border rounded-md text-sm">ถัดไป</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+(function(){
+  // ดึง CSRF จากคุกกี้
+  function getCookie(name){
+    let v=null; document.cookie.split(';').forEach(c=>{
+      c=c.trim(); if(c.startsWith(name+'=')) v=decodeURIComponent(c.slice(name.length+1));
+    }); return v;
+  }
+  const csrftoken = getCookie('csrftoken') || "{{ csrf_token }}";
+
+  // helper: ซ่อน badge ถ้ามี
+  function hideBadge(){
+    const badge = document.getElementById('notif-badge');
+    if (badge) badge.classList.add('hidden');
+  }
+
+  // ทำเป็นอ่านแล้ว (รายรายการ)
+  document.querySelectorAll('.mark-read').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+        btn.disabled = true;
+        fetch("{% url 'notifications_mark_read' 0 %}".replace("0", btn.dataset.id), {method:'POST', headers:{'X-CSRFToken': csrftoken}})
+    //   fetch(`/notifications/mark-read/${btn.dataset.id}/`, {method:'POST', headers:{'X-CSRFToken': csrftoken}})
+        .then(()=>{
+            hideBadge();
+            location.reload();
+        });
+    });
+  });
+
+  // ทำทั้งหมดเป็นอ่านแล้ว
+  const markAll=document.getElementById('markAllRead');
+  if(markAll){
+    markAll.addEventListener('click', ()=>{
+        markAll.disabled = true;
+        fetch("{% url 'notifications_mark_all_read' %}", {method:'POST', headers:{'X-CSRFToken': csrftoken}})
+    //   fetch(`/notifications/mark-all-read/`, {method:'POST', headers:{'X-CSRFToken': csrftoken}})
+        .then(()=>{
+            hideBadge();
+            location.reload();
+        });
+    });
+  }
+})();
+</script>
+{% endblock %}
