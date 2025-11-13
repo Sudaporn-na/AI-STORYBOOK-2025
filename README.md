@@ -36,6 +36,9 @@ cd DSSI-68
 
 ### 2. สร้าง Virtual Environment
 ```
+py -3.12 -m venv .venv
+```
+```
 python -m venv .venv
 ```
 
@@ -136,3 +139,4 @@ del .\security.log
 ```
 uvicorn classroom_project.asgi:application --host 127.0.0.1 --port 8000
 ```
+
