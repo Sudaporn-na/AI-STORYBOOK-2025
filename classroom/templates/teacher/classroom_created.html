@@ -2,6 +2,22 @@
 {% block title %}หน้าหลัก{% endblock %}
 
 {% block content %}
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brandDeep: '#3F2B96',   // primary deep purple
+          brandMid:  '#5B49C9',   // mid purple
+          divider:   '#2a1f5f',   // dark divider
+          yunaBg:    '#F3F9FC',   // soft bg
+        }
+      }
+    }
+  }
+</script>
+
 <div class="max-w-7xl mx-auto px-6 py-10">
 
   <!-- Header -->
@@ -9,7 +25,7 @@
     <h1 class="text-3xl font-bold">หลักสูตร</h1>
     {% if user.user_type == 'teacher' %}
     <a href="{% url 'class_create' %}"
-      class="flex items-center gap-2 text-sm px-4 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition">
+      class="flex items-center gap-2 text-sm px-4 py-2 bg-brandDeep text-white rounded-full hover:bg-indigo-700 transition">
       <span class="text-lg font-bold">+</span> สร้างห้องเรียน
     </a>
     {% endif %}
@@ -61,18 +77,36 @@
       {% endif %}
 
       <div class="p-5 space-y-2">
-        <!-- ชื่อวิชา + ปุ่มลบ (ถ้าเป็นเจ้าของ) -->
+        <!-- ชื่อวิชา + ปุ่ม 3 จุด -->
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold">{{ classroom.name }}</h3>
+
           {% if user == classroom.teacher %}
-          <form method="post" action="{% url 'delete_classroom' classroom.id %}"
-            onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบชั้นเรียนนี้? ทุกข้อมูลจะถูกลบตามไปด้วย');"
-            class="inline">
-            {% csrf_token %}
-            <button type="submit" class="text-red-600 hover:text-red-800" title="ลบชั้นเรียน">
-              <i class="bi bi-trash"></i>
+          <!-- ปุ่ม 3 จุด -->
+          <div class="relative inline-block text-left">
+            <button type="button" 
+                    class="text-gray-500 hover:text-gray-700 focus:outline-none"
+                    onclick="toggleMenu('{{ classroom.id }}')">
+              <i class="bi bi-three-dots-vertical text-lg"></i>
             </button>
-          </form>
+
+            <!-- เมนูแก้ไข/ลบ -->
+            <div id="menu-{{ classroom.id }}" 
+                class="hidden absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+              <a href="{% url 'edit_classroom' classroom.id %}" 
+                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                แก้ไขรายละเอียด
+              </a>
+              <form method="post" action="{% url 'delete_classroom' classroom.id %}"
+                    onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบชั้นเรียนนี้? ทุกข้อมูลจะถูกลบตามไปด้วย');">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                  ลบชั้นเรียน
+                </button>
+              </form>
+            </div>
+          </div>
           {% endif %}
         </div>
 
@@ -82,6 +116,9 @@
         </p>
         <p class="text-sm text-gray-600">
           สวัสดี, ครูชื่อ {{ classroom.teacher.first_name }}. มาเริ่มเรียนรู้ไปพร้อมๆ กัน
+        </p>
+        <p class="text-sm text-gray-600">
+          {{ classroom.description|default:"ไม่มีคำอธิบายสำหรับห้องเรียนนี้" }}
         </p>
 
         <!-- ลิงก์เข้าห้องเรียน ยังคงตำแหน่งเดิม -->
@@ -100,6 +137,21 @@
 
 </div>
 
+<script>
+  function toggleMenu(id) {
+    document.querySelectorAll('[id^="menu-"]').forEach(el => {
+      if (el.id !== 'menu-' + id) el.classList.add('hidden');
+    });
+    const menu = document.getElementById('menu-' + id);
+    menu.classList.toggle('hidden');
+  }
 
+  // คลิกนอกเมนูเพื่อปิด
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.relative.inline-block.text-left')) {
+      document.querySelectorAll('[id^="menu-"]').forEach(el => el.classList.add('hidden'));
+    }
+  });
+</script>
 
 {% endblock %}

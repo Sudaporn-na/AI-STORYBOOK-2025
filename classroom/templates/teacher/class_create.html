@@ -24,7 +24,7 @@
     </p>
 
     {% if user.user_type == 'teacher' %}
-    <!-- ✅ ฟอร์มสร้างห้องเรียน -->
+    <!-- ฟอร์มสร้างห้องเรียน -->
     <form method="post" action="{% url 'class_create' %}" enctype="multipart/form-data"
       class="space-y-6 bg-white p-6 rounded-xl shadow">
       {% csrf_token %}

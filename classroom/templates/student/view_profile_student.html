@@ -6,107 +6,105 @@
 <div class="bg-gray-50 w-full font-poppins text-gray-700 min-h-screen px-6 py-8">
   <div class="max-w-5xl mx-auto">
 
-    <!-- ✅ Profile Display -->
     <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
       <div>
-        <h2 class="text-lg font-semibold mb-2">Profile Details</h2>
-        <p class="text-sm text-gray-500">This is your current profile information.</p>
+        <h2 class="text-lg font-semibold mb-2">ดูโปรไฟล์ของคุณ</h2>
+        <p class="text-sm text-gray-500">นี่คือข้อมูลโปรไฟล์ปัจจุบันของคุณ</p>
       </div>
       <div class="md:col-span-2 flex flex-col gap-4">
         <div class="flex gap-8 items-center">
           <div class="flex flex-col items-center gap-2">
-            {% if user.profile_picture %}
-            <img src="{{ user.profile_picture.url }}" alt="Profile" class="w-20 h-20 rounded-full object-cover" />
+            {% if profile.profile_picture %}
+            <img src="{{ profile.profile_picture.url }}" alt="Profile" class="w-20 h-20 rounded-full object-cover" />
             {% else %}
             <img src="{% static 'images/default-profile.png' %}" alt="Profile" class="w-20 h-20 rounded-full object-cover" />
             {% endif %}
-            <p class="text-xs text-gray-500">Current profile picture</p>
-            <!-- ✅ Back & Share Buttons -->
+            <p class="text-xs text-gray-500">รูปโปรไฟล์ปัจจุบัน</p>
             <div class="flex justify-end mt-6 gap-4">
               <button onclick="copyProfileLink()" type="button"
                 class="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 border border-gray-300 rounded-full shadow hover:bg-gray-100 transition">
                   <i class="bi bi-share"></i>
-                Share Profile
+                เเชร์ลิงค์โปรไฟล์
               </button>
 
               <a href="{% url 'profile_settings_student' %}"
-                class="px-5 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition">Edit Profile</a>
+                class="px-5 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition">เเก้ไขโปรไฟล์</a>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ✅ Personal Info -->
+
     <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
       <div>
-        <h2 class="text-lg font-semibold mb-2">Personal Info</h2>
-        <p class="text-sm text-gray-500">Your basic personal details.</p>
+        <h2 class="text-lg font-semibold mb-2">ข้อมูลส่วนบุคคล</h2>
+        <p class="text-sm text-gray-500">คุณสามารถเปลี่ยนการตั้งค่าข้อมูลส่วนตัวของคุณได้ที่นี่</p>
       </div>
       <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="text-sm font-medium text-gray-700">Full Name</label>
+          <label class="text-sm font-medium text-gray-700">ชื่อนามสกุล</label>
           <input type="text" value="{{ user.get_full_name }}" readonly
             class="w-full px-3 py-2 border border-gray-300 rounded-full bg-gray-100 text-gray-800 shadow-sm cursor-default focus:outline-none">
         </div>
         <div>
-          <label class="text-sm font-medium text-gray-700">Email</label>
+          <label class="text-sm font-medium text-gray-700">อีเมล</label>
           <input type="email" value="{{ user.email }}" readonly
             class="w-full px-3 py-2 border border-gray-300 rounded-full bg-gray-100 text-gray-800 shadow-sm cursor-default focus:outline-none">
         </div>
       </div>
     </div>
 
-    <!-- ✅ Classroom Info -->
+
     <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
       <div>
-        <h2 class="text-lg font-semibold mb-2">Classroom Info</h2>
+        <h2 class="text-lg font-semibold mb-2">รหัสชั้นเรียนสาธารณะ</h2>
       </div>
       <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="text-sm font-medium text-gray-700">Teaching Subjects</label>
-          <input type="text" value="{{ user.teaching_subjects }}" readonly
+          <label class="text-sm font-medium text-gray-700">วิชาที่สอน</label>
+          <input type="text" value="{{ profile.teaching_subjects }}" readonly
             class="w-full px-3 py-2 border border-gray-300 rounded-full bg-gray-100 text-gray-800 shadow-sm cursor-default focus:outline-none">
         </div>
         <div>
-          <label class="text-sm font-medium text-gray-700">Class Code</label>
-          <input type="text" value="{{ user.class_code }}" readonly
+          <label class="text-sm font-medium text-gray-700">รหัสชั้นเรียน</label>
+          <input type="text" value="{{ profile.class_code }}" readonly
             class="w-full px-3 py-2 border border-gray-300 rounded-full bg-gray-100 text-gray-800 shadow-sm cursor-default focus:outline-none">
         </div>
         <div class="md:col-span-2">
-          <label class="text-sm font-medium text-gray-700">Classroom Link</label>
-          <input type="text" value="{{ user.classroom_link }}" readonly
+          <label class="text-sm font-medium text-gray-700">ลิงค์ชั้นเรียน</label>
+          <input type="text" value="{{ profile.classroom_link }}" readonly
             class="w-full px-3 py-2 border border-gray-300 rounded-full bg-gray-100 text-gray-800 shadow-sm cursor-default focus:outline-none">
         </div>
       </div>
     </div>
 
-    <!-- ✅ Bio -->
+
     <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
       <div>
-        <h2 class="text-lg font-semibold mb-2">Bio</h2>
+        <h2 class="text-lg font-semibold mb-2">คำอธิบายเกี่ยวกับตัวเอง</h2>
+        <p class="text-sm text-gray-500">นี่จะเป็นเรื่องราวหลักของคุณ เก็บไว้ให้ยาวๆ เลย</p>
       </div>
       <div class="md:col-span-2">
         <textarea rows="4" readonly
-          class="w-full px-3 py-2 border border-gray-300 rounded-xl bg-gray-100 text-gray-800 shadow-sm cursor-default focus:outline-none">{{ user.bio }}</textarea>
+          class="w-full px-3 py-2 border border-gray-300 rounded-xl bg-gray-100 text-gray-800 shadow-sm cursor-default focus:outline-none">{{ profile.bio }}</textarea>
       </div>
     </div>
 
-    <!-- ✅ Social Media -->
     <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
       <div>
-        <h2 class="text-lg font-semibold mb-2">Social Media Links</h2>
-        <p class="text-sm text-gray-500">Your public contact information.</p>
+        <h2 class="text-lg font-semibold mb-2">ลิงค์โซเชียลมีเดีย</h2>
+        <p class="text-sm text-gray-500">ลิงค์สำหรับโซเชียลมีเดียของคุณ</p>
       </div>
       <div class="md:col-span-2 space-y-4">
         <div>
-          <label class="text-sm font-medium text-gray-700">Facebook</label>
-          <input type="text" value="{{ user.facebook }}" readonly
+          <label class="text-sm font-medium text-gray-700">facebook.com/</label>
+          <input type="text" value="{{ profile.facebook }}" readonly
             class="w-full px-3 py-2 border border-gray-300 rounded-full bg-gray-100 text-gray-800 shadow-sm cursor-default focus:outline-none">
         </div>
         <div>
-          <label class="text-sm font-medium text-gray-700">Line</label>
-          <input type="text" value="{{ user.line }}" readonly
+          <label class="text-sm font-medium text-gray-700">line.com/</label>
+          <input type="text" value="{{ profile.line }}" readonly
             class="w-full px-3 py-2 border border-gray-300 rounded-full bg-gray-100 text-gray-800 shadow-sm cursor-default focus:outline-none">
         </div>
       </div>
@@ -115,7 +113,6 @@
   </div>
 </div>
 
-<!-- ✅ JS Function: Copy profile link -->
 <script>
   function copyProfileLink() {
     navigator.clipboard.writeText(window.location.href).then(() => {

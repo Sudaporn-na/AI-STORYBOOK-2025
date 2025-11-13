@@ -1,0 +1,70 @@
+{% extends "teacher/base_teacher.html" %}
+{% load static %}
+{% block title %}แก้ไขรายละเอียดห้องเรียน{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-10 space-y-8">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">แก้ไขรายละเอียดห้องเรียน</h1>
+        <a href="{% url 'classroom_created' %}" class="text-sm text-indigo-500 hover:underline">← กลับไปหน้าหลัก</a>
+    </div>
+
+    <form method="post" action="{% url 'edit_classroom' classroom.id %}" enctype="multipart/form-data" class="space-y-8">
+        {% csrf_token %}
+
+        <!-- ข้อมูลห้องเรียน -->
+        <div class="bg-white border border-gray-200 p-6 rounded-lg shadow-sm space-y-4">
+            <!-- ชื่อห้องเรียน -->
+            <div>
+                <label class="font-semibold text-gray-700">ชื่อห้องเรียน</label>
+                <input type="text" name="name" value="{{ classroom.name }}"
+                    class="mt-1 w-full border rounded-md px-3 py-2 text-sm" required>
+            </div>
+
+            <!-- คำอธิบายห้องเรียน -->
+            <div>
+                <label class="font-semibold text-gray-700">คำอธิบายห้องเรียน</label>
+                <textarea name="description" rows="3"
+                    class="mt-1 w-full border rounded-md px-3 py-2 text-sm" required>{{ classroom.description }}</textarea>
+            </div>
+
+            <!-- รูปภาพห้องเรียน -->
+            <div>
+                <label class="font-semibold text-gray-700">รูปภาพห้องเรียน</label>
+                <div class="mt-2 flex items-center gap-4">
+                    {% if classroom.cover_image %}
+                        <img src="{{ classroom.cover_image.url }}" alt="Classroom Image" class="w-32 h-32 object-cover rounded-md border">
+                    {% else %}
+                        <div class="w-32 h-32 flex items-center justify-center bg-gray-100 text-gray-400 rounded-md border">
+                            ไม่มีรูป
+                        </div>
+                    {% endif %}
+                    <input type="file" name="cover_image" accept="cover_image/*"
+                        class="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 
+                        file:rounded-md file:border-0 file:text-sm file:font-semibold 
+                        file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+                <p class="text-xs text-gray-500 mt-1">* หากไม่เลือกไฟล์ใหม่ ระบบจะใช้รูปเดิม</p>
+            </div>
+
+            <!-- รหัสเข้าห้องเรียน -->
+            <div>
+                <label class="font-semibold text-gray-700">รหัสเข้าห้องเรียน</label>
+                <input type="text" name="join_code" value="{{ classroom.code }}"
+                    class="mt-1 w-full border rounded-md px-3 py-2 text-sm" readonly>
+                <p class="text-xs text-gray-500 mt-1">* ระบบจะสร้างรหัสนี้โดยอัตโนมัติ</p>
+            </div>
+        </div>
+
+        <!-- ปุ่มบันทึก -->
+        <div class="flex justify-end">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm">
+                บันทึกการเปลี่ยนแปลง
+            </button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

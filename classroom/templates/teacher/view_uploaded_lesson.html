@@ -91,121 +91,172 @@
     </div>
 
 
-
-
     {# === Comments (Realtime) === #}
     <div id="comments-section" class="mt-12">
         <h3 class="text-2xl font-bold text-gray-800 mt-12 mb-4">ความคิดเห็น</h3>
 
-        <!-- Composer: รูปของคนที่กำลังพิมพ์ = request.user -->
-        <form id="c-form" class="flex items-start gap-3">
-        <!-- avatar ผู้พิมพ์ -->
-        <img
-            src="{% if request.user.profile and request.user.profile.profile_picture %}{{ request.user.profile.profile_picture.url }}{% elif request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}"
-            class="w-10 h-10 rounded-full object-cover ring-2 ring-white" alt="avatar">
+        <form id="c-form" class="flex flex-col gap-3 p-4 bg-gray-50 rounded-lg shadow-inner">
+            <div class="flex items-start gap-3">
+                <img
+                    src="{% if request.user.profile and request.user.profile.profile_picture %}{{ request.user.profile.profile_picture.url }}{% elif request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}"
+                    class="w-10 h-10 rounded-full object-cover ring-2 ring-white shrink-0" alt="avatar">
 
-        <!-- ช่องพิมพ์ -->
-        <textarea id="c-input" rows="3" required
-            class="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus:ring-2 focus:ring-indigo-500"
-            placeholder="ส่งความคิดเห็นของคุณที่นี่..."></textarea>
+                <textarea id="c-input" rows="3" required
+                    class="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+                    placeholder="ส่งความคิดเห็นและให้คะแนนที่นี่..."></textarea>
 
-        <!-- ปุ่มส่ง -->
-        <button class="shrink-0 rounded-2xl p-3 bg-gray-900 text-white hover:bg-black" title="ส่ง">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M3 11L21 3L13 21L11 13L3 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-        </button>
+                <button class="shrink-0 rounded-lg p-3 h-10 bg-indigo-600 text-white hover:bg-indigo-700 transition self-center" title="ส่ง">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M3 11L21 3L13 21L11 13L3 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+                </button>
+            </div>
 
-        <!-- ⭐️ เลือกดาว -->
-        <div id="c-stars" class="ml-3 flex items-center gap-1 select-none" aria-label="ให้คะแนน">
-            {% for i in "12345"|make_list %}
-            <button type="button" data-star="{{ forloop.counter }}"
-                    class="star-btn text-gray-300 hover:text-amber-400 transition">
-                <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.803 2.037a1 1 0 00-.364 1.118l1.07 3.292c.3.92-.755 1.688-1.54 1.118L10.5 13.347a1 1 0 00-1.175 0L5.716 16.284c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.08 8.72c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
-                </svg>
-            </button>
-            {% endfor %}
-        </div>
+            <div class="flex justify-end items-center mt-1">
+                <div id="c-stars" class="flex items-center gap-1 select-none" aria-label="ให้คะแนน">
+                    {% for i in "12345"|make_list %}
+                    <button type="button" data-star="{{ forloop.counter }}"
+                            class="star-btn text-gray-300 hover:text-amber-400 transition">
+                        <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.803 2.037a1 1 0 00-.364 1.118l1.07 3.292c.3.92-.755 1.688-1.54 1.118L10.5 13.347a1 1 0 00-1.175 0L5.716 16.284c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.08 8.72c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
+                        </svg>
+                    </button>
+                    {% endfor %}
+                </div>
 
-        <span class="ml-2 text-sm text-gray-500">
-            <span id="rating-avg">{{ rating_avg|floatformat:1 }}</span>
-            (<span id="rating-count">{{ rating_count }}</span>)
-        </span>
-
+                <span class="ml-2 text-sm text-gray-500">
+                    <span id="rating-avg">{{ rating_avg|floatformat:1 }}</span>
+                    (<span id="rating-count">{{ rating_count }}</span>)
+                </span>
+            </div>
         </form>
         
-        <!-- List: รูปของ “ผู้คอมเมนต์” = c.author -->
-        {# ฝังข้อมูลให้ JS รู้ user และสิทธิ #}
         <div id="storybook-meta"
             data-storybook-id="{{ storybook.id }}"
             data-user-id="{{ request.user.id }}"
-            data-can-moderate="{% if request.user.is_superuser or request.user.is_staff or request.user.id == storybook.user_id %}1{% else %}0{% endif %}">
+            data-user-avatar="{% if request.user.profile and request.user.profile.profile_picture %}{{ request.user.profile.profile_picture.url }}{% elif request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}"
+            data-user-initial="{{ request.user.get_full_name|default:request.user.email|first }}"
+            data-user-name="{{ request.user.get_full_name|default:request.user.email }}"
+            data-can-moderate="{% if request.user.is_superuser or request.user.is_staff %}1{% else %}0{% endif %}">
         </div>
 
-        {# ในลิสต์คอมเมนต์ SSR #}
         <ul id="c-list" class="mt-6 divide-y divide-gray-100">
         {% for c in comments %}
         <li class="group py-3" data-cid="{{ c.id }}" data-author-id="{{ c.author_id }}">
-        <div class="flex items-start gap-3">
+            <div class="flex items-start gap-3">
 
-            <!-- avatar -->
-            <div class="relative shrink-0">
-            {% if c.author.profile and c.author.profile.profile_picture %}
-                <img src="{{ c.author.profile.profile_picture.url }}" class="w-9 h-9 rounded-full object-cover" alt="">
-            {% elif c.author.profile_picture %}
-                <img src="{{ c.author.profile_picture.url }}" class="w-9 h-9 rounded-full object-cover" alt="">
-            {% else %}
-                <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">
-                {{ c.author.get_full_name|default:c.author.email|first }}
-                </div>
-            {% endif %}
-            <span class="absolute -bottom-0 -right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
-            </div>
-
-            <!-- body -->
-            <div class="min-w-0 flex-1">
-            <div class="flex items-start justify-between gap-2">
-
-                <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                    <span class="font-semibold text-gray-900 truncate">
-                    {{ c.author.get_full_name|default:c.author.email }}
-                    </span>
-                    <span class="text-gray-400 text-sm">แสดงความคิดเห็นในโพสต์ของคุณ</span>
-                </div>
-
-                <p class="mt-1 text-sm text-gray-700 leading-relaxed" data-role="msg">
-                    {% if c.is_deleted %}
-                    <em class="text-gray-500">ข้อความถูกลบ</em>
-                    {% else %}
-                    {{ c.message }}
-                    {% if c.edited_at %}<span class="text-xs text-gray-500 ml-1">(แก้ไขแล้ว)</span>{% endif %}
-                    {% endif %}
-                </p>
-
-                <div class="text-xs text-gray-400 mt-1">{{ c.created_at|date:"H:i น. j F Y" }}</div>
-                </div>
-
-                <!-- เมนู 3 จุด: โชว์เฉพาะผู้มีสิทธิ -->
-                {% if request.user.id == c.author_id or request.user.is_staff or request.user.is_superuser %}
                 <div class="relative shrink-0">
-                <button class="c-menu-btn p-1.5 rounded-full text-gray-400 hover:bg-gray-100" aria-expanded="false" aria-haspopup="true">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
-                </button>
-                <div class="c-menu hidden absolute right-0 mt-2 w-36 overflow-hidden rounded-lg border bg-white shadow-lg z-10">
-                    {% if not c.is_deleted %}
-                    <button class="c-edit block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"  data-cid="{{ c.id }}">แก้ไข</button>
-                    <button class="c-del  block w-full px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50" data-cid="{{ c.id }}">ลบ</button>
-                    {% endif %}
-                </div>
-                </div>
+                {% if c.author.profile and c.author.profile.profile_picture %}
+                    <img src="{{ c.author.profile.profile_picture.url }}" class="w-9 h-9 rounded-full object-cover" alt="">
+                {% elif c.author.profile_picture %}
+                    <img src="{{ c.author.profile_picture.url }}" class="w-9 h-9 rounded-full object-cover" alt="">
+                {% else %}
+                    <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">
+                    {{ c.author.get_full_name|default:c.author.email|first }}
+                    </div>
                 {% endif %}
+                <span class="absolute -bottom-0 -right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+                </div>
+
+                <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-2">
+
+                    <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-gray-900 truncate">
+                        {{ c.author.get_full_name|default:c.author.email }}
+                        </span>
+                        <span class="text-gray-400 text-sm">แสดงความคิดเห็นในโพสต์ของคุณ</span>
+                    </div>
+
+                    <p class="mt-1 text-sm text-gray-700 leading-relaxed" data-role="msg">
+                        {{ c.message }}
+                        {% if c.edited_at %}<span class="text-xs text-gray-500 ml-1">(แก้ไขแล้ว)</span>{% endif %}
+                    </p>
+
+                    <div class="text-xs text-gray-400 mt-1">
+                        {{ c.created_at|date:"H:i น. j F Y" }}
+                        <button class="c-reply text-indigo-600 font-medium ml-3 hover:underline" data-cid="{{ c.id }}" data-parent-name="{{ c.author.get_full_name|default:c.author.email }}">ตอบกลับ</button>
+                    </div>
+                    </div>
+
+                    {% if request.user.id == c.author_id or request.user.is_staff or request.user.is_superuser %}
+                    <div class="relative shrink-0">
+                    <button class="c-menu-btn p-1.5 rounded-full text-gray-400 hover:bg-gray-100" aria-expanded="false" aria-haspopup="true">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                    </button>
+                    <div class="c-menu hidden absolute right-0 mt-2 w-36 overflow-hidden rounded-lg border bg-white shadow-lg z-10">
+                        <button class="c-edit block w-full px-3 py-2 text-left text-sm hover:bg-gray-50" data-cid="{{ c.id }}">แก้ไข</button>
+                        <button class="c-del block w-full px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50" data-cid="{{ c.id }}">ลบ</button>
+                    </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+                
+                <div class="reply-editor-container mt-3"></div>
+
+                {# UL Container: ไม่มีคลาสเยื้อง #}
+                <ul class="c-replies-list mt-3 divide-y divide-gray-200">
+                    {% for r in c.replies.all|dictsort:"created_at" %}
+                    {% if not r.is_deleted %}
+                    {# LI Reply Item: มีคลาสเยื้อง pl-6 (1 วรรค) เสมอ #}
+                    <li class="py-2 pl-6" data-cid="{{ r.id }}" data-author-id="{{ r.author_id }}" data-parent-cid="{{ c.id }}">
+                        <div class="flex items-start gap-3">
+                            
+                            <div class="relative shrink-0">
+                            {% if r.author.profile and r.author.profile.profile_picture %}
+                                <img src="{{ r.author.profile.profile_picture.url }}" class="w-7 h-7 rounded-full object-cover" alt="">
+                            {% elif r.author.profile_picture %}
+                                <img src="{{ r.author.profile_picture.url }}" class="w-7 h-7 rounded-full object-cover" alt="">
+                            {% else %}
+                                <div class="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold">
+                                {{ r.author.get_full_name|default:r.author.email|first }}
+                                </div>
+                            {% endif %}
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-semibold text-sm text-gray-900 truncate">
+                                            {{ r.author.get_full_name|default:r.author.email }}
+                                            </span>
+                                        </div>
+
+                                        <p class="mt-1 text-sm text-gray-700 leading-relaxed" data-role="msg">
+                                            {{ r.message }} 
+                                            {% if r.edited_at %}<span class="text-xs text-gray-500 ml-1">(แก้ไขแล้ว)</span>{% endif %}
+                                        </p>
+                                        <div class="text-xs text-gray-400 mt-1">
+                                            {{ r.created_at|date:"H:i น. j F Y" }}
+                                            <button class="c-reply text-indigo-600 font-medium ml-3 hover:underline" data-cid="{{ r.id }}" data-parent-name="{{ r.author.get_full_name|default:r.author.email }}">ตอบกลับ</button>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if request.user.id == r.author_id or request.user.is_staff or request.user.is_superuser %}
+                                    <div class="relative shrink-0">
+                                    <button class="c-menu-btn p-1 rounded-full text-gray-400 hover:bg-gray-100" aria-expanded="false" aria-haspopup="true">
+                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                                    </button>
+                                    <div class="c-menu hidden absolute right-0 mt-2 w-36 overflow-hidden rounded-lg border bg-white shadow-lg z-10">
+                                        <button class="c-edit block w-full px-3 py-2 text-left text-sm hover:bg-gray-50" data-cid="{{ r.id }}">แก้ไข</button>
+                                        <button class="c-del block w-full px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50" data-cid="{{ r.id }}">ลบ</button>
+                                    </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="reply-editor-container mt-3"></div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+
+                </div>
 
             </div>
-            </div>
-
-        </div>
         </li>
-
         {% empty %}
         <li class="py-10 text-center text-gray-500">ยังไม่มีความคิดเห็น</li>
         {% endfor %}
@@ -232,12 +283,12 @@
                     placeholder="Creator Name" readonly>
             </div>
 
-            <!-- Description -->
+            <!-- Description -->   
             <div>
                 <label class="block text-sm font-medium text-gray-700">Description</label>
                 <textarea id="lesson-description"
                     class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
-                    placeholder="Description" readonly>{{ storybook.description }}</textarea>
+                    placeholder="Description" readonly>{{ storybook.detail_lesson }}</textarea>
             </div>
 
             <!-- Additional Content -->
@@ -245,7 +296,7 @@
                 <label class="block text-sm font-medium text-gray-700">Additional Content</label>
                 <textarea id="lesson-additional"
                     class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
-                    placeholder="Additional Content" readonly>{{ storybook.additional_content }}</textarea>
+                    placeholder="Additional Content" readonly>{{ storybook.Additional_lesson_details }}</textarea>
             </div>
         
     
@@ -561,243 +612,496 @@
 </script>
 
 <script>
-  (function () {
-    const meta = document.getElementById("storybook-meta");
-    if (!meta) { console.warn("storybook-meta not found; skip comments WS"); return; }
+    (function () {
+        const meta = document.getElementById("storybook-meta");
+        if (!meta) { console.warn("storybook-meta not found; skip comments WS"); return; }
 
-    const storybookId  = meta.dataset.storybookId;
-    const myId         = parseInt(meta.dataset.userId || "0", 10);
-    const canModerate  = meta.dataset.canModerate === "1";
-    const wsScheme     = location.protocol === "https:" ? "wss" : "ws";
-    const wsComments   = new WebSocket(`${wsScheme}://${location.host}/ws/storybook/${storybookId}/comments/`);
+        const storybookId = meta.dataset.storybookId;
+        const myId = parseInt(meta.dataset.userId || "0", 10);
+        const canModerate = meta.dataset.canModerate === "1";
+        const myAvatar = meta.dataset.userAvatar;
+        const myInitial = meta.dataset.userInitial;
 
-    const form  = document.getElementById("c-form");
-    const input = document.getElementById("c-input");
-    const list  = document.getElementById("c-list");
+        const wsScheme = location.protocol === "https:" ? "wss" : "ws";
+        const wsComments = new WebSocket(`${wsScheme}://${location.host}/ws/storybook/${storybookId}/comments/`);
 
-    // กันซ้ำด้วย SSR ids
-    const seen = new Set(Array.from(list.querySelectorAll("li[data-cid]")).map(li => String(li.dataset.cid)));
+        const form = document.getElementById("c-form");
+        const input = document.getElementById("c-input");
+        const list = document.getElementById("c-list");
+        
+        // กันซ้ำด้วย SSR ids
+        const seen = new Set(Array.from(list.querySelectorAll("li[data-cid]")).map(li => String(li.dataset.cid)));
 
-    // util
-    const hasAvatar = (url) => {
-      return typeof url === "string" && url.trim() !== "" && url.trim().toLowerCase() !== "null";
-    };
-    const firstChar = (name) => ((name || "").trim() || "U").charAt(0).toUpperCase();
+        // --- Utility Functions ---
+        const hasAvatar = (url) => typeof url === "string" && url.trim() !== "" && url.trim().toLowerCase() !== "null";
+        const firstChar = (name) => ((name || "").trim() || "U").charAt(0).toUpperCase();
 
-    function ensureActions(li, d) {
-      // แสดงปุ่มแก้/ลบถ้าเป็นของตัวเอง หรือมีสิทธิ์ moderate และยังไม่ถูกลบ
-      const authorId = parseInt(li.getAttribute("data-author-id") || "0", 10);
-      const allowed  = canModerate || authorId === myId;
-      if (!allowed || d.is_deleted) return;
-
-      let right = li.querySelector(".c-actions");
-      if (!right) {
-        right = document.createElement("div");
-        right.className = "c-actions shrink-0 flex gap-3";
-        const header = li.querySelector(".flex.items-start.justify-between.gap-3");
-        header && header.appendChild(right);
-      }
-      if (!right.querySelector(`[data-cid="${d.id}"].c-edit`)) {
-        right.innerHTML = `
-          <button class="c-edit text-xs text-indigo-600 hover:underline" data-cid="${d.id}">แก้ไข</button>
-          <button class="c-del text-xs text-rose-600 hover:underline" data-cid="${d.id}">ลบ</button>
-        `;
-      }
-    }
-
-    function appendComment(d, prepend) {
-    if (!d || d.id == null) return;
-    const id = String(d.id);
-    if (seen.has(id)) return;
-
-    const allow = (meta.dataset.canModerate === "1") || (parseInt(d.author_id || 0, 10) === parseInt(meta.dataset.userId || "0", 10));
-    const hasAvatar = typeof d.avatar_url === "string" && d.avatar_url.trim() !== "" && d.avatar_url.trim().toLowerCase() !== "null";
-    const initial   = ((d.author || "").trim() || "U").charAt(0).toUpperCase();
-    const editedTag = d.edited ? `<span class="text-xs text-gray-500 ml-1">(แก้ไขแล้ว)</span>` : "";
-    const msgHtml   = d.is_deleted ? `<em class="text-gray-500">ข้อความถูกลบ</em>` : (d.message || "");
-
-    const li = document.createElement("li");
-    li.className = "group py-3";
-    li.setAttribute("data-cid", id);
-    if (d.author_id != null) li.setAttribute("data-author-id", String(d.author_id));
-
-    li.innerHTML = `
-        <div class="flex items-start gap-3">
-        <div class="relative shrink-0">
-            ${
-            hasAvatar
-                ? `<img src="${d.avatar_url}" class="w-9 h-9 rounded-full object-cover" alt="${d.author || "ผู้ใช้"}">`
-                : `<div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">${initial}</div>`
-            }
-            <span class="absolute -bottom-0 -right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
-        </div>
-
-        <div class="min-w-0 flex-1">
-            <div class="flex items-start justify-between gap-2">
-
-            <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                <span class="font-semibold text-gray-900 truncate">${d.author || "ผู้ใช้"}</span>
-                <span class="text-gray-400 text-sm">แสดงความคิดเห็นในโพสต์ของคุณ</span>
-                </div>
-
-                <p class="mt-1 text-sm text-gray-700 leading-relaxed" data-role="msg">${msgHtml}${editedTag}</p>
-                <div class="text-xs text-gray-400 mt-1">${d.created_at || ""}</div>
-            </div>
-
-            ${
-                allow ? `
-                <div class="relative shrink-0">
-                <button class="c-menu-btn p-1.5 rounded-full text-gray-400 hover:bg-gray-100" aria-expanded="false" aria-haspopup="true">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+        // --- Reply Editor Creator (เหมือนเดิม) ---
+        function createReplyEditor(parentCid, parentName) {
+            document.querySelectorAll(".c-reply-form").forEach(f => f.closest(".reply-editor-container").innerHTML = "");
+            
+            const form = document.createElement('form');
+            form.className = "c-reply-form flex items-start gap-2 pt-2 pb-1";
+            form.dataset.parentCid = parentCid; 
+            
+            form.innerHTML = `
+                ${hasAvatar(myAvatar) ? `<img src="${myAvatar}" class="w-7 h-7 rounded-full object-cover ring-1 ring-gray-100 shrink-0" alt="avatar">`
+                    : `<div class="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold shrink-0">${myInitial}</div>`
+                }
+                <textarea rows="2" required 
+                    class="c-reply-input flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="ตอบกลับ ${parentName}..."
+                ></textarea>
+                <button class="shrink-0 rounded-lg p-2 h-7 bg-indigo-600 text-white hover:bg-indigo-700 transition self-center" title="ส่ง">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M3 11L21 3L13 21L11 13L3 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
                 </button>
-                <div class="c-menu hidden absolute right-0 mt-2 w-36 overflow-hidden rounded-lg border bg-white shadow-lg z-10">
-                    ${!d.is_deleted ? `
-                    <button class="c-edit block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"  data-cid="${d.id}">แก้ไข</button>
-                    <button class="c-del  block w-full px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50" data-cid="${d.id}">ลบ</button>
-                    ` : ``}
-                </div>
-                </div>` : ``
+            `;
+
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                const textarea = form.querySelector('.c-reply-input');
+                const text = (textarea.value || "").trim();
+                const pCid = parseInt(form.dataset.parentCid, 10);
+                
+                if (!text || wsComments.readyState !== WebSocket.OPEN) return;
+                
+                const payload = { 
+                    type: "create", 
+                    message: text,
+                    parent_comment_id: pCid
+                };
+                
+                wsComments.send(JSON.stringify(payload));
+                
+                textarea.value = "";
+                form.closest(".reply-editor-container").innerHTML = ""; 
+            });
+
+            return form;
+        }
+
+
+        // --- Comment Handling Logic (สำคัญ: การจัดการการเยื้อง) ---
+        function appendComment(d, prepend) {
+            if (!d || d.id == null || d.is_deleted) return; 
+
+            const id = String(d.id);
+            const parentId = d.parent_comment_id ? String(d.parent_comment_id) : null;
+            
+            if (seen.has(id)) return; 
+
+            // 1. หา Parent Name (ชื่อผู้ถูกตอบกลับ)
+            let parentAuthorName = null;
+            let parentLiForName = null;
+            if (parentId) {
+                // 💡 แก้ไข: ใช้ parentId ที่แท้จริง (parent_comment_id) ในการหาชื่อผู้ถูกตอบกลับเสมอ
+                // เพราะทุก reply ควรจะตอบกลับ comment หลักเสมอในมุมมองของการเยื้อง แต่ต้องดึงชื่อคนที่ถูก reply มาแสดง
+                // หาก d.parent_comment_id คือ id ของคอมเมนต์หลัก (ที่อยู่ติดขอบซ้าย)
+                parentLiForName = list.querySelector(`li[data-cid="${parentId}"]`);
+
+                // 💡 เพิ่มเติม: หาก d คือ reply ของ reply อื่นๆ (nested reply) 
+                // parentId จะเป็น ID ของ reply ก่อนหน้า
+                // เราต้องย้อนกลับไปหาคอมเมนต์หลัก (top-level comment) ที่เป็นบรรพบุรุษ เพื่อหา UL ที่จะ append
+                if (!parentLiForName) {
+                    let currentLi = list.querySelector(`li[data-cid="${parentId}"]`);
+                    while (currentLi && currentLi.getAttribute("data-parent-cid")) {
+                         currentLi = list.querySelector(`li[data-cid="${currentLi.getAttribute("data-parent-cid")}"]`);
+                    }
+                    parentLiForName = currentLi;
+                }
+
+                if (parentLiForName) {
+                    const nameSpan = parentLiForName.querySelector('.min-w-0 .font-semibold');
+                    if (nameSpan) {
+                         parentAuthorName = nameSpan.textContent.trim();
+                    }
+                }
             }
 
-            </div>
-        </div>
-        </div>
-    `;
 
-    prepend ? list.prepend(li) : list.appendChild(li);
-    seen.add(id);
-    }
-    // toggle เมนู 3 จุด
-    document.addEventListener("click", (e) => {
-    const btn = e.target.closest(".c-menu-btn");
-    const anyMenu = document.querySelectorAll(".c-menu");
-    // ปิดเมนูทั้งหมดก่อน
-    anyMenu.forEach(m => m.classList.add("hidden"));
+            let container = list;
+            let topLevelParentLi = null;
 
-    if (btn) {
-        const wrap = btn.parentElement;
-        const menu = wrap.querySelector(".c-menu");
-        if (menu) menu.classList.toggle("hidden");
-        e.stopPropagation();
-    }
-    });
-    // ปิดเมนูถ้าคลิกนอก
+            if (parentId) {
+                // 💡 สิ่งสำคัญ: ในการทำให้ Reply เยื้องแค่ 1 วรรคเสมอ
+                // เราต้องหาคอมเมนต์หลัก (Top-Level Parent) ที่ไม่มี data-parent-cid
+                // แล้วเอา Reply ไปยัดใน ul.c-replies-list ของคอมเมนต์หลักนั้น
+                
+                // หา LI ของ Parent Comment/Reply ที่เรากำลังจะตอบกลับ
+                let liToFindUL = list.querySelector(`li[data-cid="${parentId}"]`);
+                
+                // ไล่ขึ้นไปหา LI ที่เป็นคอมเมนต์หลัก (ไม่มี data-parent-cid)
+                while (liToFindUL && liToFindUL.getAttribute("data-parent-cid")) {
+                    const nextParentId = liToFindUL.getAttribute("data-parent-cid");
+                    liToFindUL = list.querySelector(`li[data-cid="${nextParentId}"]`);
+                }
+                
+                topLevelParentLi = liToFindUL;
 
-    // สร้างคอมเมนต์
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      const text = (input.value || "").trim();
-      if (!text || wsComments.readyState !== WebSocket.OPEN) return;
-      wsComments.send(JSON.stringify({ type: "create", message: text }));
-      input.value = "";
-    });
+                if (!topLevelParentLi) {
+                    console.warn(`[Comment WS] Top-Level Parent comment for ID ${parentId} not found for comment ID ${id}. Skipping.`);
+                    return; 
+                }
+                
+                // 2. หา/สร้าง UL Reply List ใน Top-Level Parent
+                container = topLevelParentLi.querySelector(".c-replies-list");
+                
+                if (!container) {
+                    const parentBody = topLevelParentLi.querySelector('.min-w-0.flex-1');
+                    if (parentBody) {
+                        const newUl = document.createElement('ul');
+                        // UL: ยืนยันว่าไม่มีคลาสเยื้องใดๆ บน ul นี้
+                        newUl.className = "c-replies-list mt-3 divide-y divide-gray-200"; 
+                        parentBody.appendChild(newUl); 
+                        container = newUl;
+                    } else {
+                        console.error(`[Comment WS] Could not find parent body for ${parentId}.`);
+                        return; 
+                    }
+                }
+            }
+            
+            // 3. สร้าง HTML Element
+            const allow = (meta.dataset.canModerate === "1") || (parseInt(d.author_id || 0, 10) === myId);
+            const hasAv = hasAvatar(d.avatar_url);
+            const initial = firstChar(d.author);
+            const editedTag = d.edited ? `<span class="text-xs text-gray-500 ml-1">(แก้ไขแล้ว)</span>` : "";
+            const selfAuthorName = d.author || "ผู้ใช้"; 
+            
+            // 💡 สร้างข้อความพร้อมชื่อผู้ถูกตอบกลับ
+            let msgHtml = d.message || "";
+            // 💡 เราใช้ parentId ที่รับมาเป็นตัวกำหนดว่ามันคือ Reply หรือไม่
+            if (parentId) {
+                // 💡 parentAuthorName คือชื่อของคนที่เรา reply (ไม่ว่าจะเป็นคอมเมนต์หลักหรือ reply อื่น)
+                // เพื่อให้ข้อความแสดง "@ชื่อ" ได้ถูกต้อง
+                const nameLi = list.querySelector(`li[data-cid="${parentId}"]`);
+                let actualParentName = parentAuthorName; // ใช้ชื่อที่เราหามาด้านบน (ถ้าหาไม่เจออาจเป็น null)
+                if (nameLi) {
+                     const nameSpan = nameLi.querySelector('.min-w-0 .font-semibold');
+                     if (nameSpan) {
+                         actualParentName = nameSpan.textContent.trim();
+                     }
+                }
+                
+                // เพิ่ม @ชื่อผู้ถูกตอบกลับนำหน้า
+                msgHtml = `<span class="font-medium text-indigo-600">@${actualParentName || "ผู้ใช้"}</span> <span class="text-gray-700">${msgHtml}</span>`;
+            } else {
+                msgHtml = `<span class="text-gray-700">${msgHtml}</span>`;
+            }
 
-    // แก้ไข/ลบ (delegation)
-    list.addEventListener("click", function (e) {
-      const editBtn = e.target.closest(".c-edit");
-      const delBtn  = e.target.closest(".c-del");
-      if (!editBtn && !delBtn) return;
+            const li = document.createElement("li");
+            // 💡 LI: กำหนดคลาสเยื้อง 1 วรรค (pl-6) สำหรับ Reply ทุกรายการ
+            // คอมเมนต์หลัก: group py-3
+            // Reply: py-2 pl-6 (เยื้อง 1 วรรคจาก UL แม่ ซึ่งเป็น UL ของคอมเมนต์หลัก)
+            li.className = parentId ? "py-2 pl-6" : "group py-3"; 
+            li.setAttribute("data-cid", id);
+            li.setAttribute("data-author-id", String(d.author_id));
+            if (parentId) li.setAttribute("data-parent-cid", parentId); // เก็บ parentId ที่แท้จริง
 
-      const cid = (editBtn || delBtn).dataset.cid;
-      const li  = list.querySelector(`li[data-cid="${cid}"]`);
-      if (!li) return;
+            const avatarSize = parentId ? "w-7 h-7" : "w-9 h-9";
+            const iconSize = parentId ? "w-4 h-4" : "w-5 h-5";
+            const authorClass = parentId ? "font-semibold text-sm text-gray-900 truncate" : "font-semibold text-gray-900 truncate";
+            const menuBtnClass = parentId ? "p-1" : "p-1.5";
 
-      const authorId = parseInt(li.getAttribute("data-author-id") || "0", 10);
-      const allowed  = canModerate || authorId === myId;
-      if (!allowed) return;
+            li.innerHTML = `
+                <div class="flex items-start gap-3">
+                <div class="relative shrink-0">
+                    ${hasAv ? `<img src="${d.avatar_url}" class="${avatarSize} rounded-full object-cover" alt="${d.author || "ผู้ใช้"}">`
+                        : `<div class="${avatarSize} rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">${initial}</div>`
+                    }
+                    <span class="absolute -bottom-0 -right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+                </div>
 
-      const p = li.querySelector('[data-role="msg"]');
-      if (!p) return;
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-start justify-between gap-2">
 
-      if (editBtn) {
-        // ถ้ามี editor อยู่แล้ว ไม่ต้องซ้อน
-        if (li.querySelector(".c-editor")) return;
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                        <span class="${authorClass}">${d.author || "ผู้ใช้"}</span>
+                        ${!parentId ? `<span class="text-gray-400 text-sm">แสดงความคิดเห็นในโพสต์ของคุณ</span>` : ''}
+                        </div>
 
-        const currentText = p.textContent.replace("(แก้ไขแล้ว)", "").trim();
+                        <p class="mt-1 text-sm leading-relaxed" data-role="msg">
+                            ${msgHtml}${editedTag}
+                        </p>
+                        <div class="text-xs text-gray-400 mt-1">
+                            ${d.created_at || ""}
+                            <button class="c-reply text-indigo-600 font-medium ml-3 hover:underline" data-cid="${id}" data-parent-name="${selfAuthorName}">ตอบกลับ</button>
+                        </div>
+                    </div>
 
-        const wrap = document.createElement("div");
-        wrap.className = "c-editor mt-2";
-        wrap.innerHTML = `
-          <textarea class="w-full rounded border border-gray-300 px-3 py-2">${currentText}</textarea>
-          <div class="mt-2 flex gap-2">
-            <button class="c-save px-3 py-1 rounded bg-indigo-600 text-white" data-cid="${cid}">บันทึก</button>
-            <button class="c-cancel px-3 py-1 rounded bg-gray-200" data-cid="${cid}">ยกเลิก</button>
-          </div>
-        `;
-        p.after(wrap);
+                    ${allow ? `
+                        <div class="relative shrink-0">
+                        <button class="c-menu-btn ${menuBtnClass} rounded-full text-gray-400 hover:bg-gray-100" aria-expanded="false" aria-haspopup="true">
+                            <svg class="${iconSize}" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                        </button>
+                        <div class="c-menu hidden absolute right-0 mt-2 w-36 overflow-hidden rounded-lg border bg-white shadow-lg z-10">
+                            <button class="c-edit block w-full px-3 py-2 text-left text-sm hover:bg-gray-50" data-cid="${d.id}">แก้ไข</button>
+                            <button class="c-del block w-full px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50" data-cid="${d.id}">ลบ</button>
+                        </div>
+                        </div>` : ``
+                    }
 
-        wrap.addEventListener("click", (ev) => {
-          const save   = ev.target.closest(".c-save");
-          const cancel = ev.target.closest(".c-cancel");
-          if (!save && !cancel) return;
+                    </div>
+                    
+                    <div class="reply-editor-container mt-3"></div>
 
-          if (cancel) {
-            wrap.remove();
-            return;
-          }
-          if (save) {
-            const newText = wrap.querySelector("textarea").value.trim();
-            if (!newText) return;
-            wsComments.send(JSON.stringify({ type: "update", id: parseInt(cid, 10), message: newText }));
-            wrap.remove(); // รอ server broadcast
-          }
-        });
-        return;
-      }
+                    ${!parentId ? `<ul class="c-replies-list mt-3 divide-y divide-gray-200"></ul>` : ''}
+                </div>
+                </div>
+            `;
 
-      if (delBtn) {
-        if (!confirm("ลบความคิดเห็นนี้?")) return;
-        wsComments.send(JSON.stringify({ type: "delete", id: parseInt(cid, 10) }));
-        return;
-      }
-    });
-
-    // รับ event จาก server
-    wsComments.addEventListener("message", function (e) {
-      const msg = JSON.parse(e.data);
-
-      if (msg.event === "init_comments") {
-        const arr = msg.data || [];
-        // เซิร์ฟเวอร์ส่งเก่า->ใหม่ เรา prepend เพื่อให้ใหม่สุดอยู่บน
-        for (const d of arr) appendComment(d, true);
-        return;
-      }
-
-      if (msg.event === "comment") {
-        appendComment(msg.data, true); // ใหม่สุดอยู่บน
-        return;
-      }
-
-      if (msg.event === "updated") {
-        const d  = msg.data;
-        const li = list.querySelector(`li[data-cid="${String(d.id)}"]`);
-        if (!li) { appendComment(d, true); return; }
-        const p = li.querySelector('[data-role="msg"]');
-        if (p) {
-          p.textContent = d.message || "";
-          if (d.edited) {
-            const tag = document.createElement("span");
-            tag.className = "text-xs text-gray-500 ml-2";
-            tag.textContent = "(แก้ไขแล้ว)";
-            p.appendChild(tag);
-          }
+            // 4. Append/Prepend
+            parentId ? container.appendChild(li) : container.prepend(li); 
+            seen.add(id);
+            
+            if (!parentId && list.children.length > 0 && list.querySelector('li.text-center')) {
+                const emptyMsg = list.querySelector('li.text-center');
+                if (emptyMsg && emptyMsg.textContent.includes("ยังไม่มีความคิดเห็น")) emptyMsg.remove();
+            }
         }
-        ensureActions(li, d);
-        return;
-      }
+        
+        function updateComment(d) {
+            const li = list.querySelector(`li[data-cid="${String(d.id)}"]`);
+            
+            if (d.is_deleted) { 
+                // 💡 แก้ไข: ถ้าลบ Comment หลักที่มี Reply ใน DOM อยู่ด้วย ให้ตรวจสอบว่า Reply นั้นจะถูกลบไปด้วยหรือไม่
+                if (li && !li.getAttribute("data-parent-cid")) {
+                    const repliesList = li.querySelector(".c-replies-list");
+                    if (repliesList) {
+                        // ลบ Reply ที่อยู่ภายในออกจาก Set ด้วย
+                        repliesList.querySelectorAll("li[data-cid]").forEach(replyLi => {
+                             seen.delete(replyLi.dataset.cid);
+                        });
+                    }
+                }
+                li && li.remove();
+                seen.delete(String(d.id));
+                return; 
+            }
+            
+            if (!li) { appendComment(d, true); return; } 
 
-      if (msg.event === "deleted") {
-        const d  = msg.data;
-        const li = list.querySelector(`li[data-cid="${String(d.id)}"]`);
-        if (!li) return;
-        const p = li.querySelector('[data-role="msg"]');
-        if (p) p.innerHTML = `<em class="text-gray-500">ข้อความถูกลบ</em>`;
-        li.querySelectorAll(".c-edit, .c-del").forEach(btn => btn.remove());
-        return;
-      }
-    });
-  })();
+            const p = li.querySelector('[data-role="msg"]');
+            if (!p) return;
+
+            // ต้องจัดการการแสดงชื่อผู้ถูกตอบกลับในกรณีที่มีการแก้ไขด้วย
+            const parentId = d.parent_comment_id ? String(d.parent_comment_id) : null;
+            
+            let parentAuthorName = null;
+            let actualParentName = null;
+            
+            // 💡 แก้ไข: ใช้ parentId ที่แท้จริง (parent_comment_id) ในการหาชื่อผู้ถูกตอบกลับเสมอ
+            const nameLi = list.querySelector(`li[data-cid="${parentId}"]`);
+            if (nameLi) {
+                 const nameSpan = nameLi.querySelector('.min-w-0 .font-semibold');
+                 if (nameSpan) {
+                     actualParentName = nameSpan.textContent.trim();
+                 }
+            }
+
+            let msgHtml = d.message || "";
+            if (parentId && actualParentName) {
+                // เพิ่ม @ชื่อผู้ถูกตอบกลับนำหน้า
+                msgHtml = `<span class="font-medium text-indigo-600">@${actualParentName}</span> <span class="text-gray-700">${msgHtml}</span>`;
+            } else {
+                msgHtml = `<span class="text-gray-700">${msgHtml}</span>`;
+            }
+            
+            p.innerHTML = msgHtml;
+
+            if (d.edited) {
+                const tag = document.createElement("span");
+                tag.className = "text-xs text-gray-500 ml-1";
+                tag.textContent = "(แก้ไขแล้ว)";
+                p.appendChild(tag);
+            }
+        }
+
+        // --- Event Listeners (เหมือนเดิม) ---
+
+        // 1. สร้างคอมเมนต์หลัก (Submit c-form)
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            const text = (input.value || "").trim();
+            const ratingInput = document.querySelector('.star-btn.text-amber-400');
+            const ratingValue = ratingInput ? parseInt(ratingInput.dataset.star, 10) : null;
+            
+            if (!text || wsComments.readyState !== WebSocket.OPEN) return;
+            
+            const payload = { 
+                type: "create", 
+                message: text,
+                rating: ratingValue,
+                parent_comment_id: null 
+            };
+            
+            wsComments.send(JSON.stringify(payload));
+            input.value = "";
+        });
+
+        // 2. การจัดการปุ่ม Reply (สร้าง Editor ในคอมเมนต์)
+        list.addEventListener("click", function (e) {
+            const replyBtn = e.target.closest(".c-reply");
+            if (!replyBtn) return;
+            
+            const cid = replyBtn.dataset.cid;
+            const parentName = replyBtn.dataset.parentName || "ผู้ใช้"; 
+            
+            const li = replyBtn.closest(`li[data-cid]`);
+            if (!li) return;
+
+            // 💡 การแก้ไข: การหา Container
+            // ถ้าเป็น Reply ที่ตอบ Reply อื่น, Container จะอยู่ที่ Reply นั้นๆ
+            // แต่ถ้าต้องการให้ Reply ทุกระดับออกมาเยื้อง 1 วรรคเท่ากัน และอยู่ใต้คอมเมนต์หลัก
+            // ฟังก์ชัน createReplyEditor จะต้องถูกเรียกจาก LI ตัวนั้นๆ เพื่อให้เกิด editor-container
+            // ซึ่งในส่วนนี้โค้ดเดิมก็ถูกต้องแล้ว (editor อยู่ใน LI ตัวนั้น)
+            const container = li.querySelector(".reply-editor-container");
+            if (!container) return;
+            
+            const editor = createReplyEditor(cid, parentName);
+            container.appendChild(editor);
+            
+            editor.querySelector('.c-reply-input').focus();
+            
+            e.stopPropagation();
+        });
+        
+        // 3. เมนู 3 จุด (เหมือนเดิม)
+        document.addEventListener("click", (e) => {
+            const btn = e.target.closest(".c-menu-btn");
+            const anyMenu = document.querySelectorAll(".c-menu");
+            anyMenu.forEach(m => m.classList.add("hidden"));
+
+            if (btn) {
+                const wrap = btn.parentElement;
+                const menu = wrap.querySelector(".c-menu");
+                if (menu) menu.classList.toggle("hidden");
+                e.stopPropagation();
+            } else if (!e.target.closest(".c-menu")) {
+                anyMenu.forEach(m => m.classList.add("hidden"));
+            }
+        });
+        
+        // 4. แก้ไข/ลบ (delegation)
+        list.addEventListener("click", function (e) {
+            const editBtn = e.target.closest(".c-edit");
+            const delBtn = e.target.closest(".c-del");
+            if (!editBtn && !delBtn) return;
+            
+            const cid = (editBtn || delBtn).dataset.cid;
+            const li = list.querySelector(`li[data-cid="${cid}"]`);
+            if (!li) return;
+
+            const authorId = parseInt(li.getAttribute("data-author-id") || "0", 10);
+            const allowed = canModerate || authorId === myId;
+            if (!allowed) return;
+
+            const p = li.querySelector('[data-role="msg"]');
+            if (!p) return;
+            
+            li.querySelector('.c-menu').classList.add("hidden"); 
+
+            if (editBtn) {
+                if (li.querySelector(".c-editor")) return;
+
+                // ดึงข้อความดิบสำหรับการแก้ไข
+                let currentText = p.textContent;
+                currentText = currentText.replace("(แก้ไขแล้ว)", "").trim();
+                
+                // หากมีชื่อ @name นำหน้า ให้ตัดออกก่อนเข้า textarea (ใช้ parentId ของ LI นั้นๆ)
+                const parentId = li.getAttribute("data-parent-cid");
+                if (parentId) {
+                    const parentLi = list.querySelector(`li[data-cid="${parentId}"]`);
+                    if (parentLi) {
+                        const nameSpan = parentLi.querySelector('.min-w-0 .font-semibold');
+                        if (nameSpan) {
+                             const parentAuthorName = nameSpan.textContent.trim();
+                             const prefix = `@${parentAuthorName}`;
+                             if (currentText.startsWith(prefix)) {
+                                 currentText = currentText.substring(prefix.length).trim();
+                             }
+                        }
+                    }
+                }
+
+                const wrap = document.createElement("div");
+                wrap.className = "c-editor mt-2";
+                wrap.innerHTML = `
+                    <textarea class="w-full rounded border border-gray-300 px-3 py-2 text-sm">${currentText}</textarea>
+                    <div class="mt-2 flex gap-2">
+                        <button class="c-save px-3 py-1 rounded bg-indigo-600 text-white text-sm" data-cid="${cid}">บันทึก</button>
+                        <button class="c-cancel px-3 py-1 rounded bg-gray-200 text-sm" data-cid="${cid}">ยกเลิก</button>
+                    </div>
+                `;
+                p.after(wrap);
+
+                wrap.addEventListener("click", (ev) => {
+                    const save = ev.target.closest(".c-save");
+                    const cancel = ev.target.closest(".c-cancel");
+                    if (!save && !cancel) return;
+
+                    if (cancel) {
+                        wrap.remove();
+                        return;
+                    }
+                    if (save) {
+                        const newText = wrap.querySelector("textarea").value.trim();
+                        if (!newText) return;
+                        wsComments.send(JSON.stringify({ type: "update", id: parseInt(cid, 10), message: newText }));
+                        wrap.remove();
+                    }
+                });
+                return;
+            }
+
+            if (delBtn) {
+                if (!confirm("ลบความคิดเห็นนี้?")) return;
+                wsComments.send(JSON.stringify({ type: "delete", id: parseInt(cid, 10) }));
+                return;
+            }
+        });
+
+
+        // 5. รับ event จาก server (เหมือนเดิม)
+        wsComments.addEventListener("message", function (e) {
+            const msg = JSON.parse(e.data);
+
+            if (msg.event === "init_comments") {
+                const arr = msg.data || [];
+                // 💡 สิ่งสำคัญ: ในการทำให้ Reply ทุกระดับเยื้องเท่ากัน (1 วรรค)
+                // เราต้องเรียงลำดับให้คอมเมนต์หลัก (parent_comment_id: null) มาก่อน
+                // แต่เนื่องจากเราไม่สามารถเรียงให้ Reply ของ Reply มาต่อจาก Reply แรกได้ง่ายๆ
+                // วิธีนี้จะใช้การจัดการ DOM ภายใน appendComment แทน (ซึ่งได้ทำไปแล้ว)
+                // ดังนั้นการเรียงหลัก-รอง ในขั้นต้นนี้จึงไม่สำคัญเท่าการจัดการ DOM ภายใน appendComment
+
+                // 💡 เราจะใช้การเรียงลำดับตาม ID โดยมี Parent Comment นำหน้า
+                arr.sort((a, b) => {
+                    if (a.parent_comment_id === b.id) return 1;
+                    if (b.parent_comment_id === a.id) return -1;
+                    if (!a.parent_comment_id && b.parent_comment_id) return -1;
+                    if (a.parent_comment_id && !b.parent_comment_id) return 1;
+                    return (a.id < b.id) ? -1 : (a.id > b.id) ? 1 : 0;
+                });
+                
+                // การเรียก appendComment ต้องทำเรียงลำดับ ID น้อยไปมาก เพื่อให้หา parent ได้
+                for (const d of arr.sort((a, b) => (a.id - b.id))) {
+                    appendComment(d, false);
+                }
+                return;
+            }
+
+            if (msg.event === "comment") {
+                appendComment(msg.data, true); 
+                return;
+            }
+
+            if (msg.event === "updated" || msg.event === "deleted") {
+                updateComment(msg.data);
+                return;
+            }
+        });
+    })();
 </script>
 
 <script>

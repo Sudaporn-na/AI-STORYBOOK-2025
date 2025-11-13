@@ -1,15 +1,21 @@
 # models.py
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.db import models
-from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.utils import timezone
+
 import uuid
 import secrets
 import string
-from django.conf import settings
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+import random
+from datetime import timedelta
+
+
+# USER และ PROFILE MODELS
 
 class User(AbstractUser):
     USER_TYPES = (
@@ -52,6 +58,8 @@ class Profile(models.Model):
 
 
 
+# CLASSROOM และ LESSON MODELS
+
 class Classroom(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200, verbose_name='ชื่อวิชา')
@@ -62,6 +70,7 @@ class Classroom(models.Model):
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_classes')
     created_at = models.DateTimeField(auto_now_add=True)
     cover_image = models.ImageField(upload_to='classroom_covers/', null=True, blank=True)
+    description = models.TextField(blank=True, null=True)
     
     def save(self, *args, **kwargs):
         if not self.code:
@@ -88,21 +97,24 @@ class Lesson(models.Model):
 
     def __str__(self):
         return self.title
-    
 
-from django.db import models
-# models.py
+
+
+# STORYBOOK และ RELATED MODELS
+
 class Storybook(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, related_name="storybooks", null=True, blank=True)
     title = models.CharField(max_length=255)
     file = models.FileField(upload_to='lessons/')
-    cover_image_url = models.URLField(blank=True, null=True)
+    # cover_image_url = models.URLField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_ready = models.BooleanField(default=False)
     is_failed = models.BooleanField(default=False)
     is_uploaded = models.BooleanField(default=False)
     download_permission = models.CharField(max_length=10, choices=[('public', 'Public'), ('private', 'Private')], default='public')
+    detail_lesson = models.TextField(blank=True, null=True)
+    Additional_lesson_details = models.TextField(blank=True, null=True)
     lesson = models.ForeignKey('Lesson', on_delete=models.CASCADE, related_name='storybook', null=True, blank=True)
     favorites = models.ManyToManyField(User, related_name='favorite_storybooks', blank=True)
 
@@ -113,8 +125,10 @@ class Scene(models.Model):
     text = models.TextField()
     image_prompt = models.TextField()
     image_url = models.URLField(max_length=1000, blank=True, null=True)
-    audio_url = models.URLField(max_length=1000, blank=True, null=True)  
-    
+    audio_url = models.URLField(max_length=1000, blank=True, null=True)
+
+
+# POST-TEST MODELS
 
 class PostTestQuestion(models.Model):
     storybook = models.ForeignKey(Storybook, on_delete=models.CASCADE, related_name='questions')
@@ -147,8 +161,9 @@ class PostTestAnswer(models.Model):
 
     def is_correct(self):
         return self.selected_choice == self.question.correct_choice
-    
 
+
+# REPORT MODEL
 
 class Report(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -161,7 +176,7 @@ class Report(models.Model):
         return f"Report by {self.user} on {self.storybook}"
 
 
-    
+# TEACHER ID MODEL
 
 class TeacherID(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher_id', null=True, blank=True)
@@ -171,7 +186,9 @@ class TeacherID(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.teacher_code})"
-    
+
+
+# NOTIFICATION MODEL
 
 class Notification(models.Model):
     EVENT_CHOICES = [
@@ -194,20 +211,17 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-=======
 
-# classroom/models.py
-from django.conf import settings
-from django.db import models
+
+# COMMENT MODEL
 
 class Comment(models.Model):
     storybook = models.ForeignKey('Storybook', on_delete=models.CASCADE, related_name="comments")
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-
-    # ✅ เพิ่มสำหรับแก้ไข/ลบ
-    edited_at = models.DateTimeField(null=True, blank=True)
+    edited_at = models.DateTimeField(null=True, blank=True) # เพิ่มสำหรับแก้ไข/ลบ
+    parent_comment = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='replies')
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
     deleted_by = models.ForeignKey(
@@ -222,10 +236,7 @@ class Comment(models.Model):
         return f"{self.author} : {self.message[:30]}"
 
 
-
-from django.conf import settings
-from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
+# STORYBOOK RATING MODEL
 
 class StorybookRating(models.Model):
     storybook = models.ForeignKey("Storybook", related_name="ratings", on_delete=models.CASCADE)
@@ -243,15 +254,7 @@ class StorybookRating(models.Model):
         return f"{self.user_id} -> {self.storybook_id} = {self.value}"
 
 
-
-
-
-from django.db import models
-from django.conf import settings
-from django.utils import timezone
-from datetime import timedelta
-import random
-
+# EMAIL OTP MODEL
 
 class EmailOTP(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="email_otps")
@@ -266,37 +269,23 @@ class EmailOTP(models.Model):
         return f"OTP for {self.user} ({self.otp_code})"
 
     @classmethod
-    def generate_otp(cls, user, minutes=5):
-        """
-        สร้าง OTP 6 หลัก และตั้งหมดอายุภายใน X นาที (ค่าเริ่มต้น 5)
-        """
+    def generate_otp(cls, user, minutes=5):  # สร้าง OTP 6 หลัก และตั้งหมดอายุภายใน X นาที (ค่าเริ่มต้น 5)
         code = f"{random.randint(0, 999999):06d}"
-        expires = timezone.now() + timedelta(minutes=minutes)
-        # (ทางเลือก) ลบ OTP เก่าที่หมดอายุทิ้ง
-        cls.objects.filter(user=user, expires_at__lt=timezone.now()).delete()
+        expires = timezone.now() + timedelta(minutes=minutes) 
+        cls.objects.filter(user=user, expires_at__lt=timezone.now()).delete() # ลบ OTP เก่าที่หมดอายุแล้ว
         return cls.objects.create(user=user, otp_code=code, expires_at=expires)
 
-    def is_valid(self, code: str) -> bool:
-        """
-        ตรวจว่าโค้ดตรงและยังไม่หมดอายุ
-        """
+    def is_valid(self, code: str) -> bool: # ตรวจสอบว่า OTP ถูกต้องและยังไม่หมดอายุ
         return self.otp_code == code and timezone.now() <= self.expires_at
 
-
-
-
-# classroom/models.py
-from django.conf import settings
-from django.db import models
+# STORYBOOK ACCESS MODEL
 
 class StorybookAccess(models.Model):
     storybook = models.ForeignKey("Storybook", on_delete=models.CASCADE, related_name="accesses")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-    # ถ้าต้องการเก็บเพิ่ม: ip, user_agent, session_id
     ip = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.user_id} viewed {self.storybook_id} at {self.created_at}"
-

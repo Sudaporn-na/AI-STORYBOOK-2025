@@ -11,52 +11,51 @@
             {% csrf_token %}
 
             <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-semibold">Profile Settings</h1>
+                <h1 class="text-2xl font-semibold">ตั้งค่าข้อมูลส่วนตัว</h1>
                 <a href="{% url 'view_profile_student' %}"
-                    class="px-4 py-2 bg-black text-white rounded-full text-sm flex items-center gap-2">View Profile
+                    class="px-4 py-2 bg-black text-white rounded-full text-sm flex items-center gap-2">ดูโปรไฟล์
                     →</a>
             </div>
 
-            <!-- ✅ Profile Details -->
+            <!-- Profile Details -->
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
-                    <h2 class="text-lg font-semibold mb-2">Profile Details</h2>
-                    <p class="text-sm text-gray-500">You can change your profile details.</p>
+                    <h2 class="text-lg font-semibold mb-2">รายละเอียดโปรไฟล์</h2>
+                    <p class="text-sm text-gray-500">คุณสามารถเปลี่ยนรายละเอียดโปรไฟล์ของคุณได้</p>
                 </div>
                 <div class="md:col-span-2 flex flex-col gap-4">
                     <div class="flex gap-8 items-center">
                         <div class="flex flex-col items-center gap-2">
-                            <img src="{% if user.profile_picture %}{{ user.profile_picture.url }}
-                                    {% else %}
-                                        {% static 'images/default-profile.png' %}
-                                    {% endif %}"
-                                alt="Profile" class="w-20 h-20 rounded-full object-cover" />
-                            <p class="text-xs text-gray-500">This is where people will see your actual face</p>
+                            {% if profile_form.instance.profile_picture %}
+                                <img src="{{ profile_form.instance.profile_picture.url }}"
+                                    alt="Profile"
+                                    class="w-20 h-20 rounded-full object-cover" />
+                            {% else %}
+                                <img src="{% static 'images/default-profile.png' %}"
+                                    alt="Profile"
+                                    class="w-20 h-20 rounded-full object-cover" />
+                            {% endif %}
+                            <p class="text-xs text-gray-500">นี่คือที่ที่ผู้คนจะได้เห็นใบหน้าที่แท้จริงของคุณ</p>
                         </div>
                         <div class="border border-dashed border-gray-300 rounded-lg w-full p-6 text-center">
-                            <p class="text-sm text-gray-500 mb-2">Upload new picture</p>
+                            <p class="text-sm text-gray-500 mb-2">อัพโหลดภาพใหม่</p>
 
-                            <!-- ✅ ชื่อไฟล์ -->
-                            <p id="file-name" class="text-sm text-gray-600 mb-3 truncate text-center">No file chosen</p>
+                            <p id="file-name" class="text-sm text-gray-600 mb-3 truncate text-center">ไม่ได้เลือกไฟล์</p>
 
-                            <!-- ✅ ปุ่ม Choose File ตรงกลาง -->
                             <label for="id_profile_picture"
                                 class="inline-block cursor-pointer file:bg-black bg-black text-white text-sm font-semibold py-2 px-5 rounded-full hover:bg-gray-800 transition">
-                                Choose File
+                                เลือกไฟล์
                             </label>
 
-                            <!-- ✅ input[type="file"] ซ่อน -->
                             <input type="file" name="profile_picture" id="id_profile_picture"
                                 accept="image/png, image/jpeg" class="hidden" onchange="updateFileName(event)" />
 
-                            {% if form.profile_picture.errors %}
-                            <p class="text-red-600 text-sm mt-2">{{ form.profile_picture.errors }}</p>
+                            {% if profile_form.profile_picture.errors %}
+                            <p class="text-red-600 text-sm mt-2">{{ profile_form.profile_picture.errors }}</p>
                             {% endif %}
 
-                            <p class="text-xs text-gray-400 mt-2">Supported Format: JPG, PNG (max 10MB)</p>
+                            <p class="text-xs text-gray-400 mt-2">รูปแบบที่รองรับ: SVG, JPG, PNG (ไฟล์ละ 10mb)</p>
                         </div>
-
-
                     </div>
                 </div>
             </div>
@@ -67,37 +66,37 @@
             <!-- ✅ Personal Info -->
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
-                    <h2 class="text-lg font-semibold mb-2">Personal Info</h2>
-                    <p class="text-sm text-gray-500">Change your personal information settings here.</p>
+                    <h2 class="text-lg font-semibold mb-2">ข้อมูลส่วนบุคคล</h2>
+                    <p class="text-sm text-gray-500">คุณสามารถเปลี่ยนการตั้งค่าข้อมูลส่วนตัวของคุณได้ที่นี่</p>
                 </div>
                 <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="text-sm font-medium">First Name</label>
-                        {{ form.first_name }}
+                        <label class="text-sm font-medium">ชื่อ</label>
+                        {{ user_form.first_name }}
                     </div>
                     <div>
-                        <label class="text-sm font-medium">Last Name</label>
-                        {{ form.last_name }}
+                        <label class="text-sm font-medium">นามสกุล</label>
+                        {{ user_form.last_name }}
                     </div>
                     <div>
-                        <label class="text-sm font-medium">Email Address</label>
-                        {{ form.email }}
+                        <label class="text-sm font-medium">อีเมล</label>
+                        {{ user_form.email }}
                     </div>
                     <div>
-                        <label class="text-sm font-medium">Phone Number</label>
-                        {{ form.phone }}
+                        <label class="text-sm font-medium">หมายเลขโทรศัพท์</label>
+                        {{ profile_form.phone }}
                     </div>
                     <div>
-                        <label class="text-sm font-medium">Age</label>
-                        {{ form.age }}
+                        <label class="text-sm font-medium">อายุ</label>
+                        {{ profile_form.age }}
                     </div>
                     <div>
-                        <label class="text-sm font-medium">Gender</label>
-                        {{ form.gender }}
+                        <label class="text-sm font-medium">เพศ</label>
+                        {{ profile_form.gender }}
                     </div>
                     <div>
-                        <label class="text-sm font-medium">Country</label>
-                        {{ form.country }}
+                        <label class="text-sm font-medium">ประเทศ</label>
+                        {{ profile_form.country }}
                     </div>
                 </div>
             </div>
@@ -108,21 +107,21 @@
             <!-- Public Class Code -->
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
-                    <h2 class="text-lg font-semibold mb-2">Public Class Code</h2>
-                    <p class="text-sm text-gray-500">This is the main profile that will be visible for everyone</p>
+                    <h2 class="text-lg font-semibold mb-2">รหัสชั้นเรียนสาธารณะ</h2>
+                    <p class="text-sm text-gray-500">นี่คือโปรไฟล์หลักที่ทุกคนจะมองเห็นได้</p>
                 </div>
                 <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-medium">Teaching subjects</label>
-                        {{ form.teaching_subjects }}
+                        {{ profile_form.teaching_subjects }}
                     </div>
                     <div>
                         <label class="text-sm font-medium">Class Code</label>
-                        {{ form.class_code }}
+                        {{ profile_form.class_code }}
                     </div>
                     <div class="md:col-span-2">
                         <label class="text-sm font-medium">Classroom Link</label>
-                        {{ form.classroom_link }}
+                        {{ profile_form.classroom_link }}
                     </div>
                 </div>
             </div>
@@ -133,11 +132,11 @@
             <!-- ✅ Bio Description -->
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
-                    <h2 class="text-lg font-semibold mb-2">Bio Description</h2>
-                    <p class="text-sm text-gray-500">Tell your story here.</p>
+                    <h2 class="text-lg font-semibold mb-2">คำอธิบายเกี่ยวกับตัวเอง</h2>
+                    <p class="text-sm text-gray-500">นี่จะเป็นเรื่องราวหลักของคุณ เก็บไว้ให้ยาวๆ เลย</p>
                 </div>
                 <div class="md:col-span-2">
-                    {{ form.bio }}
+                    {{ profile_form.bio }}
                 </div>
             </div>
 
@@ -147,17 +146,17 @@
             <!-- ✅ Social Media Links -->
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
-                    <h2 class="text-lg font-semibold mb-2">Social Media Links</h2>
-                    <p class="text-sm text-gray-500">Links to your social accounts.</p>
+                    <h2 class="text-lg font-semibold mb-2">ลิงค์โซเชียลมีเดีย</h2>
+                    <p class="text-sm text-gray-500">ลิงค์สำหรับโซเชียลมีเดียของคุณ</p>
                 </div>
                 <div class="md:col-span-2 space-y-4">
                     <div>
-                        <label class="text-sm font-medium">Facebook</label>
-                        {{ form.facebook }}
+                        <label class="text-sm font-medium">facebook.com/</label>
+                        {{ profile_form.facebook }}
                     </div>
                     <div>
-                        <label class="text-sm font-medium">Line</label>
-                        {{ form.line }}
+                        <label class="text-sm font-medium">line.com/</label>
+                        {{ profile_form.line }}
                     </div>
                 </div>
             </div>
@@ -165,9 +164,8 @@
             <!-- ✅ Action Buttons -->
             <div class="flex justify-end items-center gap-4 mt-6">
                 <a href="#"
-                    class="px-4 py-2 text-gray-600 hover:text-black border rounded-full">Cancel</a>
-                <button type="submit" class="px-5 py-2 bg-black text-white rounded-full hover:bg-gray-800">Save
-                    Settings</button>
+                    class="px-4 py-2 text-gray-600 hover:text-black border rounded-full">ยกเลิก</a>
+                <button type="submit" class="px-5 py-2 bg-black text-white rounded-full hover:bg-gray-800">บันทึกการตั้งค่า</button>
             </div>
         </form>
     </div>

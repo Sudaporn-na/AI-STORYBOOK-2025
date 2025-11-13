@@ -50,6 +50,7 @@ class LessonUploadForm(forms.ModelForm):
 #             'rows': 4,
 #         })
 
+
 # ฟอร์มสำหรับแก้ข้อมูลบน User เท่านั้น
 class UserUpdateForm(forms.ModelForm):
     class Meta:
@@ -175,4 +176,4 @@ class ReportForm(forms.ModelForm):
 class ClassroomForm(forms.ModelForm):
     class Meta:
         model = Classroom
-        fields = ['name', 'cover_image']
+        fields = ['name', 'cover_image', 'description']
