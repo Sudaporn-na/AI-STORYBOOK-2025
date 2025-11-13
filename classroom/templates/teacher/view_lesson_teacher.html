@@ -90,8 +90,8 @@
 
         <!-- 👤 ผู้ใช้ -->
         <div class="flex items-center space-x-3">
-            <img src="{% if request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}"
-                class="w-10 h-10 rounded-full object-cover" alt="avatar">
+        <img
+            src="{% if request.user.profile and request.user.profile.profile_picture %}{{ request.user.profile.profile_picture.url }}{% elif request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}"                class="w-10 h-10 rounded-full object-cover" alt="avatar">
             <div>
                 <p class="font-semibold text-sm text-gray-800">{{ request.user.get_full_name }}</p>
                 <p class="text-xs text-gray-500">อย่าลืมดูภาพนิ่งด้วยนะครับ</p>
@@ -177,31 +177,33 @@
 
     <form id="lesson-details" class="mt-8 hidden">
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Lesson Name</label>
-            <p class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
-                {{ storybook.title }}
-            </p>
+            <label class="block text-sm font-medium text-gray-700">Lesson Name</label>
+            <input id="lesson-name" type="text" value="{{ storybook.title }}"
+                class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
+                placeholder="Lesson Name" readonly>
+        </div>
+        <!-- Creator -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Creator</label>
+            <input id="lesson-creator" type="text"
+                value="{{ storybook.user.get_full_name|default:storybook.user.email }}"
+                class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
+                placeholder="Creator Name" readonly>
         </div>
 
+        <!-- Description -->   
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Creator</label>
-            <p class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
-                {{ storybook.user.get_full_name|default:storybook.user.email }}
-            </p>
+            <label class="block text-sm font-medium text-gray-700">Description</label>
+            <textarea id="lesson-description"
+                class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
+                placeholder="Description" readonly>{{ storybook.detail_lesson }}</textarea>
         </div>
-
+        <!-- Additional Content -->
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <div class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
-                บทเรียน AI ที่สร้างจาก PDF/DOCX
-            </div>
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Additional Content</label>
-            <div class="border border-dashed border-blue-400 rounded-lg px-4 py-3 bg-gray-100">
-                -
-            </div>
+            <label class="block text-sm font-medium text-gray-700">Additional Content</label>
+            <textarea id="lesson-additional"
+                class="w-full border border-gray-300 bg-gray-100 rounded-lg px-4 py-3 text-gray-600"
+                placeholder="Additional Content" readonly>{{ storybook.Additional_lesson_details }}</textarea>
         </div>
     </form>
 

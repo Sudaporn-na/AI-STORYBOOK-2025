@@ -52,12 +52,14 @@ class StorybookConsumer(AsyncWebsocketConsumer):
 
 
 # classroom/consumers.py
+import json
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from asgiref.sync import sync_to_async
 from django.contrib.auth.models import AnonymousUser
 from django.utils.timezone import localtime, now
 from django.contrib.auth import get_user_model
-from .models import Storybook, Comment
+from django.db.models import Q
+from .models import Storybook, Comment # ตรวจสอบให้แน่ใจว่า import Comment ที่มี parent_comment แล้ว
 
 User = get_user_model()
 
@@ -85,6 +87,9 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
         history = await self._get_recent(self.storybook_id)
         await self.send_json({"event": "init_comments", "data": history})
 
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
     async def receive_json(self, content, **kwargs):
         t = content.get("type")
         user = self.scope.get("user")
@@ -93,9 +98,14 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
 
         if t == "create":
             text = (content.get("message") or "").strip()
+            # 🌟 เพิ่ม: รับ parent_comment_id
+            parent_id = content.get("parent_comment_id")
+            
             if not text:
                 return
-            data = await self._create_and_serialize(user.id, self.storybook_id, text)
+            
+            # 🌟 ส่ง parent_id ไปด้วย
+            data = await self._create_and_serialize(user.id, self.storybook_id, text, parent_id)
             await self.channel_layer.group_send(self.group_name, {"type": "comment.created", **data})
             return
 
@@ -115,10 +125,11 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
                 return
             data = await self._delete_and_serialize(user.id, cid)
             if data:
+                # 🌟 data จะมี is_deleted: True ทำให้ฝั่ง JS ลบ DOM
                 await self.channel_layer.group_send(self.group_name, {"type": "comment.deleted", **data})
             return
 
-    # ---- group handlers ----
+    # ---- group handlers (เหมือนเดิม) ----
     async def comment_created(self, event):
         await self.send_json({"event": "comment", "data": event})
 
@@ -130,20 +141,40 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
 
     # ---- helpers ----
     @sync_to_async
-    def _create_and_serialize(self, user_id, storybook_id, message):
+    # 🌟 ปรับปรุง: เพิ่ม parent_comment_id=None
+    def _create_and_serialize(self, user_id, storybook_id, message, parent_comment_id=None):
         user = User.objects.get(pk=user_id)
         sb = Storybook.objects.get(pk=storybook_id)
-        c = Comment.objects.create(storybook=sb, author=user, message=message)
+        parent = None
+        if parent_comment_id:
+             # ตรวจสอบคอมเมนต์แม่: ต้องอยู่ใน Storybook เดียวกันและยังไม่ถูกลบ
+            try:
+                parent = Comment.objects.get(
+                    pk=parent_comment_id, storybook=sb, is_deleted=False
+                )
+            except Comment.DoesNotExist:
+                parent_comment_id = None # ถ้าหาไม่เจอหรือถูกลบแล้ว ก็สร้างเป็นคอมเมนต์หลัก
+        
+        c = Comment.objects.create(
+            storybook=sb, 
+            author=user, 
+            message=message,
+            parent_comment=parent # 🌟 กำหนดคอมเมนต์แม่
+        )
         return self._serialize_comment(c)
 
     @sync_to_async
     def _update_and_serialize(self, user_id, comment_id, message):
         try:
-            c = Comment.objects.select_related("author", "storybook").get(pk=comment_id)
+            # ใช้ select_related เพื่อดึง author และ storybook มาพร้อมกัน
+            c = Comment.objects.select_related("author", "storybook").get(pk=comment_id, is_deleted=False)
         except Comment.DoesNotExist:
             return None
-        if not self._can_edit(User.objects.get(pk=user_id), c):
+        
+        u = User.objects.get(pk=user_id)
+        if not self._can_edit(u, c):
             return None
+            
         c.message = message
         c.edited_at = now()
         c.save(update_fields=["message", "edited_at"])
@@ -152,41 +183,75 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
     @sync_to_async
     def _delete_and_serialize(self, user_id, comment_id):
         try:
-            c = Comment.objects.select_related("author", "storybook").get(pk=comment_id)
+            # ใช้ select_related เพื่อดึง author และ storybook มาพร้อมกัน
+            c = Comment.objects.select_related("author", "storybook").get(pk=comment_id, is_deleted=False)
         except Comment.DoesNotExist:
             return None
+            
         u = User.objects.get(pk=user_id)
         if not self._can_delete(u, c):
             return None
+            
         # soft delete
         c.is_deleted = True
         c.deleted_at = now()
         c.deleted_by = u
         c.save(update_fields=["is_deleted", "deleted_at", "deleted_by"])
+        
+        # 🌟 ลบคอมเมนต์ลูกทั้งหมดด้วย (Optional: หากต้องการให้การลบหลักลบลูกด้วย)
+        # Comment.objects.filter(parent_comment=c).update(
+        #     is_deleted=True, 
+        #     deleted_at=now(), 
+        #     deleted_by=u
+        # )
+        
+        # 🌟 ส่งข้อมูลกลับไป โดยมี is_deleted: True 
         return self._serialize_comment(c)
 
     @sync_to_async
-    def _get_recent(self, storybook_id, limit=100):
+    def _get_recent(self, storybook_id, limit=200): # เพิ่ม limit ให้เยอะขึ้นตาม frontend
+        # 🌟 ดึงเฉพาะคอมเมนต์หลักที่ยังไม่ถูกลบ (และคอมเมนต์ลูกที่ยังไม่ถูกลบ)
         qs = (Comment.objects
-              .filter(storybook_id=storybook_id)
-              .select_related("author")
+              .filter(
+                  Q(storybook_id=storybook_id) & (Q(parent_comment__isnull=True) | Q(parent_comment__is_deleted=False)),
+                  is_deleted=False
+              )
+              .select_related("author", "parent_comment")
               .order_by("-created_at")[:limit])
-        out = [self._serialize_comment(c) for c in qs]
-        return list(reversed(out))  # ส่งเก่า->ใหม่; ฝั่ง JS จะ prepend เพื่อให้ใหม่อยู่บน
+        
+        # ต้องดึงคอมเมนต์หลักและลูกแยกกันเพื่อให้การเรียงลำดับใน JS ถูกต้อง
+        top_level_comments = [c for c in qs if c.parent_comment is None]
+        
+        out = []
+        
+        # ดึง replies ทั้งหมดของ top_level comments ที่ดึงมา (ถ้าไม่ใช้ prefetch_related ใน view)
+        # ใน Consumer เราจะพยายามส่งแค่ top-level ที่ไม่ถูกลบ หรือ replies ที่ไม่ถูกลบ
+        # การดึง qs ทั้งหมดแล้วกรองเอาเฉพาะที่ไม่ถูกลบจะง่ายกว่า
+        
+        all_active_comments = [self._serialize_comment(c) for c in qs]
+        
+        # เราส่งทั้งหมดกลับไป โดยฝั่ง JS จะจัดเรียงเองตาม parent_comment_id
+        return list(reversed(all_active_comments)) 
 
     def _serialize_comment(self, c: Comment):
         u = c.author
+        # 🌟 เพิ่ม parent_comment_id
+        parent_id = c.parent_comment_id if c.parent_comment_id and not c.parent_comment.is_deleted else None
+
         return {
             "id": c.id,
             "author_id": u.id,
             "author": u.get_full_name() or getattr(u, "email", "ผู้ใช้"),
             "avatar_url": _best_avatar_url(u),
             "message": c.message,
-            "created_at": localtime(c.created_at).strftime("%H:%M น. %d %B %Y"),
+            # 🌟 ใช้ strftime ที่ตรงกับ JS
+            "created_at": localtime(c.created_at).strftime("%H:%M น. %j %B %Y"), 
             "edited": bool(c.edited_at),
             "is_deleted": bool(c.is_deleted),
+            "parent_comment_id": parent_id, # 🌟 เพิ่ม parent_comment_id
         }
 
+    # .... (ส่วน _can_edit / _can_delete เหมือนเดิม)
     def _can_edit(self, user, c: Comment):
         # คนเขียน, เจ้าของ storybook, staff/superuser
         return (c.author_id == user.id) or (c.storybook.user_id == user.id) or user.is_staff or user.is_superuser

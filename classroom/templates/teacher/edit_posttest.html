@@ -5,47 +5,164 @@
 {% block content %}
 <div class="max-w-4xl mx-auto px-6 py-10 space-y-8">
 
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-gray-900">แก้ไขแบบทดสอบ</h1>
-        <a href="{% url 'view_uploaded_lesson' storybook.id %}" class="text-sm text-indigo-500 hover:underline">← กลับ</a>
-    </div>
+    <h1 class="text-2xl font-bold text-[#3F2B96]">แก้ไขแบบทดสอบ</h1>
 
-    <form method="post" action="{% url 'edit_posttest' storybook.id %}" class="space-y-8">
+    <form method="post" action="{% url 'edit_posttest' storybook.id %}">
         {% csrf_token %}
 
-        {% for q in questions %}
-        <div class="bg-white border border-gray-200 p-6 rounded-lg shadow-sm space-y-4">
-            <div>
-                <label class="font-semibold text-gray-700">คำถาม {{ forloop.counter }}</label>
-                <input type="text" name="question_{{ q.id }}" value="{{ q.question_text }}"
-                    class="mt-1 w-full border rounded-md px-3 py-2 text-sm" required>
-            </div>
+        <!-- Existing Questions -->
+        <div id="existing-questions" class="space-y-6 mt-6">
+            {% for q in questions %}
+            <div class="relative bg-gray-50 border border-[#2a1f5f] p-6 rounded-lg shadow-sm space-y-4">
+                <!-- ลบข้อสอบเดิม -->
+                <button type="submit" name="delete_{{ q.id }}" class="absolute top-2 right-2 text-[#3F2B96] hover:text-[#5B49C9] text-lg" title="ลบข้อสอบ">
+                    &times;
+                </button>
 
-            {% for i in "1234"|make_list %}
-            <div class="flex items-center gap-2">
-                <input type="radio" name="correct_{{ q.id }}" value="{{ i }}" {% if q.correct_choice == i|add:0 %}checked{% endif %}>
-                <input type="text" name="choice{{ i }}_{{ q.id }}"
-                    value="{% if i == '1' %}{{ q.choice_1 }}{% elif i == '2' %}{{ q.choice_2 }}{% elif i == '3' %}{{ q.choice_3 }}{% elif i == '4' %}{{ q.choice_4 }}{% endif %}"
-                    class="w-full border rounded-md px-3 py-2 text-sm" required>
+                <div>
+                    <label class="text-sm font-medium text-[#3F2B96] block mb-1">คำถาม {{ forloop.counter }}</label>
+                    <input type="text" name="question_{{ q.id }}" value="{{ q.question_text }}" class="w-full border border-[#2a1f5f] px-4 py-2 rounded-md" required>
+                </div>
+
+                <div class="space-y-2">
+                    {% for i in "1234"|make_list %}
+                    <label class="flex items-center gap-2 border border-[#2a1f5f] px-4 py-2 rounded-md">
+                        <input type="radio" name="correct_{{ q.id }}" value="{{ i }}" {% if q.correct_choice == i|add:0 %}checked{% endif %} class="accent-[#5B49C9]" />
+                        <input type="text" name="choice{{ i }}_{{ q.id }}" value="{% if i == '1' %}{{ q.choice_1 }}{% elif i == '2' %}{{ q.choice_2 }}{% elif i == '3' %}{{ q.choice_3 }}{% elif i == '4' %}{{ q.choice_4 }}{% endif %}" class="w-full text-sm focus:outline-none" required />
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-[#3F2B96] mb-1">คำอธิบายสำหรับคำตอบที่ถูกต้อง</label>
+                    <textarea name="explanation_{{ q.id }}" class="w-full border border-[#2a1f5f] px-4 py-2 rounded-md" rows="2">{{ q.explanation }}</textarea>
+                </div>
             </div>
             {% endfor %}
-
-            <div>
-                <label class="text-sm text-gray-600">คำอธิบายสำหรับคำตอบที่ถูกต้อง</label>
-                <textarea name="explanation_{{ q.id }}" class="w-full border rounded-md px-3 py-2 text-sm" rows="2">{{ q.explanation }}</textarea>
-            </div>
         </div>
-        {% empty %}
-        <p class="text-sm text-gray-500 italic">ยังไม่มีคำถามแบบทดสอบ</p>
-        {% endfor %}
 
-        <div class="flex justify-end">
-            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm">
+        <!-- เพิ่มข้อสอบใหม่ -->
+        <h3 class="text-xl font-bold text-[#3F2B96] mt-10">เพิ่มข้อสอบใหม่</h3>
+        <div id="question-container" class="space-y-6 mt-6"></div>
+        <div class="flex justify-center mt-6">
+            <button id="add-question-btn" type="button" class="px-6 py-2 rounded-md bg-[#3F2B96] text-white text-sm hover:bg-[#5B49C9] transition">
+                + เพิ่มแบบทดสอบ
+            </button>
+        </div>
+
+        <div class="flex justify-end mt-6">
+            <button type="submit" class="bg-[#3F2B96] hover:bg-[#5B49C9] text-white px-6 py-2 rounded-md text-sm">
                 บันทึกการเปลี่ยนแปลง
             </button>
         </div>
     </form>
-
 </div>
+
+<!-- JS เพิ่มข้อสอบใหม่ -->
+<!-- <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('question-container');
+    const addBtn = document.getElementById('add-question-btn');
+    let index = 0;
+    const maxQuestions = 10;
+
+    addBtn.addEventListener('click', () => {
+        const totalQuestions = container.children.length;
+        if (totalQuestions >= maxQuestions) {
+            alert(`สามารถเพิ่มได้สูงสุด ${maxQuestions} ข้อ`);
+            return;
+        }
+
+        const div = document.createElement('div');
+        div.className = 'relative bg-gray-50 border border-[#2a1f5f] p-6 rounded-lg space-y-4';
+
+        div.innerHTML = `
+            <button type="button" class="absolute top-2 right-2 text-[#3F2B96] hover:text-[#5B49C9] text-lg remove-btn" title="Remove">&times;</button>
+
+            <div class="mb-4">
+                <label class="text-sm font-medium text-[#3F2B96] block mb-1">Question ${index + 1}</label>
+                <input type="text" name="new_question[]" class="w-full border border-[#2a1f5f] px-4 py-2 rounded-md" placeholder="Enter your question..." required />
+            </div>
+
+            <div class="space-y-2">
+                ${[1,2,3,4].map(i => `
+                    <label class="flex items-center gap-2 border border-[#2a1f5f] px-4 py-2 rounded-md">
+                        <input type="radio" name="new_correct_${index}" value="${i}" class="accent-[#5B49C9]" ${i===1?'checked':''} />
+                        <input type="text" name="new_choice${i}[]" class="w-full text-sm focus:outline-none" placeholder="Choice ${i}" required />
+                    </label>
+                `).join('')}
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-[#3F2B96] mb-1">คำอธิบายสำหรับคำตอบที่ถูกต้อง</label>
+                <textarea name="new_explanation[]" class="w-full border border-[#2a1f5f] px-4 py-2 rounded-md" rows="2" placeholder="ใส่คำอธิบาย"></textarea>
+            </div>
+        `;
+
+        container.appendChild(div);
+        index++;
+
+        // ลบข้อสอบใหม่
+        div.querySelector('.remove-btn').addEventListener('click', () => {
+            div.remove();
+        });
+    });
+});
+</script> -->
+
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('question-container');
+    const addBtn = document.getElementById('add-question-btn');
+    const existingCount = {{ questions|length }};  // <-- จำนวนข้อสอบเดิมในฐานข้อมูล
+    let index = existingCount; // เริ่มนับต่อจากข้อสุดท้าย
+    const maxQuestions = 10;
+
+    addBtn.addEventListener('click', () => {
+        const totalQuestions = existingCount + container.children.length;
+        if (totalQuestions >= maxQuestions) {
+            alert(`สามารถเพิ่มได้สูงสุด ${maxQuestions} ข้อ`);
+            return;
+        }
+
+        const div = document.createElement('div');
+        div.className = 'relative bg-gray-50 border border-[#2a1f5f] p-6 rounded-lg space-y-4';
+
+        div.innerHTML = `
+            <button type="button" class="absolute top-2 right-2 text-[#3F2B96] hover:text-[#5B49C9] text-lg remove-btn" title="Remove">&times;</button>
+
+            <div class="mb-4">
+                <label class="text-sm font-medium text-[#3F2B96] block mb-1">Question ${index + 1}</label>
+                <input type="text" name="new_question[]" class="w-full border border-[#2a1f5f] px-4 py-2 rounded-md" placeholder="Enter your question..." required />
+            </div>
+
+            <div class="space-y-2">
+                ${[1,2,3,4].map(i => `
+                    <label class="flex items-center gap-2 border border-[#2a1f5f] px-4 py-2 rounded-md">
+                        <input type="radio" name="new_correct_${index}" value="${i}" class="accent-[#5B49C9]" ${i===1?'checked':''} />
+                        <input type="text" name="new_choice${i}[]" class="w-full text-sm focus:outline-none" placeholder="Choice ${i}" required />
+                    </label>
+                `).join('')}
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-[#3F2B96] mb-1">คำอธิบายสำหรับคำตอบที่ถูกต้อง</label>
+                <textarea name="new_explanation[]" class="w-full border border-[#2a1f5f] px-4 py-2 rounded-md" rows="2" placeholder="ใส่คำอธิบาย"></textarea>
+            </div>
+        `;
+
+        container.appendChild(div);
+        index++;
+
+        // ลบข้อสอบใหม่
+        div.querySelector('.remove-btn').addEventListener('click', () => {
+            div.remove();
+        });
+    });
+});
+</script>
+
 {% endblock %}

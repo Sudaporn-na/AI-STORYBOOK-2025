@@ -104,10 +104,11 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_ADAPTER = 'classroom.adapters.CustomAccountAdapter'
 SOCIALACCOUNT_ADAPTER = 'classroom.adapters.CustomSocialAccountAdapter'
 
-ACCOUNT_USERNAME_REQUIRED = True
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'  # เพราะคุณใช้ AbstractUser
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
+
+# ACCOUNT_USERNAME_REQUIRED = True
+# ACCOUNT_EMAIL_REQUIRED = True
+# ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'  # เพราะคุณใช้ AbstractUser
+# ACCOUNT_AUTHENTICATION_METHOD = 'email'
 
 
 
@@ -123,6 +124,12 @@ ACCOUNT_LOGOUT_REDIRECT_URL = '/auth/'
 # ACCOUNT_LOGIN_METHODS = {'email'}
 # ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+
+
+
+
 
 CACHES = {
     'default': {
@@ -130,26 +137,7 @@ CACHES = {
     }
 }
 
-
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 465
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = 'sudaphornsahnguandi5488@gmail.com'
-# EMAIL_HOST_PASSWORD = 'tvzo qqoz pkxh xubd'  # App Password 16 หลัก
-
-
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_USE_SSL = False
-
-# EMAIL_HOST_USER = 'sudaphornsahnguandi5488@gmail.com'
-# EMAIL_HOST_PASSWORD = 'tvzoqqozpkxhxubd'  # 16 ตัวติดกัน
-# DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
-
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -202,9 +190,9 @@ WSGI_APPLICATION = 'classroom_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'AISTORYBOOK'),
+        'NAME': os.environ.get('DB_NAME', 'NSC2025'),
         'USER': os.environ.get('DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'Prabenz@34839'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'Suda@04022547'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
         },
