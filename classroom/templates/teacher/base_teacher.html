@@ -1,4 +1,6 @@
 {% load static %}
+{% load socialaccount %}
+{% get_social_accounts user as accounts %}
 <link rel="icon" href="{% static 'images/logo.png' %}" type="image/png">
 <!DOCTYPE html>
 <html lang="th">
@@ -93,7 +95,7 @@
             <li>
               <a href="{% url 'teacher_lesson_history' %}">
                 <i class="icon ph-bold ph-calendar-blank"></i>
-                <span class="text">ประวัติ</span>
+                <span class="text">ประวัติการสร้างบทเรียน</span>
               </a>
             </li>
             <li>
@@ -156,11 +158,17 @@
           <a href="{% url 'profile_settings_teacher' %}">
             <div class="user-img">
               <img
-                src="{% if user.is_authenticated and user.profile and user.profile.profile_picture %}
+                src="
+                  {% if user.profile and user.profile.profile_picture %}
                       {{ user.profile.profile_picture.url }}
-                    {% else %}
+
+                  {% elif accounts.google %}
+                      {{ accounts.google.0.extra_data.picture }}
+
+                  {% else %}
                       {% static 'images/default-profile.jpg' %}
-                    {% endif %}"
+                  {% endif %}
+                "
                 class="rounded-full w-12 h-12 object-cover"
               />
             </div>

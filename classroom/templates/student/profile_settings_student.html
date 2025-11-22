@@ -1,12 +1,14 @@
 {% extends "student/base_student.html" %}
 {% load static %}
+{% load socialaccount %}
+{% get_social_accounts user as accounts %}
 {% block title %}Profile Settings{% endblock %}
 {% block content %}
 
 <div class="bg-gray-50 w-full font-poppins text-gray-700 min-h-screen px-6 py-8">
     <div class="max-w-5xl mx-auto">
 
-        <!-- ✅ เริ่ม Form -->
+        <!-- เริ่ม Form -->
         <form method="POST" enctype="multipart/form-data" class="space-y-10">
             {% csrf_token %}
 
@@ -30,12 +32,18 @@
                                 <img src="{{ profile_form.instance.profile_picture.url }}"
                                     alt="Profile"
                                     class="w-20 h-20 rounded-full object-cover" />
+                            {% elif accounts.google %}
+                                <img src="{{ accounts.google.0.extra_data.picture }}"
+                                    alt="Google Avatar"
+                                    class="w-20 h-20 rounded-full object-cover" />
                             {% else %}
                                 <img src="{% static 'images/default-profile.png' %}"
                                     alt="Profile"
                                     class="w-20 h-20 rounded-full object-cover" />
                             {% endif %}
-                            <p class="text-xs text-gray-500">นี่คือที่ที่ผู้คนจะได้เห็นใบหน้าที่แท้จริงของคุณ</p>
+                            <p class="text-xs text-gray-500">
+                                นี่คือที่ที่ผู้คนจะได้เห็นใบหน้าที่แท้จริงของคุณ
+                            </p>
                         </div>
                         <div class="border border-dashed border-gray-300 rounded-lg w-full p-6 text-center">
                             <p class="text-sm text-gray-500 mb-2">อัพโหลดภาพใหม่</p>

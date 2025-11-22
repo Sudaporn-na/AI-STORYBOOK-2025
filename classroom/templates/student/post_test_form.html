@@ -8,14 +8,14 @@
         {% csrf_token %}
 
         <h2 class="text-3xl font-bold text-center text-purple-700">
-            🎮 แบบทดสอบจากนิทาน AI
+            แบบทดสอบจากนิทาน AI
         </h2>
 
         {% for item in randomized_questions %}
         <div class="question-step {% if not forloop.first %}hidden{% endif %}" data-step="{{ forloop.counter0 }}">
             <div class="space-y-6">
                 <p class="text-xl font-semibold text-purple-800">
-                    ❓ ข้อ {{ forloop.counter }}: {{ item.question.question_text }}
+                    ข้อ {{ forloop.counter }}: {{ item.question.question_text }}
                 </p>
 
                 <div class="space-y-4">
@@ -34,7 +34,7 @@
                     {% if not forloop.first %}
                     <button type="button"
                         class="prev-btn px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-full shadow hover:bg-gray-400 transition">
-                        ⬅️ ย้อนกลับ
+                        ย้อนกลับ
                     </button>
                     {% else %}
                     <span></span>  <!-- Placeholder to align next button to right -->
@@ -42,7 +42,7 @@
 
                     <button type="button"
                         class="next-btn px-6 py-2 bg-purple-600 text-white font-semibold rounded-full shadow hover:bg-purple-500 transition">
-                        ถัดไป ➡️
+                        ถัดไป
                     </button>
                 </div>
 
@@ -53,7 +53,7 @@
         <div id="submit-section" class="hidden text-center">
             <button type="submit"
                 class="mt-8 px-10 py-3 bg-pink-600 hover:bg-pink-500 text-white font-bold text-lg rounded-full shadow-lg transition">
-                ✅ ส่งคำตอบทั้งหมด
+                ส่งคำตอบทั้งหมด
             </button>
         </div>
     </form>
@@ -77,7 +77,7 @@
             const selected = currentQuestion.querySelector("input[type='radio']:checked");
 
             if (!selected) {
-                alert("กรุณาเลือกคำตอบก่อนนะครับ 😊");
+                alert("กรุณาเลือกคำตอบก่อนนะครับ");
                 return;
             }
 

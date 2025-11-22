@@ -3,15 +3,16 @@
 
 {% block content %}
 
+<!-- Tailwind Custom Colors -->
 <script>
   tailwind.config = {
     theme: {
       extend: {
         colors: {
-          brandDeep: '#3F2B96',   // primary deep purple
-          brandMid:  '#5B49C9',   // mid purple
-          divider:   '#2a1f5f',   // dark divider
-          yunaBg:    '#F3F9FC',   // soft bg
+          brandDeep: '#3F2B96',
+          brandMid:  '#5B49C9',
+          divider:   '#2A1F5F',
+          yunaBg:    '#F3F9FC',
         }
       }
     }
@@ -22,86 +23,82 @@
 
   <!-- Header -->
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold">หลักสูตร</h1>
+    <h1 class="text-3xl font-bold text-brandDeep">หลักสูตร</h1>
+
     {% if user.user_type == 'teacher' %}
     <a href="{% url 'class_create' %}"
-      class="flex items-center gap-2 text-sm px-4 py-2 bg-brandDeep text-white rounded-full hover:bg-indigo-700 transition">
+      class="flex items-center gap-2 text-sm px-5 py-2 bg-brandDeep text-white rounded-full shadow hover:bg-brandMid transition">
       <span class="text-lg font-bold">+</span> สร้างห้องเรียน
     </a>
     {% endif %}
   </div>
 
-  <!-- Search Box -->
+  <!-- Search -->
   <form method="get" class="mb-10">
     <input
       name="q"
       type="text"
       value="{{ q }}"
       placeholder="ค้นหาห้องเรียน..."
-      class="w-full px-5 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 shadow-sm bg-white"
+      class="w-full px-5 py-3 rounded-xl border border-brandMid focus:ring-2 focus:ring-brandMid shadow-sm bg-white"
     />
   </form>
-
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-    {% for classroom in classrooms %}
-      <!-- เหมือนด้านบน -->
-    {% empty %}
-      <div class="col-span-full text-center text-gray-500">ไม่พบห้องเรียน</div>
-    {% endfor %}
-  </div>
 
   <!-- Subtitle -->
   <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
     <div>
-      <h2 class="text-2xl font-semibold">หลักสูตรที่ฉันสร้าง</h2>
-      <p class="text-sm text-gray-500">อย่าประเมินพลังของเรื่องราวต่ำเกินไป
-        แม้แต่เรื่องราวที่เรียบง่ายที่สุดก็ยังมีคุณธรรมที่ลึกซึ้ง</p>
+      <h2 class="text-2xl font-semibold text-brandDeep">หลักสูตรที่ฉันสร้าง</h2>
+      <p class="text-sm text-gray-500">อย่าประเมินพลังของเรื่องราว แม้เรื่องราวที่เรียบง่ายก็มีคุณค่าลึกซึ้ง</p>
     </div>
-    <div class="text-sm text-indigo-600 font-medium whitespace-nowrap">
+    <div class="text-sm text-brandMid font-medium whitespace-nowrap">
       {{ classrooms|length }} หลักสูตร
     </div>
   </div>
 
-
-  <!-- Grid of Enrolled Courses -->
+  <!-- Classroom Cards -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+
     {% for classroom in classrooms %}
-    <div class="bg-white rounded-2xl shadow-md hover:shadow-xl transition overflow-hidden">
+    <div class="bg-white rounded-2xl border border-[#eae8ff] shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden group">
+
+      <!-- Cover -->
       {% if classroom.cover_image %}
-      <img src="{{ classroom.cover_image.url }}" alt="{{ classroom.name }}" class="w-full h-44 object-cover" />
+      <img src="{{ classroom.cover_image.url }}" alt="{{ classroom.name }}" class="w-full h-44 object-cover group-hover:opacity-90 transition">
       {% else %}
-      <div
-        class="w-full h-44 flex items-center justify-center bg-gradient-to-r from-purple-400 to-gray-500 text-white text-lg font-bold">
+      <div class="w-full h-44 flex items-center justify-center bg-gradient-to-r from-brandMid to-gray-400 text-white text-lg font-bold">
         ไม่มีภาพหน้าปก
       </div>
       {% endif %}
 
-      <div class="p-5 space-y-2">
-        <!-- ชื่อวิชา + ปุ่ม 3 จุด -->
+      <!-- Body -->
+      <div class="p-5 space-y-3">
+
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold">{{ classroom.name }}</h3>
+          <h3 class="text-lg font-semibold text-gray-900 group-hover:text-brandDeep transition">{{ classroom.name }}</h3>
 
           {% if user == classroom.teacher %}
-          <!-- ปุ่ม 3 จุด -->
+          <!-- Menu Button -->
           <div class="relative inline-block text-left">
-            <button type="button" 
-                    class="text-gray-500 hover:text-gray-700 focus:outline-none"
+            <button type="button"
+                    class="text-gray-500 hover:text-brandDeep focus:outline-none"
                     onclick="toggleMenu('{{ classroom.id }}')">
-              <i class="bi bi-three-dots-vertical text-lg"></i>
+              <i class="bi bi-three-dots-vertical text-xl"></i>
             </button>
 
-            <!-- เมนูแก้ไข/ลบ -->
-            <div id="menu-{{ classroom.id }}" 
-                class="hidden absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-              <a href="{% url 'edit_classroom' classroom.id %}" 
-                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <!-- Dropdown Menu -->
+            <div id="menu-{{ classroom.id }}"
+                 class="hidden absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+              
+              <a href="{% url 'edit_classroom' classroom.id %}"
+                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-brandMid hover:text-white transition">
                 แก้ไขรายละเอียด
               </a>
+
               <form method="post" action="{% url 'delete_classroom' classroom.id %}"
-                    onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบชั้นเรียนนี้? ทุกข้อมูลจะถูกลบตามไปด้วย');">
+                    onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบห้องเรียนนี้?');">
                 {% csrf_token %}
-                <button type="submit" 
-                        class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                <button type="submit"
+                        class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">
                   ลบชั้นเรียน
                 </button>
               </form>
@@ -110,33 +107,36 @@
           {% endif %}
         </div>
 
-        <!-- รายละเอียด -->
         <p class="text-xs text-gray-500">
           โดย {{ classroom.teacher.get_full_name|default:classroom.teacher.username }}
         </p>
-        <p class="text-sm text-gray-600">
-          สวัสดี, ครูชื่อ {{ classroom.teacher.first_name }}. มาเริ่มเรียนรู้ไปพร้อมๆ กัน
-        </p>
-        <p class="text-sm text-gray-600">
+
+        <p class="text-sm text-gray-700">
           {{ classroom.description|default:"ไม่มีคำอธิบายสำหรับห้องเรียนนี้" }}
         </p>
 
-        <!-- ลิงก์เข้าห้องเรียน ยังคงตำแหน่งเดิม -->
-        <div class="mt-4 flex justify-between text-sm text-indigo-600 font-semibold">
-          <span>Lessons</span>
-          <a href="{% url 'classroom_home' classroom.id %}" class="hover:underline">เข้าห้องเรียน</a>
+        <div class="mt-4 flex justify-between text-sm font-semibold">
+          <span class="text-brandMid">บทเรียน</span>
+          <a href="{% url 'classroom_home' classroom.id %}"
+             class="text-brandDeep hover:underline">
+            เข้าห้องเรียน
+          </a>
         </div>
+
       </div>
     </div>
+
     {% empty %}
     <div class="col-span-full text-center text-gray-500">
-      คุณยังไม่ได้ลงทะเบียนในชั้นเรียนใดๆ
+      ไม่พบห้องเรียน
     </div>
     {% endfor %}
+
   </div>
 
 </div>
 
+<!-- JS Toggle Menu -->
 <script>
   function toggleMenu(id) {
     document.querySelectorAll('[id^="menu-"]').forEach(el => {
@@ -146,7 +146,7 @@
     menu.classList.toggle('hidden');
   }
 
-  // คลิกนอกเมนูเพื่อปิด
+  // Close menu if click outside
   document.addEventListener('click', function(e) {
     if (!e.target.closest('.relative.inline-block.text-left')) {
       document.querySelectorAll('[id^="menu-"]').forEach(el => el.classList.add('hidden'));

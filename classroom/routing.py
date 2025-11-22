@@ -1,13 +1,12 @@
 # classroom/routing.py
 from django.urls import path
-from . import consumers
+from .consumers import StorybookConsumer, SceneProgressConsumer, CommentConsumer
 from .consumers_rating import RatingConsumer
-# from django.urls import re_path
-# from .consumers import StorybookConsumer 
 
 websocket_urlpatterns = [
-    path("ws/storybook/<int:storybook_id>/", consumers.SceneProgressConsumer.as_asgi()),
-    path("ws/storybook/<int:storybook_id>/comments/", consumers.CommentConsumer.as_asgi()),  
-    path("ws/storybook/<int:storybook_id>/rating/", RatingConsumer.as_asgi()),   # ใหม่
-    # re_path(r"ws/storybook/(?P<storybook_id>\d+)/$", StorybookConsumer.as_asgi()),
+    path("ws/storybook-progress/<int:storybook_id>/", StorybookConsumer.as_asgi()), # ใช้ตอนหน้าโหลดกำลังสร้างนิทาน
+    path("ws/storybook/<int:storybook_id>/", SceneProgressConsumer.as_asgi()), # ใช้ตอนหน้า flipbook แสดงฉาก
+    path("ws/storybook/<int:storybook_id>/comments/", CommentConsumer.as_asgi()), # comments
+    path("ws/storybook/<int:storybook_id>/rating/", RatingConsumer.as_asgi()), # ratings
 ]
+
