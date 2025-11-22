@@ -1,0 +1,38 @@
+{% extends "admin/base_admin.html" %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-xl mx-auto mt-10 bg-white shadow-lg rounded-xl p-8">
+  <h2 class="text-xl font-bold text-blue-900 mb-1">แก้ไขข้อมูลครู</h2>
+  <p class="text-sm text-gray-600 mb-6">ปรับปรุงข้อมูลแล้วกดบันทึก</p>
+
+  <form method="POST" class="space-y-4">
+    {% csrf_token %}
+
+    <div class="relative">
+      <span class="absolute left-3 top-2.5 text-gray-400 material-symbols-outlined">person</span>
+      <input name="full_name" type="text" value="{{ teacher.full_name }}" placeholder="ชื่อเต็ม"
+             class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+    </div>
+
+    <div class="relative">
+      <span class="absolute left-3 top-2.5 text-gray-400 material-symbols-outlined">mail</span>
+      <input name="email" type="email" value="{{ teacher.email }}" placeholder="อีเมล"
+             class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+    </div>
+
+    <div class="relative">
+      <span class="absolute left-3 top-2.5 text-gray-400 material-symbols-outlined">lock</span>
+      <input name="teacher_code" type="text" value="{{ teacher.teacher_code }}" placeholder="รหัสประจำตัว"
+             class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+    </div>
+
+    <div class="flex items-center gap-3 pt-2">
+      <a href="{% url 'add_teacher_registry' %}" class="px-4 py-2 rounded-lg border text-gray-700 hover:bg-gray-50">ยกเลิก</a>
+      <button type="submit" class="px-4 py-2 rounded-lg bg-blue-900 text-white hover:bg-blue-800 font-semibold">บันทึก</button>
+    </div>
+  </form>
+</div>
+
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+{% endblock %}

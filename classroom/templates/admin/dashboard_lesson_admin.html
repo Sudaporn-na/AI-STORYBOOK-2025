@@ -48,12 +48,21 @@
           </div>
         </div>
 
-        <form action="{% url 'delete_reported_storybook' report.storybook.id %}" method="post">
+        <!-- <form action="{% url 'delete_report' report.id %}" method="post">
           {% csrf_token %}
-          <button type="submit" class="text-red-400 hover:text-red-600" title="ลบบทเรียน">
+          <button type="submit" class="text-red-400 hover:text-red-600" title="ลบรายงาน">
+            <i class="fas fa-trash-alt fa-lg"></i>
+          </button>
+        </form> -->
+        <form action="{% url 'delete_report' report.id %}" 
+          method="post"
+          onsubmit="return confirm('คุณต้องการลบรายงานนี้หรือไม่?');">
+          {% csrf_token %}
+          <button type="submit" class="text-red-400 hover:text-red-600" title="ลบรายงาน">
             <i class="fas fa-trash-alt fa-lg"></i>
           </button>
         </form>
+
       </div>
       {% empty %}
       <p class="text-center text-gray-500 py-8">ยังไม่มีรายงานบทเรียน</p>

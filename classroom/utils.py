@@ -19,8 +19,11 @@ from pydub import AudioSegment
 load_dotenv()
 
 # --- FFmpeg path for pydub ---
-FFMPEG_BIN  = os.getenv("FFMPEG_BIN",  r"C:\ffmpeg\ffmpeg-8.0-full_build\bin\ffmpeg.exe")
-FFPROBE_BIN = os.getenv("FFPROBE_BIN", r"C:\ffmpeg\ffmpeg-8.0-full_build\bin\ffprobe.exe")
+
+FFMPEG_BIN  = os.getenv("FFMPEG_BIN",  r"D:\Acer\Download\ffmpeg-8.0-full_build\ffmpeg-8.0-full_build\bin\ffmpeg.exe")
+FFPROBE_BIN = os.getenv("FFPROBE_BIN", r"D:\Acer\Download\ffmpeg-8.0-full_build\ffmpeg-8.0-full_build\bin\ffprobe.exe")
+
+
 AudioSegment.converter = FFMPEG_BIN
 AudioSegment.ffprobe   = FFPROBE_BIN
 

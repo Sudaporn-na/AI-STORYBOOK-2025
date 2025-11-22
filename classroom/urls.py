@@ -84,15 +84,19 @@ urlpatterns = [
     path("school-admin/add-teacher/", views.add_teacher_registry_view, name="add_teacher_registry"),
     path('school-admin/delete-teacher/<int:teacher_id>/', views.delete_teacher_view, name='delete_teacher'),
     path('school-admin/delete-user/<int:user_id>/', views.delete_user_view, name='delete_user'),
+    # path('school-admin/teachers/<int:pk>/edit/', views.edit_teacher, name='edit_teacher'),
+    path('school-admin/teachers/<int:teacher_id>/edit/',views.edit_teacher,name='edit_teacher'),
 
     path('school-admin/teacher/<int:teacher_id>/lessons/', views.teacher_lesson_list_view, name='teacher_lesson_list'),
     path('school-admin/teacher/lesson/<int:lesson_id>/delete/', views.delete_teacher_lesson_view, name='delete_teacher_lesson'),
     path('school-admin/reported-lessons/', views.admin_reported_lessons_view, name='admin_reported_lessons'),
     path('school-admin/report/<int:storybook_id>/', views.admin_report_detail_view, name='admin_report_detail'),
-    path('school-admin/delete-storybook/<int:storybook_id>/', views.delete_reported_storybook, name='delete_reported_storybook'),
+    # path('school-admin/delete-storybook/<int:storybook_id>/', views.delete_reported_storybook, name='delete_reported_storybook'),
     path('school-admin/teacher/storybooks/<int:teacher_id>/', views.teacher_storybooks_admin_view, name='teacher_storybooks_admin'),
     path('school-admin/teacher/lesson/<int:storybook_id>/', views.admin_view_lesson_detail, name='admin_view_lesson_detail'),
     path('school-admin/teacher/storybook/delete/<int:storybook_id>/', views.delete_teacher_storybook_view, name='delete_teacher_storybook'),
+    path('school-admin/delete-report/<int:report_id>/', views.delete_report, name='delete_report'),
+
     path('admin/lesson/delete/<int:storybook_id>/', views.delete_storybook, name='delete_storybook'),
 
     path('school-admin/profile-settings-admin/', views.profile_settings_admin, name='profile_settings_admin'),
@@ -104,4 +108,7 @@ urlpatterns = [
     path('notifications/unread-count/', views.notifications_unread_count, name='notifications_unread_count'),
     path('notifications/mark-read/<int:pk>/', views.notifications_mark_read, name='notifications_mark_read'),
     path('notifications/mark-all-read/', views.notifications_mark_all_read, name='notifications_mark_all_read'),
+    path('storybook/<uuid:storybook_id>/share/', views.share_storybook, name='share_storybook'),
+
+
 ]
