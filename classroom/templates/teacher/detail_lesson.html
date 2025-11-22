@@ -46,14 +46,8 @@
         <!-- Play/Pause -->
         <button id="player-toggle"
             class="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow hover:bg-gray-100 transition">
-            <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800" viewBox="0 0 24 24"
-                fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-            </svg>
-            <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800 hidden"
-                viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
-            </svg>
+            <i id="icon-play" class="ph-fill ph-play text-gray-800 text-xl"></i> 
+            <i id="icon-pause" class="ph-fill ph-pause text-gray-800 text-xl hidden"></i>
         </button>
 
         <!-- Progress Bar -->
@@ -69,16 +63,8 @@
             <span id="global-time-display" class="block text-right text-sm text-gray-700 mt-1">00:00 / 00:00</span>
             <button id="mute-btn"
                 class="flex items-center justify-center w-9 h-9 rounded-full bg-white shadow hover:bg-gray-100 transition">
-                <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a9 9 0 010 12.73" />
-                </svg>
-                <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800 hidden"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 14M15 5l-7 14" />
-                </svg>
+                <i id="icon-sound-on" class="ph-bold ph-speaker-simple-high text-gray-800 text-xl"></i>
+                <i id="icon-sound-off" class="ph-bold ph-speaker-simple-slash text-gray-800 text-xl hidden"></i>
             </button>
         </div>
     </div>
@@ -167,6 +153,29 @@
         </form>
     </div>
 
+    <div id="loading-modal"
+        class="hidden fixed inset-0 bg-[#ffffffd5] backdrop-blur-sm flex items-center justify-center z-[9999]">
+        <div class="bg-white w-[480px] p-8 rounded-2xl shadow-xl text-center space-y-6 border">
+            <h2 id="loading-title" class="text-2xl font-bold text-gray-800">
+                กำลังสร้างนิทาน...
+            </h2>
+
+            <p id="loading-sub" class="text-gray-500 text-sm">
+                กำลังสร้างพรอมต์...
+            </p>
+
+            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div id="loading-progress"
+                    class="h-3 w-0 bg-blue-500 rounded-full transition-all duration-300"></div>
+            </div>
+
+            <p id="loading-percent" class="text-sm font-medium text-gray-600">
+                0%
+            </p>
+        </div>
+    </div>
+
+
 </div>
 
 <!-- JS -->
@@ -214,54 +223,6 @@
     }
 </script>
 
-<script>
-    const scenes = {{ scenes| safe }};
-    const container = document.querySelector(".grid.grid-cols-2");
-    let currentIndex = 0;
-
-    function renderScenes(index) {
-        container.innerHTML = "";
-        const left = scenes[index];
-        const right = scenes[index + 1];
-
-        [left, right].forEach((scene) => {
-            const sceneDiv = document.createElement("div");
-            sceneDiv.className = "relative flex items-end justify-center p-4 border-r border-gray-300";
-
-            if (scene) {
-                sceneDiv.innerHTML = `
-                    ${scene.image_url ? `<img src="${scene.image_url}" alt="Scene" class="absolute inset-0 w-full h-full object-cover">` : ''}
-                    <div class="relative z-10 flex flex-col items-center space-y-2">
-                        <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded-md max-w-[90%] text-center shadow-lg">
-                            ${scene.text || ''}
-                        </p>
-                        ${scene.audio_url ? `<audio controls src="${scene.audio_url}" class="w-full max-w-xs"></audio>` : ''}
-                    </div>
-                `;
-            } else {
-                sceneDiv.innerHTML = `<div class="text-gray-400 text-sm italic">Empty Page</div>`;
-            }
-
-            container.appendChild(sceneDiv);
-        });
-    }
-
-    document.getElementById("next-btn")?.addEventListener("click", () => {
-        currentIndex = (currentIndex + 2) % scenes.length;
-        renderScenes(currentIndex);
-    });
-
-    document.getElementById("prev-btn")?.addEventListener("click", () => {
-        currentIndex = (currentIndex - 2 + scenes.length) % scenes.length;
-        renderScenes(currentIndex);
-    });
-
-    renderScenes(0); // Initial render
-</script>
-
-
-
-
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -295,7 +256,7 @@
 
                 <div class="mt-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">คำอธิบายสำหรับคำตอบที่ถูกต้อง</label>
-                    <textarea class="w-full border border-dashed border-gray-300 px-4 py-2 rounded-md"
+                    <textarea class="w-full border border-dashed border-gray-300 px-4 py-2 rounded-md explanation-textarea"
                             placeholder="ใส่คำอธิบาย เช่น ทำไมข้อนี้ถึงถูก หรือหลักการที่ใช้ตอบ">
                     </textarea>
                 </div>
@@ -369,7 +330,103 @@
 
 
 <!-- ฝังค่าจาก Django -->
-<div id="storybook-meta" data-storybook-id="{{ storybook.id }}" data-csrf="{{ csrf_token }}"></div>
+<div id="storybook-meta"
+     data-storybook-id="{{ storybook.id }}"
+     data-csrf="{{ csrf_token }}"
+     data-status="{% if storybook.is_ready %}ready{% elif storybook.is_failed %}failed{% else %}processing{% endif %}">
+</div>
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const modal   = document.getElementById("loading-modal");
+    const sub     = document.getElementById("loading-sub");
+    const bar     = document.getElementById("loading-progress");
+    const percent = document.getElementById("loading-percent");
+
+    const meta        = document.getElementById("storybook-meta");
+    const storybookId = meta.dataset.storybookId;
+    const status      = meta.dataset.status;   // ready / failed / processing
+
+    let ws = null;
+    const totalScenes = 20;
+
+    // ฟังก์ชันเริ่มโหลด + เปิด WebSocket
+    function startProgressWebSocket() {
+        // แสดง modal (เพราะตอนนี้กำลังประมวลผลจริง ๆ)
+        modal.classList.remove("hidden");
+
+        ws = new WebSocket(`ws://${window.location.host}/ws/storybook-progress/${storybookId}/`);
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+
+            // === PROMPT ===
+            if (data.evt === "progress" && data.status === "creating_prompt") {
+                sub.textContent = "กำลังสร้างพรอมต์...";
+                bar.style.width = "5%";
+                percent.textContent = "5%";
+            }
+
+            // === SCENE X ===
+            if (data.evt === "progress" && data.status === "creating_scene") {
+                const x = data.current || 1;
+                sub.textContent = `กำลังสร้างฉากที่ ${x} / ${totalScenes}`;
+                let p = Math.floor((x / totalScenes) * 95) + 5;
+                bar.style.width = p + "%";
+                percent.textContent = p + "%";
+            }
+
+            // === FINISHED ===
+            if (data.evt === "progress" && data.status === "finished") {
+                sub.textContent = "สร้างนิทานเสร็จแล้ว!";
+                bar.style.width = "100%";
+                percent.textContent = "100%";
+
+                setTimeout(() => {
+                    modal.classList.add("hidden");
+                }, 800);
+
+                ws.close();
+            }
+
+            // === FAILED (เผื่อ Celery error) ===
+            if (data.evt === "progress" && data.status === "failed") {
+                sub.textContent = "เกิดข้อผิดพลาดระหว่างสร้างนิทาน";
+                bar.style.width = "100%";
+                percent.textContent = "ERROR";
+
+                setTimeout(() => {
+                    modal.classList.add("hidden");
+                }, 1200);
+
+                ws.close();
+            }
+        };
+
+        ws.onerror = function(e) {
+            console.error("WS error:", e);
+        };
+    }
+
+    // ===========================
+    // ตัดสินใจว่าจะโชว์ modal มั้ย
+    // ===========================
+    if (status === "processing") {
+        // เคสนี้คือ: เพิ่งอัปไฟล์ / เพิ่งกดสร้าง → Celery ยังรันอยู่
+        // = เราเปิด WebSocket + แสดง modal ให้เห็น progress
+        startProgressWebSocket();
+    } else {
+        // ถ้า ready / failed = ไม่ต้องทำอะไร ปล่อยให้ modal ซ่อนไปเลย
+        modal.classList.add("hidden");
+    }
+
+});
+</script>
+
+
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -448,7 +505,7 @@
                     div.innerHTML = `
           ${scene.image_url ? `<img src="${scene.image_url}" class="absolute inset-0 w-full h-full object-cover">` : ``}
           <div class="relative z-10 flex flex-col items-center space-y-2">
-            <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded max-w-[90%] text-center shadow">
+            <p class="relative z-10 bg-black/75 text-white px-3 py-2 rounded text-sm text-center mb-4">
               ${scene.text || ""}
             </p>
             ${audioTag}

@@ -45,16 +45,8 @@
     <div class="flex items-center justify-between text-gray-600 text-sm mt-4">
         <button id="player-toggle"
             class="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow hover:bg-gray-100 transition">
-            <!-- ▶️ Icon: เล่น -->
-            <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800" viewBox="0 0 24 24"
-                fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-            </svg>
-            <!-- ⏸️ Icon: หยุด -->
-            <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800 hidden"
-                viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
-            </svg>
+            <i id="icon-play" class="ph-fill ph-play text-gray-800 text-xl"></i> 
+            <i id="icon-pause" class="ph-fill ph-pause text-gray-800 text-xl hidden"></i>
         </button>
 
         <div class="flex items-center gap-3">
@@ -62,19 +54,8 @@
             <!-- 🔈 ปุ่มเปิด/ปิดเสียง -->
             <button id="mute-btn"
                 class="flex items-center justify-center w-9 h-9 rounded-full bg-white shadow hover:bg-gray-100 transition">
-                <!-- ไอคอนเปิดเสียง -->
-                <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a9 9 0 010 12.73" />
-                </svg>
-
-                <!-- ไอคอนปิดเสียง -->
-                <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800 hidden"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 14M15 5l-7 14" />
-                </svg>
+                <i id="icon-sound-on" class="ph-bold ph-speaker-simple-high text-gray-800 text-xl"></i>
+                <i id="icon-sound-off" class="ph-bold ph-speaker-simple-slash text-gray-800 text-xl hidden"></i>
             </button>
 
         </div>
@@ -497,7 +478,7 @@
                 sceneDiv.innerHTML = `
                     ${scene.image_url ? `<img src="${scene.image_url}" class="absolute inset-0 w-full h-full object-cover">` : ''}
                     <div class="relative z-10 flex flex-col items-center space-y-2">
-                        <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded-md max-w-[90%] text-center shadow-lg">
+                        <p class="relative z-10 bg-black/75 text-white px-3 py-2 rounded text-sm text-center mb-4">
                             ${scene.text || ''}
                         </p>
                         ${audioHtml}

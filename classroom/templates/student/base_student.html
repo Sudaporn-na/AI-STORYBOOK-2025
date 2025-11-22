@@ -1,4 +1,6 @@
 {% load static %}
+{% load socialaccount %}
+{% get_social_accounts user as accounts %}
 <!DOCTYPE html>
 <html lang="th">
 
@@ -73,13 +75,19 @@
             </li>
             <li>
               <a href="{% url 'lesson_history' %}">
-                <i class="icon ph-bold ph-user"></i>
+                <i class="icon ph-bold ph-calendar-blank"></i>
                 <span class="text">ประวัติบทเรียน</span>
               </a>
             </li>
             <li>
+              <a href="{% url 'reporting_history' %}">
+                <i class="icon ph-bold ph-flag"></i>
+                <span class="text">ประวัติการรายงาน</span>
+              </a>
+            </li>
+            <li>
               <a href="{% url 'student_favorites' %}">
-                <i class="bi bi-heart"></i>
+                <i class="icon ph-bold ph-heart"></i>
                 <span class="text">รายการโปรด</span>
               </a>
             </li>
@@ -119,15 +127,30 @@
             </a>
           </li>
         </ul>
+        <ul>
+          <li>
+            <a href="{% url 'delete_account' %}"
+              onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีผู้ใช้ของคุณ?');">
+              <i class="fa-solid fa-trash"></i>
+              <span class="text">ลบบัญชีผู้ใช้</span>
+            </a>
+          </li>
+        </ul>
         <div class="head hover:bg-gray-100 p-2 rounded-lg transition">
           <a href="{% url 'profile_settings_student' %}">
             <div class="user-img">
               <img
-                src="{% if user.is_authenticated and user.profile and user.profile.profile_picture %}
+                src="
+                  {% if user.profile and user.profile.profile_picture %}
                       {{ user.profile.profile_picture.url }}
-                    {% else %}
+
+                  {% elif accounts.google %}
+                      {{ accounts.google.0.extra_data.picture }}
+
+                  {% else %}
                       {% static 'images/default-profile.jpg' %}
-                    {% endif %}"
+                  {% endif %}
+                "
                 class="rounded-full w-12 h-12 object-cover"
               />
             </div>

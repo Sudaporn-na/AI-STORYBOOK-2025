@@ -1,5 +1,6 @@
 {% extends 'student/base_student.html' %}
 {% load static %}
+{% load dict_extras %}
 {% block title %}Lesson Detail{% endblock %}
 
 {% block content %}
@@ -7,7 +8,7 @@
 
     <!-- Lesson Header -->
     <h1 class="text-2xl font-bold text-gray-800">{{ storybook.title }}</h1>
-    <p class="text-gray-500 text-sm">By {{ storybook.user.get_full_name|default:storybook.user.email }}</p>
+    <p class="text-gray-500 text-sm">โดย {{ storybook.user.get_full_name|default:storybook.user.email }}</p>
 
     <!-- Flipbook Frame -->
     <div class="relative bg-black rounded-[20px] w-full h-[600px] overflow-hidden shadow-lg">
@@ -46,14 +47,8 @@
         <!-- Play/Pause -->
         <button id="player-toggle"
             class="flex items-center justify-center w-10 h-10 rounded-full bg-white shadow hover:bg-gray-100 transition">
-            <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800" viewBox="0 0 24 24"
-                fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-            </svg>
-            <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800 hidden"
-                viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
-            </svg>
+            <i id="icon-play" class="ph-fill ph-play text-gray-800 text-xl"></i> 
+            <i id="icon-pause" class="ph-fill ph-pause text-gray-800 text-xl hidden"></i>
         </button>
 
         <!-- Progress Bar -->
@@ -69,16 +64,8 @@
             <span id="global-time-display" class="block text-right text-sm text-gray-700 mt-1">00:00 / 00:00</span>
             <button id="mute-btn"
                 class="flex items-center justify-center w-9 h-9 rounded-full bg-white shadow hover:bg-gray-100 transition">
-                <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a9 9 0 010 12.73" />
-                </svg>
-                <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800 hidden"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 14M15 5l-7 14" />
-                </svg>
+                <i id="icon-sound-on" class="ph-bold ph-speaker-simple-high text-gray-800 text-xl"></i>
+                <i id="icon-sound-off" class="ph-bold ph-speaker-simple-slash text-gray-800 text-xl hidden"></i>
             </button>
         </div>
     </div>
@@ -87,18 +74,6 @@
 
     <!-- ✅ ผู้ใช้ + แชร์/รายการโปรด -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-8">
-
-        {% comment %} <!-- 👤 ผู้ใช้ -->
-        <!-- ใช้ storybook.user แทน request.user -->
-        <div class="flex items-center space-x-3">
-        <img
-            src="{% if request.user.profile and request.user.profile.profile_picture %}{{ request.user.profile.profile_picture.url }}{% elif request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}"
-                class="w-10 h-10 rounded-full object-cover" alt="avatar">
-            <div>
-                <p class="font-semibold text-sm text-gray-800">{{ storybook.user.get_full_name }}</p>
-                <p class="text-xs text-gray-500">ครูผู้สร้างบทเรียน</p>
-            </div>
-        </div> {% endcomment %}
 
         <!-- 👤 ผู้ใช้ -->
         <div class="flex items-center space-x-3">
@@ -136,10 +111,10 @@
 
 
             <!-- ปุ่ม รายการโปรด -->
-            <button
+            {% comment %} <button
                 class="flex items-center px-4 py-2 rounded-xl bg-white border shadow-sm text-gray-700 text-sm hover:bg-gray-100 transition">
                 <i class="fa-solid fa-bookmark mr-2"></i> รายการโปรด
-            </button>
+            </button> {% endcomment %}
 
             {# ใช้ Font Awesome: fa-regular / fa-solid #}
             <button
@@ -260,8 +235,19 @@
         <form id="c-form" class="flex flex-col gap-3 p-4 bg-gray-50 rounded-lg shadow-inner">
             <div class="flex items-start gap-3">
                 <img
-                    src="{% if request.user.profile and request.user.profile.profile_picture %}{{ request.user.profile.profile_picture.url }}{% elif request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}"
-                    class="w-10 h-10 rounded-full object-cover ring-2 ring-white shrink-0" alt="avatar">
+                    src="
+                        {% if request.user.profile.profile_picture %}
+                            {{ request.user.profile.profile_picture.url }}
+                        {% elif google_picture_me %}
+                            {{ google_picture_me }}
+                        {% elif request.user.profile_picture %}
+                            {{ request.user.profile_picture.url }}
+                        {% else %}
+                            {% static 'images/default_avatar.png' %}
+                        {% endif %}
+                    "
+                    class="w-10 h-10 rounded-full object-cover ring-2 ring-white shrink-0"
+                    alt="avatar">
 
                 <textarea id="c-input" rows="3" required
                     class="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-3 focus:ring-2 focus:ring-indigo-500"
@@ -306,17 +292,26 @@
             <div class="flex items-start gap-3">
 
                 <div class="relative shrink-0">
-                {% if c.author.profile and c.author.profile.profile_picture %}
-                    <img src="{{ c.author.profile.profile_picture.url }}" class="w-9 h-9 rounded-full object-cover" alt="">
-                {% elif c.author.profile_picture %}
-                    <img src="{{ c.author.profile_picture.url }}" class="w-9 h-9 rounded-full object-cover" alt="">
-                {% else %}
-                    <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">
-                    {{ c.author.get_full_name|default:c.author.email|first }}
-                    </div>
-                {% endif %}
-                <span class="absolute -bottom-0 -right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+                    {% with pic=google_picture|get_item:c.author.id %}
+                        {% if c.author.profile and c.author.profile.profile_picture %}
+                            <img src="{{ c.author.profile.profile_picture.url }}"
+                                class="w-9 h-9 rounded-full object-cover">
+
+                        {% elif pic %}
+                            <img src="{{ pic }}"
+                                class="w-9 h-9 rounded-full object-cover">
+
+                        {% else %}
+                            <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">
+                                {{ c.author.get_full_name|default:c.author.email|first }}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <span class="absolute -bottom-0 -right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
                 </div>
+
+
 
                 <div class="min-w-0 flex-1">
                 <div class="flex items-start justify-between gap-2">
@@ -362,19 +357,23 @@
                     {% if not r.is_deleted %}
                     {# LI Reply Item: มีคลาสเยื้อง pl-6 (1 วรรค) เสมอ #}
                     <li class="py-2 pl-6" data-cid="{{ r.id }}" data-author-id="{{ r.author_id }}" data-parent-cid="{{ c.id }}">
-                        <div class="flex items-start gap-3">
-                            
+                        <div class="flex items-start gap-3">                           
                             <div class="relative shrink-0">
-                            {% if r.author.profile and r.author.profile.profile_picture %}
-                                <img src="{{ r.author.profile.profile_picture.url }}" class="w-7 h-7 rounded-full object-cover" alt="">
-                            {% elif r.author.profile_picture %}
-                                <img src="{{ r.author.profile_picture.url }}" class="w-7 h-7 rounded-full object-cover" alt="">
-                            {% else %}
-                                <div class="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold">
-                                {{ r.author.get_full_name|default:r.author.email|first }}
+                                    {% with pic=google_picture|get_item:c.author.id %}
+                                        {% if c.author.profile and c.author.profile.profile_picture %}
+                                            <img src="{{ c.author.profile.profile_picture.url }}"
+                                                class="w-9 h-9 rounded-full object-cover" alt="">
+                                        {% elif pic %}
+                                            <img src="{{ pic }}"
+                                                class="w-9 h-9 rounded-full object-cover" alt="">
+                                        {% else %}
+                                            <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold">
+                                                {{ c.author.get_full_name|default:c.author.email|first }}
+                                            </div>
+                                        {% endif %}
+                                    {% endwith %}
+                                    <span class="absolute -bottom-0 -right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
                                 </div>
-                            {% endif %}
-                            </div>
 
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-start justify-between gap-2">
@@ -679,7 +678,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     div.innerHTML = `
           ${scene.image_url ? `<img src="${scene.image_url}" class="absolute inset-0 w-full h-full object-cover">` : ``}
           <div class="relative z-10 flex flex-col items-center space-y-2">
-            <p class="bg-gray-600 text-white text-sm px-4 py-2 rounded max-w-[90%] text-center shadow">
+            <p class="relative z-10 bg-black/75 text-white px-3 py-2 rounded text-sm text-center mb-4">
               ${scene.text || ""}
             </p>
             ${audioTag}

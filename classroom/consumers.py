@@ -1,6 +1,15 @@
+# classroom/consumers.py
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from asgiref.sync import sync_to_async
-from .models import Scene
+
+from channels.generic.websocket import AsyncWebsocketConsumer
+
+import json
+from django.contrib.auth.models import AnonymousUser
+from django.utils.timezone import localtime, now
+from django.contrib.auth import get_user_model
+from django.db.models import Q
+from .models import Storybook, Comment, Scene # ตรวจสอบให้แน่ใจว่า import Comment ที่มี parent_comment แล้ว
 
 
 class SceneProgressConsumer(AsyncJsonWebsocketConsumer):
@@ -30,36 +39,37 @@ class SceneProgressConsumer(AsyncJsonWebsocketConsumer):
             "scene_number", "text", "image_url", "audio_url"
         ))
 
-# consumers.py
-import json
-from channels.generic.websocket import AsyncWebsocketConsumer
 
 class StorybookConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.storybook_id = self.scope["url_route"]["kwargs"]["storybook_id"]
         self.group_name = f"storybook_{self.storybook_id}"
+
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
-    # รับทุก event มาจาก group_send ผ่าน type="send_generic"
+    # PROGRESS 
+    async def send_progress(self, event):
+        await self.send(text_data=json.dumps({
+            "evt": "progress",
+            **{k: v for k, v in event.items() if k != "type"}
+        }))
+
+    # SCENE UPDATE
+    async def send_scene_update(self, event):
+        await self.send(text_data=json.dumps({
+            "evt": "scene_update",
+            **event["data"]
+        }))
+
+    # GENERIC (fallback)
     async def send_generic(self, event):
-        data = event.get("data", {})
-        # data ต้องมี key "evt" เสมอ (scene_status / scene_update / story_status)
-        await self.send(text_data=json.dumps(data))
+        await self.send(text_data=json.dumps(event.get("data", {})))
 
 
-# classroom/consumers.py
-import json
-from channels.generic.websocket import AsyncJsonWebsocketConsumer
-from asgiref.sync import sync_to_async
-from django.contrib.auth.models import AnonymousUser
-from django.utils.timezone import localtime, now
-from django.contrib.auth import get_user_model
-from django.db.models import Q
-from .models import Storybook, Comment # ตรวจสอบให้แน่ใจว่า import Comment ที่มี parent_comment แล้ว
 
 User = get_user_model()
 
@@ -98,13 +108,13 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
 
         if t == "create":
             text = (content.get("message") or "").strip()
-            # 🌟 เพิ่ม: รับ parent_comment_id
+            # เพิ่ม รับ parent_comment_id
             parent_id = content.get("parent_comment_id")
             
             if not text:
                 return
             
-            # 🌟 ส่ง parent_id ไปด้วย
+            # ส่ง parent_id ไปด้วย
             data = await self._create_and_serialize(user.id, self.storybook_id, text, parent_id)
             await self.channel_layer.group_send(self.group_name, {"type": "comment.created", **data})
             return
@@ -125,7 +135,7 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
                 return
             data = await self._delete_and_serialize(user.id, cid)
             if data:
-                # 🌟 data จะมี is_deleted: True ทำให้ฝั่ง JS ลบ DOM
+                # data จะมี is_deleted: True ทำให้ฝั่ง JS ลบ DOM
                 await self.channel_layer.group_send(self.group_name, {"type": "comment.deleted", **data})
             return
 
@@ -141,7 +151,7 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
 
     # ---- helpers ----
     @sync_to_async
-    # 🌟 ปรับปรุง: เพิ่ม parent_comment_id=None
+    # เพิ่ม parent_comment_id=None
     def _create_and_serialize(self, user_id, storybook_id, message, parent_comment_id=None):
         user = User.objects.get(pk=user_id)
         sb = Storybook.objects.get(pk=storybook_id)
@@ -159,7 +169,7 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
             storybook=sb, 
             author=user, 
             message=message,
-            parent_comment=parent # 🌟 กำหนดคอมเมนต์แม่
+            parent_comment=parent # กำหนดคอมเมนต์แม่
         )
         return self._serialize_comment(c)
 
@@ -198,19 +208,19 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
         c.deleted_by = u
         c.save(update_fields=["is_deleted", "deleted_at", "deleted_by"])
         
-        # 🌟 ลบคอมเมนต์ลูกทั้งหมดด้วย (Optional: หากต้องการให้การลบหลักลบลูกด้วย)
+        # ลบคอมเมนต์ลูกทั้งหมดด้วย (Optional: หากต้องการให้การลบหลักลบลูกด้วย)
         # Comment.objects.filter(parent_comment=c).update(
         #     is_deleted=True, 
         #     deleted_at=now(), 
         #     deleted_by=u
         # )
         
-        # 🌟 ส่งข้อมูลกลับไป โดยมี is_deleted: True 
+        # ส่งข้อมูลกลับไป โดยมี is_deleted: True 
         return self._serialize_comment(c)
 
     @sync_to_async
     def _get_recent(self, storybook_id, limit=200): # เพิ่ม limit ให้เยอะขึ้นตาม frontend
-        # 🌟 ดึงเฉพาะคอมเมนต์หลักที่ยังไม่ถูกลบ (และคอมเมนต์ลูกที่ยังไม่ถูกลบ)
+        # ดึงเฉพาะคอมเมนต์หลักที่ยังไม่ถูกลบ (และคอมเมนต์ลูกที่ยังไม่ถูกลบ)
         qs = (Comment.objects
               .filter(
                   Q(storybook_id=storybook_id) & (Q(parent_comment__isnull=True) | Q(parent_comment__is_deleted=False)),
@@ -235,7 +245,7 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
 
     def _serialize_comment(self, c: Comment):
         u = c.author
-        # 🌟 เพิ่ม parent_comment_id
+        # เพิ่ม parent_comment_id
         parent_id = c.parent_comment_id if c.parent_comment_id and not c.parent_comment.is_deleted else None
 
         return {
@@ -244,14 +254,13 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
             "author": u.get_full_name() or getattr(u, "email", "ผู้ใช้"),
             "avatar_url": _best_avatar_url(u),
             "message": c.message,
-            # 🌟 ใช้ strftime ที่ตรงกับ JS
+            # ใช้ strftime ที่ตรงกับ JS
             "created_at": localtime(c.created_at).strftime("%H:%M น. %j %B %Y"), 
             "edited": bool(c.edited_at),
             "is_deleted": bool(c.is_deleted),
-            "parent_comment_id": parent_id, # 🌟 เพิ่ม parent_comment_id
+            "parent_comment_id": parent_id, # เพิ่ม parent_comment_id
         }
 
-    # .... (ส่วน _can_edit / _can_delete เหมือนเดิม)
     def _can_edit(self, user, c: Comment):
         # คนเขียน, เจ้าของ storybook, staff/superuser
         return (c.author_id == user.id) or (c.storybook.user_id == user.id) or user.is_staff or user.is_superuser

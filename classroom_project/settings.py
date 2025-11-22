@@ -105,10 +105,19 @@ ACCOUNT_ADAPTER = 'classroom.adapters.CustomAccountAdapter'
 SOCIALACCOUNT_ADAPTER = 'classroom.adapters.CustomSocialAccountAdapter'
 
 
-# ACCOUNT_USERNAME_REQUIRED = True
-# ACCOUNT_EMAIL_REQUIRED = True
-# ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'  # เพราะคุณใช้ AbstractUser
-# ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_AUTHENTICATION_METHOD = "email"
+SOCIALACCOUNT_QUERY_EMAIL = True
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "SCOPE": ["email", "profile"],
+        "FIELDS": ["email", "name", "picture"],
+    }
+}
 
 
 
@@ -125,7 +134,7 @@ ACCOUNT_LOGOUT_REDIRECT_URL = '/auth/'
 # ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 
 ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+ACCOUNT_SIGNUP_FIELDS = ['email*','password1*', 'password2*']
 
 
 
