@@ -71,6 +71,7 @@
             <td class="px-4 py-2 font-medium text-blue-800">{{ teacher.email }}</td>
             <td class="px-4 py-2 font-medium text-blue-800">{{ teacher.teacher_code }}</td>
             <td class="px-4 py-2 text-center">
+              <a href="{% url 'edit_teacher' teacher.id %}" class="text-blue-600 hover:underline">แก้ไข</a>
               <form method="POST" action="{% url 'delete_teacher' teacher.id %}" onsubmit="return confirm('คุณต้องการลบครูคนนี้จริงหรือไม่?');">
                 {% csrf_token %}
                 <button type="submit" class="text-red-600 hover:underline">ลบ</button>

@@ -17,11 +17,19 @@
       <div class="w-12 h-12 flex items-center justify-center shrink-0 ml-1 mr-4 rounded-2xl ring-1
         {% if n.event_type == 'lesson_uploaded' %} bg-green-300 ring-green-200 text-green-600
         {% elif n.event_type == 'test_submitted' %} bg-purple-100 ring-purple-200 text-purple-600
+        {% elif n.event_type == 'student_downloaded' %}
+        bg-amber-100 ring-amber-200 text-amber-700
+        {% elif n.event_type == 'share_completed' %}
+        bg-cyan-100 ring-cyan-200 text-cyan-700
         {% else %} bg-slate-50 ring-slate-200 text-slate-600 {% endif %}">
         {% if n.event_type == 'lesson_uploaded' %}
           <i class="fa-solid fa-book-open text-lg"></i>
         {% elif n.event_type == 'test_submitted' %}
           <i class="fa-solid fa-flask text-lg"></i>
+        {% elif n.event_type == 'student_downloaded' %}
+          <i class="fa-solid fa-download text-base"></i>
+        {% elif n.event_type == 'share_completed' %}
+          <i class="fa-solid fa-share-from-square text-lg"></i>
         {% else %} <i class="fa-solid fa-bell text-lg"></i> {% endif %}
       </div>
 

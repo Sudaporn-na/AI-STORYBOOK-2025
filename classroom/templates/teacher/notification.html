@@ -25,6 +25,7 @@
         bg-amber-100 ring-amber-200 text-amber-700
       {% elif n.event_type == 'student_shared' %}
         bg-violet-100 ring-violet-200 text-violet-700
+      
       {% else %}
         bg-slate-100 ring-slate-200 text-slate-700
       {% endif %}
@@ -39,6 +40,8 @@
         <i class="fa-solid fa-download text-base"></i>
       {% elif n.event_type == 'student_shared' %}
         <i class="fa-solid fa-share-nodes text-base"></i>
+      <!-- {% elif n.event_type == 'student_shared' %}
+        <i class="fa-solid fa-share text-lg"></i> -->
       {% else %}
         <i class="fa-solid fa-bell text-base"></i>
       {% endif %}
