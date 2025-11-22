@@ -1,11 +1,14 @@
 {% extends "teacher/base_teacher.html" %}
 {% load static %}
+{% comment %} {% load socialaccount %} {% endcomment %}
+{% comment %} {% get_social_accounts user as accounts %} {% endcomment %}
 {% block title %}Profile Settings{% endblock %}
 {% block content %}
 
 <div class="bg-gray-50 w-full font-poppins text-gray-700 min-h-screen px-6 py-8">
     <div class="max-w-5xl mx-auto">
 
+        <!-- เริ่ม Form -->
         <form method="POST" enctype="multipart/form-data" class="space-y-10">
             {% csrf_token %}
 
@@ -29,12 +32,18 @@
                                 <img src="{{ profile_form.instance.profile_picture.url }}"
                                     alt="Profile"
                                     class="w-20 h-20 rounded-full object-cover" />
+                            {% elif accounts.google %}
+                                <img src="{{ accounts.google.0.extra_data.picture }}"
+                                    alt="Google Avatar"
+                                    class="w-20 h-20 rounded-full object-cover" />
                             {% else %}
                                 <img src="{% static 'images/default-profile.png' %}"
                                     alt="Profile"
                                     class="w-20 h-20 rounded-full object-cover" />
                             {% endif %}
-                            <p class="text-xs text-gray-500">นี่คือที่ที่ผู้คนจะได้เห็นใบหน้าที่แท้จริงของคุณ</p>
+                            <p class="text-xs text-gray-500">
+                                นี่คือที่ที่ผู้คนจะได้เห็นใบหน้าที่แท้จริงของคุณ
+                            </p>
                         </div>
                         <div class="border border-dashed border-gray-300 rounded-lg w-full p-6 text-center">
                             <p class="text-sm text-gray-500 mb-2">อัพโหลดภาพใหม่</p>
@@ -62,6 +71,7 @@
             <!-- Divider -->
             <hr class="my-6 border-gray-300" />
 
+            <!-- Personal Info -->
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
                     <h2 class="text-lg font-semibold mb-2">ข้อมูลส่วนบุคคล</h2>
@@ -102,7 +112,7 @@
 
             <!-- Divider -->
             <hr class="my-6 border-gray-300" />
-
+            <!-- Public Class Code -->
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
                     <h2 class="text-lg font-semibold mb-2">รหัสชั้นเรียนสาธารณะ</h2>
@@ -110,15 +120,15 @@
                 </div>
                 <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="text-sm font-medium">วิชาที่สอน</label>
+                        <label class="text-sm font-medium">Teaching subjects</label>
                         {{ profile_form.teaching_subjects }}
                     </div>
                     <div>
-                        <label class="text-sm font-medium">รหัสชั้นเรียน</label>
+                        <label class="text-sm font-medium">Class Code</label>
                         {{ profile_form.class_code }}
                     </div>
                     <div class="md:col-span-2">
-                        <label class="text-sm font-medium">ลิงค์ชั้นเรียน</label>
+                        <label class="text-sm font-medium">Classroom Link</label>
                         {{ profile_form.classroom_link }}
                     </div>
                 </div>
@@ -127,6 +137,7 @@
             <!-- Divider -->
             <hr class="my-6 border-gray-300" />
 
+            <!-- Bio Description -->
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
                     <h2 class="text-lg font-semibold mb-2">คำอธิบายเกี่ยวกับตัวเอง</h2>
@@ -140,6 +151,7 @@
             <!-- Divider -->
             <hr class="my-6 border-gray-300" />
 
+            <!-- Social Media Links -->
             <div class="p-6 mb-6 md:grid md:grid-cols-3 gap-6">
                 <div>
                     <h2 class="text-lg font-semibold mb-2">ลิงค์โซเชียลมีเดีย</h2>
@@ -157,9 +169,9 @@
                 </div>
             </div>
 
-
+            <!-- Action Buttons -->
             <div class="flex justify-end items-center gap-4 mt-6">
-                <a href="{% url 'view_profile_teacher' %}"
+                <a href="#"
                     class="px-4 py-2 text-gray-600 hover:text-black border rounded-full">ยกเลิก</a>
                 <button type="submit" class="px-5 py-2 bg-black text-white rounded-full hover:bg-gray-800">บันทึกการตั้งค่า</button>
             </div>
@@ -169,12 +181,12 @@
 
 
 <script>
-    function updateFileName(event) {
-        const fileInput = event.target;
-        const fileNameSpan = document.getElementById('file-name');
-        const file = fileInput.files[0];
-        fileNameSpan.textContent = file ? file.name : 'No file chosen';
-    }
+  function updateFileName(event) {
+    const fileInput = event.target;
+    const fileNameSpan = document.getElementById('file-name');
+    const file = fileInput.files[0];
+    fileNameSpan.textContent = file ? file.name : 'No file chosen';
+  }
 </script>
 
 

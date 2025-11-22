@@ -2,11 +2,12 @@
 {% block title %}เข้าร่วมชั้นเรียน{% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center px-6 py-16">
+<div class="min-h-screen flex items-center justify-center px-6 py-16 bg-gradient-to-b">
 
     <div class="w-full max-w-lg text-center">
 
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">
+        <!-- Heading -->
+        <h1 class="text-3xl font-bold text-[#3F2B96] mb-2">
             {% if user.user_type == 'teacher' %}
             Create Your Class
             {% else %}
@@ -14,7 +15,7 @@
             {% endif %}
         </h1>
 
-        <p class="text-base text-gray-600 mb-1">
+        <p class="text-base text-[#5B49C9] mb-1">
             {% if user.user_type == 'teacher' %}
             Fill in the subject name to create your classroom.
             {% else %}
@@ -22,21 +23,34 @@
             {% endif %}
         </p>
 
-        <!-- Student: Classroom Code Join Form -->
+        <!-- Form -->
         <form method="post" action="{% url 'courses_enroll' %}"
-            class="mt-10 bg-[#f9fafb] rounded-2xl shadow-xl px-8 py-6 border border-gray-200">
+            class="mt-10 bg-white rounded-3xl shadow-xl px-8 py-8 border border-[#E0D7FF]">
+            
             {% csrf_token %}
-            <label for="classroom_code" class="block text-left text-sm font-medium text-gray-700 mb-2">Classroom
-                Code</label>
+
+            <!-- Label -->
+            <label for="classroom_code" class="block text-left text-sm font-semibold text-[#3F2B96] mb-2">
+                Classroom Code
+            </label>
+
+            <!-- Input field -->
             <div
-                class="flex items-center bg-white border border-gray-300 rounded-full px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-blue-500">
-                <i class="fas fa-key text-gray-400 mr-3 text-md"></i>
-                <input type="text" id="classroom_code" name="classroom_code" placeholder="e.g. ABC123" required
+                class="flex items-center bg-purple-50 border border-[#C6B8FF] rounded-full px-4 py-3 shadow-sm 
+                       focus-within:ring-2 focus-within:ring-[#5B49C9] transition">
+                
+                <i class="fas fa-key text-[#3F2B96] mr-3 text-md"></i>
+                
+                <input type="text" id="classroom_code" name="classroom_code"
+                    placeholder="e.g. ABC123" required
                     class="w-full bg-transparent text-gray-800 placeholder-gray-400 focus:outline-none text-sm" />
             </div>
-            <div class="mt-6">
+
+            <!-- Submit -->
+            <div class="mt-8">
                 <button type="submit"
-                    class="w-full bg-green-600 hover:bg-green-700 text-white font-medium text-sm px-6 py-2 rounded-full transition shadow-md hover:shadow-lg">
+                    class="w-full bg-gradient-to-r from-[#3F2B96] to-[#5B49C9] text-white font-medium text-sm 
+                           px-6 py-3 rounded-full transition shadow-lg hover:opacity-90">
                     Join
                 </button>
             </div>

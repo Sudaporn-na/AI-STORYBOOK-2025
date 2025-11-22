@@ -1,0 +1,110 @@
+{% extends "student/base_student.html" %}
+{% load static %}
+{% block title %}ประวัติการรายงาน{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-10 space-y-10">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-[#3F2B96]">ประวัติการรายงาน</h1>
+        <a href="javascript:history.back()"
+           class="px-4 py-2 bg-[#3F2B96] text-white rounded-full hover:bg-[#5B49C9] transition">
+            กลับ
+        </a>
+    </div>
+
+    <!-- Search + Filter -->
+    <form method="get" class="flex items-center gap-4 bg-gray-50 p-4 rounded-xl border border-[#2a1f5f]/30">
+        <input type="text" name="q" value="{{ query }}"
+               placeholder="ค้นหาเหตุผล / รายละเอียด / ชื่อบทเรียน"
+               class="flex-1 px-4 py-2 border border-[#2a1f5f] rounded-lg text-sm focus:ring-[#5B49C9]">
+
+        <select name="order" class="px-4 py-2 border border-[#2a1f5f] rounded-lg text-sm bg-white">
+            <option value="newest" {% if order == "newest" %}selected{% endif %}>ล่าสุดก่อน</option>
+            <option value="oldest" {% if order == "oldest" %}selected{% endif %}>เก่าสุดก่อน</option>
+        </select>
+
+        <button class="px-4 py-2 bg-[#3F2B96] text-white rounded-lg hover:bg-[#5B49C9]">
+            ค้นหา
+        </button>
+    </form>
+
+    <!-- List -->
+    <div class="bg-white shadow rounded-3xl p-6 border border-[#2a1f5f]/20">
+
+        {% if page_obj %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-[#3F2B96] text-white text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-3 text-left">#</th>
+                        <th class="px-4 py-3 text-left">บทเรียน</th>
+                        <th class="px-4 py-3 text-left">เหตุผล</th>
+                        <th class="px-4 py-3 text-left">รายละเอียด</th>
+                        <th class="px-4 py-3 text-left">วันที่</th>
+                        <th class="px-4 py-3 text-left">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for r in page_obj %}
+                    <tr class="hover:bg-indigo-50/40">
+                        <td class="px-4 py-2">{{ forloop.counter }}</td>
+                        <td class="px-4 py-2">{{ r.storybook.title }}</td>
+                        <td class="px-4 py-2">{{ r.reason }}</td>
+                        <td class="px-4 py-2">{{ r.detail|truncatewords:12 }}</td>
+                        <td class="px-4 py-2">{{ r.created_at|date:"j M Y, H:i" }}</td>
+                        <td class="px-4 py-2 flex gap-3">
+                            <a href="{% url 'edit_report' r.id %}"
+                               class="text-[#3F2B96] hover:underline text-sm">แก้ไข</a>
+                            <a href="{% url 'delete_report' r.id %}"
+                               onclick="return confirm('ต้องการลบรายงานนี้หรือไม่?')"
+                               class="text-red-600 hover:underline text-sm">ลบ</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex justify-center mt-6">
+            <div class="flex items-center gap-2">
+
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}&order={{ order }}"
+                   class="px-3 py-1 rounded-lg bg-[#3F2B96] text-white hover:bg-[#5B49C9]">
+                    ‹
+                </a>
+                {% endif %}
+
+                {% for p in page_obj.paginator.page_range %}
+                <a href="?page={{ p }}&q={{ query }}&order={{ order }}"
+                   class="px-3 py-1 rounded-lg 
+                          {% if p == page_obj.number %}
+                              bg-[#5B49C9] text-white
+                          {% else %}
+                              bg-gray-200 text-gray-700 hover:bg-gray-300
+                          {% endif %}">
+                    {{ p }}
+                </a>
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&q={{ query }}&order={{ order }}"
+                   class="px-3 py-1 rounded-lg bg-[#3F2B96] text-white hover:bg-[#5B49C9]">
+                    ›
+                </a>
+                {% endif %}
+
+            </div>
+        </div>
+
+        {% else %}
+        <p class="text-gray-500">ยังไม่เคยมีประวัติการรายงาน</p>
+        {% endif %}
+
+    </div>
+
+</div>
+{% endblock %}

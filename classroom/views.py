@@ -1,15 +1,18 @@
-# ───────────────────────────────
-# 🧩 SYSTEM / AUTH / OTP / COMMON
-# ───────────────────────────────
+# Standard Library และ System
+import io, os, json, logging
+import random
 
+#Django Core และ Utilities  พื้นฐานจาก Django ที่ใช้ในการจัดการเว็บแอปพลิเคชัน, ผู้ใช้, ฟอร์ม, URL, และการแคช
 from django import template
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate, get_user_model
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse, HttpResponseForbidden
+
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
 from django.conf import settings
@@ -17,42 +20,30 @@ from django.urls import reverse
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db import transaction
-from xhtml2pdf import pisa
-import io, os, json, logging
+from django.db.models import Avg, Count, Q, OuterRef, Subquery, Prefetch, Max, F
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
+from django.core.cache import cache
 from django.template.loader import render_to_string
 from django.core.serializers.json import DjangoJSONEncoder
-from django.views.decorators.http import require_POST
 
-from .forms import (
-    SecureUserCreationForm,
-    SecureAuthenticationForm,
-    JoinClassroomForm,
-    ProfileUpdateForm,
-    UserUpdateForm,
-    ReportForm,
-)
-from .models import (
-    Scene,
-    TeacherID,
-    User,
-    Classroom,
-    EmailOTP,
-    Storybook,
-    Report,
-    Lesson,
-)
+# Third-Party Libraries ไลบรารีภายนอกที่ไม่ได้มาพร้อมกับ Django พวก REST framework, xhtml2pdf
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from allauth.socialaccount.models import SocialAccount
+from xhtml2pdf import pisa
+
+#Local และ App-Specific Imports จากไฟล์หรือโมดูลภายในแอปพลิเคชัน
+from .forms import SecureUserCreationForm, SecureAuthenticationForm, JoinClassroomForm, ProfileUpdateForm, UserUpdateForm, ReportForm, LessonUploadForm, ClassroomForm
+from .models import Scene, TeacherID, User, Classroom, EmailOTP, Storybook, Report, Lesson, PostTestQuestion, PostTestSubmission, Comment, StorybookRating, StorybookAccess, PostTestAnswer, Notification
+
 from .tasks import process_storybook_async
 from .serializers import ClassroomSerializer
 from .notify_utils import notify_user
 
 logger = logging.getLogger("django.security")
 
-# ==============================
-# AUTH & ROLE SELECTION
-# ==============================
+
+# AUTH และ ROLE SELECTION
 
 DEFAULT_BACKEND = settings.AUTHENTICATION_BACKENDS[0]
 
@@ -189,11 +180,7 @@ def select_role_view(request):
 
     return render(request, 'select_a_role.html')
 
-
-
-# ==============================
 # OTP RESET PASSWORD SYSTEM
-# ==============================
 
 User = get_user_model()
 
@@ -323,9 +310,7 @@ def reset_password_custom(request):
 
     return render(request, "otp/reset_password_custom.html", {})
 
-# ==============================
 # OTHER COMMON SYSTEM VIEWS
-# ==============================
 
 def landing_page(request):
     return render(request, "landing.html")
@@ -491,48 +476,9 @@ def delete_account(request):
 
 
 
-# ───────────────────────────────
-# 👩‍🏫 TEACHER VIEWS
-# ───────────────────────────────
+# TEACHER VIEWS
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.http import JsonResponse, HttpResponseForbidden
-from django.urls import reverse
-from django.db import transaction
-from django.utils import timezone
-from django.conf import settings
-import os
-import json
-from django.db.models import Avg, Count
-from django.db.models import Q
-
-
-from .models import (
-    Storybook,
-    Lesson,
-    Classroom,
-    PostTestQuestion,
-    PostTestSubmission,
-    Comment,
-    StorybookRating,
-)
-from .forms import (
-    LessonUploadForm,
-    ClassroomForm,
-    ProfileUpdateForm,
-    UserUpdateForm,
-)
-from .tasks import process_storybook_async
-from .notify_utils import notify_user
-
-
-# ==============================
-# UPLOAD & VIEW LESSON
-# ==============================
-
-
+# UPLOAD และ VIEW LESSON
 @login_required
 def classroom_home(request, classroom_id):
     classroom = get_object_or_404(Classroom, id=classroom_id)
@@ -618,7 +564,7 @@ def upload_lesson_file(request, classroom_id):
             # สร้าง Storybook ที่เชื่อมกับ lesson
             storybook = Storybook.objects.create(
                 user=request.user,
-                classroom=classroom,  # 🔹 เพิ่ม relation ถ้ามี field นี้
+                classroom=classroom,  # เพิ่ม relation ถ้ามี field นี้
                 title=lesson.title,
                 file=lesson.file
             )
@@ -648,88 +594,63 @@ def upload_lesson_file(request, classroom_id):
     })
 
 
-# @login_required
-# def view_uploaded_lesson(request, storybook_id):
-#     # ถ้าเป็นหน้า teacher ให้ล็อคเจ้าของงานไว้ด้วย user=request.user
-#     storybook = get_object_or_404(Storybook, id=storybook_id, user=request.user)
-
-#     posttest_questions = PostTestQuestion.objects.filter(storybook=storybook)
-
-#     # scenes เหมือนเดิม
-#     scenes_qs = storybook.scenes.order_by('scene_number')
-
-#     # คอมเมนต์ตั้งต้น (เอาไว้โชว์ทันทีตอนรีเฟรช)
-#     comments = (
-#         Comment.objects
-#         .filter(storybook=storybook)
-#         .select_related("author")        # ให้ดึงข้อมูลผู้เขียนมาพร้อมกัน
-#         .order_by("-created_at")[:200]   # จำกัดจำนวนล่าสุด 200 รายการ
-#     )
-#     agg = storybook.ratings.aggregate(avg=Avg("value"), count=Count("id"))
-#     user_rating = None
-#     if request.user.is_authenticated:
-#         user_rating = (StorybookRating.objects
-#                        .filter(storybook=storybook, user=request.user)
-#                        .values_list("value", flat=True).first())
-
-#     context = {
-#         'storybook': storybook,
-#         'questions': posttest_questions,
-#         'scenes': json.dumps(
-#             list(scenes_qs.values('scene_number', 'text', 'image_url', 'audio_url')),
-#             cls=DjangoJSONEncoder
-#         ),
-#         'comments': comments,            # ส่งให้ template ลูปแสดง
-#         'comments_count': comments.count() if hasattr(comments, 'count') else len(comments),
-#         "rating_avg": (agg["avg"] or 0),
-#         "rating_count": agg["count"] or 0,
-#         "user_rating": user_rating or 0,
-#     }
-#     return render(request, 'teacher/view_uploaded_lesson.html', context)
-
-
 
 @login_required
 def view_uploaded_lesson(request, storybook_id):
-    # ตรวจสอบว่าผู้ใช้เป็นเจ้าของงาน
+    # ตรวจสอบว่าเป็นเจ้าของงาน
     storybook = get_object_or_404(Storybook, id=storybook_id, user=request.user)
 
     posttest_questions = PostTestQuestion.objects.filter(storybook=storybook)
-
     scenes_qs = storybook.scenes.order_by('scene_number')
 
-    # 🌟 แก้ไข: ดึงเฉพาะ Top-level comments (parent_comment__isnull=True) 
-    # และยังไม่ถูกลบ (is_deleted=False)
+    # ดึงเฉพาะ Top-level comments และยังไม่ถูกลบ
     comments = (
         Comment.objects
-        .filter(storybook=storybook, parent_comment__isnull=True, is_deleted=False) 
+        .filter(storybook=storybook, parent_comment__isnull=True, is_deleted=False)
         .select_related("author")
-        # 🌟 เพิ่ม: ดึง replies และ author ของ replies มาพร้อมกัน
-        .prefetch_related("replies", "replies__author") 
+        .prefetch_related("replies", "replies__author")
         .order_by("-created_at")[:200]
     )
-    
+
+    # NEW — ดึง Google account สำหรับผู้เขียน comment ทุกคน
+    google_picture = {}
+
+    for c in comments:
+        acc = SocialAccount.objects.filter(user=c.author, provider="google").first()
+        google_picture[c.author.id] = acc.extra_data.get("picture") if acc else None
+
+        for reply in c.replies.all():
+            racc = SocialAccount.objects.filter(user=reply.author, provider="google").first()
+            google_picture[reply.author.id] = racc.extra_data.get("picture") if racc else None
+
+
+
+    # การคำนวณ rating
     agg = storybook.ratings.aggregate(avg=Avg("value"), count=Count("id"))
     user_rating = None
     if request.user.is_authenticated:
-        user_rating = (StorybookRating.objects
-                       .filter(storybook=storybook, user=request.user)
-                       .values_list("value", flat=True).first())
+        user_rating = (
+            StorybookRating.objects
+            .filter(storybook=storybook, user=request.user)
+            .values_list("value", flat=True)
+            .first()
+        )
 
     context = {
-        'storybook': storybook,
-        'questions': posttest_questions,
-        'scenes': json.dumps(
-            list(scenes_qs.values('scene_number', 'text', 'image_url', 'audio_url')),
-            cls=DjangoJSONEncoder
+        "storybook": storybook,
+        "questions": posttest_questions,
+        "scenes": json.dumps(
+            list(scenes_qs.values("scene_number", "text", "image_url", "audio_url")),
+            cls=DjangoJSONEncoder,
         ),
-        'comments': comments, # ส่งเฉพาะ Top-level comments ที่ไม่ถูกลบ
-        'comments_count': comments.count(),
+        "comments": comments,
+        "comments_count": comments.count(),
+        "google_picture": google_picture,  
         "rating_avg": (agg["avg"] or 0),
         "rating_count": agg["count"] or 0,
         "user_rating": user_rating or 0,
     }
-    return render(request, 'teacher/view_uploaded_lesson.html', context)
+    return render(request, "teacher/view_uploaded_lesson.html", context)
 
 
 @login_required
@@ -754,10 +675,7 @@ def cancel_storybook(request, storybook_id):
     return redirect('upload_lesson_file', classroom_id=classroom_id)
 
 
-# ==============================
 # CLASSROOM MANAGEMENT
-# ==============================
-
 @login_required
 def class_create_teacher(request):
     if request.user.user_type != 'teacher':
@@ -836,10 +754,7 @@ def create_lesson_for_classroom(request, classroom_id):
     })
 
 
-# ==============================
 # LESSON & POSTTEST MANAGEMENT
-# ==============================
-
 
 # ===== โมเดลที่อาจยังไม่มี ให้ try/except ไว้ก่อน เพื่อไม่ให้พัง =====
 try:
@@ -863,9 +778,7 @@ def teacher_view_lesson_detail(request, storybook_id):
     """
     storybook = get_object_or_404(Storybook, id=storybook_id, user=request.user)
 
-    # ------------------------------
     # 1) สถิติแบบทดสอบ (PostTest)
-    # ------------------------------
     submissions = (
         PostTestSubmission.objects
         .filter(storybook=storybook)
@@ -904,18 +817,13 @@ def teacher_view_lesson_detail(request, storybook_id):
     .count()
 )
 
-
-    # ------------------------------
     # 2) ความคิดเห็น / คอมเมนต์
-    # ------------------------------
     feedback_count = Comment.objects.filter(
         storybook=storybook,
         is_deleted=False
     ).count()
 
-    # ------------------------------
     # 3) เรตติ้ง (1–5)
-    # ------------------------------
     rating_info = StorybookRating.objects.filter(storybook=storybook).aggregate(
         avg=Avg("value"),
         count=Count("id"),
@@ -923,9 +831,7 @@ def teacher_view_lesson_detail(request, storybook_id):
     rating_avg = round(rating_info["avg"] or 0, 1)
     rating_count = rating_info["count"] or 0
 
-    # ------------------------------
     # 4) ดาวน์โหลด / แชร์ (ถ้ามีโมเดล)
-    # ------------------------------
     if StorybookDownload:
         downloads_count = StorybookDownload.objects.filter(storybook=storybook).count()
     else:
@@ -936,9 +842,7 @@ def teacher_view_lesson_detail(request, storybook_id):
     else:
         shares_count = 0
 
-    # ------------------------------
     # 5) วิว (ถ้ามีฟิลด์ views ใน Storybook)
-    # ------------------------------
     views_count = getattr(storybook, "views", 0)
 
     context = {
@@ -1182,9 +1086,7 @@ def lesson_history_teacher(request):
     })
 
 
-# ==============================
 # TEACHER PROFILE
-# ==============================
 
 @login_required
 def profile_settings_teacher(request):
@@ -1253,43 +1155,10 @@ def teacher_profile(request):
     })
 
 
-# ───────────────────────────────
-# 🎓 STUDENT VIEWS
-# ───────────────────────────────
+# STUDENT VIEWS
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.http import JsonResponse, HttpResponseForbidden
-from django.db import transaction
-from django.urls import reverse
-from django.utils import timezone
-from django.core.cache import cache
-import random
-from django.db.models import OuterRef, Subquery, Prefetch, Max, F 
+# CLASSROOM JOIN และ VIEW LESSON
 
-
-from .models import (
-    Storybook,
-    Classroom,
-    StorybookAccess,
-    PostTestQuestion,
-    PostTestSubmission,
-    PostTestAnswer,
-    Comment,
-    StorybookRating,
-)
-from .forms import (
-    JoinClassroomForm,
-    ProfileUpdateForm,
-    UserUpdateForm,
-)
-from .notify_utils import notify_user
-
-
-# ==============================
-# CLASSROOM JOIN & VIEW LESSON
-# ==============================
 def _get_client_ip(request):
     xff = request.META.get('HTTP_X_FORWARDED_FOR')
     if xff:
@@ -1338,6 +1207,39 @@ def join_classroom(request):
         'classrooms': classrooms  # ส่งข้อมูลคลาสเข้าร่วมไปยัง template
     })
 
+
+@login_required
+def leave_classroom(request, classroom_id):
+    if request.user.user_type != 'student':
+        messages.error(request, 'เฉพาะนักเรียนเท่านั้นที่ออกจากชั้นเรียนได้')
+        return redirect('dashboard_student')
+
+    try:
+        classroom = Classroom.objects.get(id=classroom_id)
+    except Classroom.DoesNotExist:
+        messages.error(request, 'ไม่พบชั้นเรียนนี้')
+        return redirect('dashboard_student')
+
+    if request.user not in classroom.students.all():
+        messages.info(request, 'คุณไม่ได้อยู่ในชั้นเรียนนี้')
+        return redirect('dashboard_student')
+
+    # ลบออกจากห้องเรียน
+    classroom.students.remove(request.user)
+
+    # แจ้งครูว่ามีนักเรียนออกจากห้องเรียน
+    notify_user(
+        classroom.teacher,
+        event_type="student_left",
+        verb="ออกจากชั้นเรียน",
+        description=f"{request.user.get_full_name() or request.user.email} ออกจาก {classroom.name}",
+        target_url=reverse("classroom_home", args=[classroom.id])
+    )
+
+    messages.success(request, f'ออกจากชั้นเรียน {classroom.name} สำเร็จ')
+    return redirect('courses_enroll')
+
+
 @login_required
 def class_join_student(request):
 
@@ -1372,16 +1274,39 @@ def student_view_storybook(request, storybook_id):
         )
         cache.set(key, True, timeout=60)
 
+    google_acc = SocialAccount.objects.filter(user=request.user, provider="google").first()
+    google_picture_url = google_acc.extra_data.get("picture") if google_acc else None
+
+
+    comments = (
+        Comment.objects
+        .filter(storybook=storybook, parent_comment__isnull=True, is_deleted=False)
+        .select_related("author")
+        .prefetch_related("replies", "replies__author")
+        .order_by("-created_at")[:200]
+    )
+
+    # NEW — ดึง Google account สำหรับผู้เขียน comment ทุกคน
+    google_picture = {}
+
+    for c in comments:
+        acc = SocialAccount.objects.filter(user=c.author, provider="google").first()
+        google_picture[c.author.id] = acc.extra_data.get("picture") if acc else None
+
+        for reply in c.replies.all():
+            racc = SocialAccount.objects.filter(user=reply.author, provider="google").first()
+            google_picture[reply.author.id] = racc.extra_data.get("picture") if racc else None
+
     # ส่ง context เดียวพอ
     context = {
         "storybook": storybook,
+        "google_picture_me": google_picture_url,
+        "google_picture": google_picture,
     }
     return render(request, "student/detail_lesson_student.html", context)
 
 
-# ==============================
 # POST TEST & RESULT
-# ==============================
 
 @login_required
 def take_post_test(request, storybook_id):
@@ -1474,9 +1399,7 @@ def student_posttest_history(request, storybook_id, user_id):
         'storybook': storybook
     })
 
-# ==============================
 # FAVORITES SYSTEM
-# ==============================
 
 @login_required
 def student_favorites(request):
@@ -1523,9 +1446,7 @@ def view_lesson_teacher(request, storybook_id):
     })
 
 
-# ==============================
 # STUDENT LESSON HISTORY
-# ==============================
 
 @login_required
 def student_lesson_history_view(request):
@@ -1563,8 +1484,8 @@ def student_lesson_detail_history(request, storybook_id):
     total_questions = PostTestQuestion.objects.filter(storybook=storybook).count()
     passing_score = total_questions * 0.6  # 60% ถือว่าผ่าน
 
-    scenes = storybook.scenes.all()  # ✅ ดึงฉากทั้งหมดของ storybook
-    cover_scene = scenes.first()     # ✅ เอาฉากแรกเป็นปก
+    scenes = storybook.scenes.all()  # ดึงฉากทั้งหมดของ storybook
+    cover_scene = scenes.first()     # เอาฉากแรกเป็นปก
     cover_image_url = cover_scene.image_url if cover_scene else None  # ป้องกันกรณีไม่มีฉากเลย
 
     return render(request, 'student/lesson_detail_with_score.html', {
@@ -1576,9 +1497,7 @@ def student_lesson_detail_history(request, storybook_id):
     })
 
 
-# ==============================
 # STUDENT PROFILE
-# ==============================
 
 @login_required
 def profile_settings_student(request):
@@ -1627,35 +1546,80 @@ def view_profile_student(request):
         'hidden_fields': hidden_fields,
     })
 
-# ───────────────────────────────
-# 🛠 ADMIN VIEWS
-# ───────────────────────────────
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib import messages
-from django.http import JsonResponse, HttpResponseForbidden
-from django.db.models import Count
-from django.urls import reverse
-from .models import TeacherID
+# ประวัติการรายงานของนักเรียน
 
-from .models import (
-    User,
-    TeacherID,
-    Storybook,
-    Lesson,
-    Report,
-)
-from .forms import (
-    ProfileUpdateForm,
-)
-from .notify_utils import notify_user
+@login_required
+def reporting_history(request):
+    query = request.GET.get("q", "")
+    order = request.GET.get("order", "newest")  # newest / oldest
+
+    reports = Report.objects.filter(user=request.user)
+
+    # Search
+    if query:
+        reports = reports.filter(
+            Q(reason__icontains=query) |
+            Q(detail__icontains=query) |
+            Q(storybook__title__icontains=query)
+        )
+
+    # Order
+    if order == "oldest":
+        reports = reports.order_by("created_at")
+    else:
+        reports = reports.order_by("-created_at")
+
+    # Pagination
+    paginator = Paginator(reports, 7)  # แสดง 7 รายการต่อหน้า
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "student/reporting_history.html", {
+        "page_obj": page_obj,
+        "query": query,
+        "order": order
+    })
+
+
+@login_required
+def edit_report(request, report_id):
+    report = get_object_or_404(Report, id=report_id, user=request.user)
+
+    if request.method == "POST":
+        reason = request.POST.get("reason", "").strip()
+        detail = request.POST.get("detail", "").strip()
+
+        if not reason:
+            messages.error(request, "กรุณาระบุเหตุผล")
+            return redirect("edit_report", report_id=report_id)
+
+        report.reason = reason
+        report.detail = detail
+        report.save()
+
+        messages.success(request, "แก้ไขรายงานเรียบร้อยแล้ว")
+        return redirect("reporting_history")
+
+    return render(request, "student/edit_report.html", {
+        "report": report
+    })
+
+
+# ลบรายงานของนักเรียน (เฉพาะของตัวเอง)
+@login_required
+def delete_report(request, report_id):
+    report = get_object_or_404(Report, id=report_id, user=request.user)
+    report.delete()
+    messages.success(request, "ลบรายงานเรียบร้อยแล้ว")
+    return redirect("reporting_history")
 
 
 
-# ==============================
+# ADMIN VIEWS
+
+
 # USER MANAGEMENT
-# ==============================
 
 @login_required
 def user_list_view(request):
@@ -1728,9 +1692,7 @@ def edit_teacher(request, teacher_id):
     return render(request, "admin/edit_teacher.html", {"teacher": teacher})
 
 
-# ==============================
 # TEACHER LESSON MANAGEMENT
-# ==============================
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser or u.user_type == 'admin')
@@ -1785,9 +1747,7 @@ def teacher_storybooks_admin_view(request, teacher_id):
     })
 
 
-# ==============================
 # REPORT MANAGEMENT
-# ==============================
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser or u.user_type == 'admin')
@@ -1849,9 +1809,7 @@ def delete_storybook(request, storybook_id):
     return redirect('admin_lesson_dashboard')
 
 
-# ==============================
 # ADMIN PROFILE
-# ==============================
 
 @login_required
 def profile_settings_admin(request):
@@ -1890,21 +1848,10 @@ def view_profile_admin(request):
 
 
 
-# ───────────────────────────────
-# 🔔 NOTIFICATION SYSTEM
-# ───────────────────────────────
-
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.utils import timezone
-
-from .models import Notification
+# NOTIFICATION SYSTEM
 
 
-# ==============================
 # VIEW NOTIFICATIONS
-# ==============================
 
 @login_required
 def notifications_list(request):

@@ -1,5 +1,7 @@
 {% extends "teacher/base_teacher.html" %}
 {% load static %}
+{% load socialaccount %}
+{% get_social_accounts user as accounts %}
 {% block title %}View Profile{% endblock %}
 
 {% block content %}
@@ -14,10 +16,18 @@
       <div class="md:col-span-2 flex flex-col gap-4">
         <div class="flex gap-8 items-center">
           <div class="flex flex-col items-center gap-2">
-            {% if profile.profile_picture %}
-            <img src="{{ profile.profile_picture.url }}" alt="Profile" class="w-20 h-20 rounded-full object-cover" />
+            {% if request.user.profile.profile_picture %}
+                <img src="{{ request.user.profile.profile_picture.url }}"
+                    alt="Profile"
+                    class="w-20 h-20 rounded-full object-cover" />
+            {% elif accounts.google %}
+                <img src="{{ accounts.google.0.extra_data.picture }}"
+                    alt="Google Avatar"
+                    class="w-20 h-20 rounded-full object-cover" />
             {% else %}
-            <img src="{% static 'images/default-profile.png' %}" alt="Profile" class="w-20 h-20 rounded-full object-cover" />
+                <img src="{% static 'images/default_avatar.png' %}"
+                    alt="Default Avatar"
+                    class="w-20 h-20 rounded-full object-cover" />
             {% endif %}
             <p class="text-xs text-gray-500">รูปโปรไฟล์ปัจจุบัน</p>
             <div class="flex justify-end mt-6 gap-4">

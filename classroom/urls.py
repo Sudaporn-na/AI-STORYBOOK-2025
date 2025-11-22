@@ -52,6 +52,8 @@ urlpatterns = [
     # นักเรียน (Student)
     path('class-join/', views.class_join_student, name='class_join'),
     path('courses-enroll/', views.join_classroom, name='courses_enroll'),
+    path('classroom/<uuid:classroom_id>/leave/', views.leave_classroom, name='leave_classroom'),
+
     path('courses-enrolled/', views.join_classroom, name='courses_enrolled'),
 
     path('student/storybook/<int:storybook_id>/view/', views.student_view_storybook, name='student_display_lesson'),
@@ -69,6 +71,11 @@ urlpatterns = [
     path('favorites/', views.student_favorites, name='student_favorites'),
 
     path("detail-lesson-all/<int:storybook_id>/", views.detail_lesson_all, name="detail_lesson_all"),
+
+    path('reports/history/', views.reporting_history, name='reporting_history'),
+    path('reports/delete/<int:report_id>/', views.delete_report, name='delete_report'),
+    path('reports/edit/<int:report_id>/', views.edit_report, name='edit_report'),
+
 
 
     # แอดมิน (Admin)
