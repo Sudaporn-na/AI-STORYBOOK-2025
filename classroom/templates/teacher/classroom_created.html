@@ -28,7 +28,7 @@
     {% if user.user_type == 'teacher' %}
     <a href="{% url 'class_create' %}"
       class="flex items-center gap-2 text-sm px-5 py-2 bg-brandDeep text-white rounded-full shadow hover:bg-brandMid transition">
-      <span class="text-lg font-bold">+</span> สร้างห้องเรียน
+      <span class="text-lg font-bold">+</span> สร้างวิชาเรียน
     </a>
     {% endif %}
   </div>
@@ -39,7 +39,7 @@
       name="q"
       type="text"
       value="{{ q }}"
-      placeholder="ค้นหาห้องเรียน..."
+      placeholder="ค้นหาวิชาเรียน..."
       class="w-full px-5 py-3 rounded-xl border border-brandMid focus:ring-2 focus:ring-brandMid shadow-sm bg-white"
     />
   </form>
@@ -119,7 +119,7 @@
           <span class="text-brandMid">บทเรียน</span>
           <a href="{% url 'classroom_home' classroom.id %}"
              class="text-brandDeep hover:underline">
-            เข้าห้องเรียน
+            เข้าวิชาเรียน
           </a>
         </div>
 

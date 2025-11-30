@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8">
+    <title>{{ storybook.title }}</title>
+    <style>
+
+        @font-face {
+            font-family: 'Sarabun';
+            src: url("{% static 'fonts/THSarabunNew.ttf' %}");
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #fff7ed;
+        }
+
+        /* ปกนิทาน */
+        .cover {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(180deg, #fff2df, #ffe6f2);
+            text-align: center;
+            padding: 40px;
+        }
+
+        .cover-title {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ff6f61;
+            margin-bottom: 20px;
+        }
+
+        .cover-by {
+            font-size: 20px;
+            color: #555;
+        }
+
+        .cover-chip {
+            background: #ffd9b3;
+            padding: 8px 24px;
+            border-radius: 50px;
+            margin-bottom: 20px;
+            color: #8a4b20;
+            font-size: 18px;
+        }
+
+        /* หน้าฉาก */
+        .scene-page {
+            height: 100vh;
+            padding: 60px;
+            box-sizing: border-box;
+            background: #fff7ed;
+            page-break-before: always;
+        }
+
+        .scene-header {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #663300;
+        }
+
+        .scene-img {
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .scene-textbox {
+            background: #fffbe9;
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid #ffecb3;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            font-size: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<!-- ปกนิทาน -->
+<div class="cover">
+    <div class="cover-chip">นิทานภาพ AI Storybook</div>
+    <div class="cover-title">{{ storybook.title }}</div>
+    <div class="cover-by">โดย {{ storybook.user.get_full_name|default:storybook.user.email }}</div>
+</div>
+
+<!-- หน้าฉากทั้งหมด -->
+{% for scene in scenes %}
+<div class="scene-page">
+
+    <div class="scene-header">ฉากที่ {{ scene.scene_number }}</div>
+
+    {% if scene.image_url %}
+        <img src="{{ scene.image_url }}" class="scene-img">
+    {% endif %}
+
+    <div class="scene-textbox">
+        {{ scene.text }}
+    </div>
+
+</div>
+{% endfor %}
+
+</body>
+</html>

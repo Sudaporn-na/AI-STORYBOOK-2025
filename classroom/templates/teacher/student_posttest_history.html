@@ -81,8 +81,8 @@
                 {% for sub in submissions %}
                 <tr>
                     <td class="px-4 py-2">{{ student.get_full_name|default:student.email }}</td>
-                    <td class="px-4 py-2">{{ student.class_code|default:"-" }}</td>
-                    <td class="px-4 py-2">{{ student.teaching_subjects|default:"-" }}</td>
+                    <td class="px-4 py-2">{{ student.profile.student_id }}</td>
+                    <td class="px-4 py-2">{{ student.profile.grade_level }}</td>
                     <td class="px-4 py-2">{{ sub.score }}/10</td>
                     <td class="px-4 py-2">{{ sub.submitted_at|date:"j M Y" }}</td>
                     <td class="px-4 py-2">

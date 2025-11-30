@@ -409,60 +409,278 @@ from django.http import HttpResponseForbidden
 #         }
 #     )
 
+# def export_lesson_pdf(request, storybook_id):
+#     storybook = get_object_or_404(Storybook, id=storybook_id)
+
+#     # ตรวจสอบสิทธิ์: ครูเจ้าของบทเรียน หรือ นักเรียนที่สามารถเข้าถึงได้
+#     is_owner = storybook.user == request.user
+#     is_student_viewer = request.user.user_type == 'student'
+
+#     if not (is_owner or is_student_viewer):
+#         return HttpResponseForbidden("คุณไม่มีสิทธิ์ดาวน์โหลดบทเรียนนี้")
+
+#     scenes = storybook.scenes.order_by('scene_number')
+#     html = render_to_string('teacher/lesson_detail_for_pdf.html', {
+#         'storybook': storybook,
+#         'scenes': scenes,
+#     }, request=request)
+
+#     buffer = io.BytesIO()
+#     pisa_status = pisa.CreatePDF(src=html, dest=buffer, link_callback=link_callback)
+#     if pisa_status.err:
+#         return HttpResponse('เกิดข้อผิดพลาดในการสร้าง PDF', status=500)
+
+#     # 🔔 1) แจ้งครูว่า "นักเรียนดาวน์โหลด PDF"
+#     if request.user.user_type == 'student' and not is_owner:
+#         try:
+#             notify_user(
+#                 storybook.user,   # ครู
+#                 event_type="student_downloaded",
+#                 verb="ดาวน์โหลด: นักเรียนดาวน์โหลดบทเรียนของคุณ",
+#                 description=f"{request.user.get_full_name() or request.user.email} ดาวน์โหลด {storybook.title}",
+#                 target_url=reverse("teacher_view_lesson_detail", args=[storybook.id]),
+#             )
+#         except Exception:
+#             pass
+    
+#     # 🔔 2) แจ้งนักเรียนเองว่า "ดาวน์โหลดสำเร็จ"
+#     try:
+#         notify_user(
+#             request.user,  # นักเรียนผู้ดาวน์โหลด
+#             event_type="download_completed",
+#             verb="ดาวน์โหลดไฟล์ PDF สำเร็จ",
+#             description=f"คุณได้ดาวน์โหลดบทเรียน {storybook.title} เรียบร้อยแล้ว",
+#             target_url=f"/student/storybook/{storybook.id}/",
+#         )
+#     except Exception:
+#         pass
+
+#     buffer.seek(0)
+#     return HttpResponse(
+#         buffer,
+#         content_type='application/pdf',
+#         headers={
+#             'Content-Disposition': f'attachment; filename="lesson_{storybook.id}.pdf"'
+#         }
+#     )
+
+
+
+# def export_lesson_pdf(request, storybook_id):
+#     storybook = get_object_or_404(Storybook, id=storybook_id)
+
+#     is_owner = storybook.user == request.user
+#     is_student = request.user.user_type == 'student'
+
+#     # 🛑 1) ตรวจสอบ download_permission ก่อนดาวน์โหลด
+#     if storybook.download_permission == "private" and not is_owner:
+#         return HttpResponseForbidden("คุณไม่มีสิทธิ์ดาวน์โหลดบทเรียนนี้ (Private)")
+
+#     # 🛑 2) ตรวจสอบสิทธิ์เข้าถึงบทเรียน
+#     if not (is_owner or is_student):
+#         return HttpResponseForbidden("คุณไม่มีสิทธิ์ดาวน์โหลดบทเรียนนี้")
+
+#     scenes = storybook.scenes.order_by('scene_number')
+#     html = render_to_string('teacher/lesson_detail_for_pdf.html', {
+#         'storybook': storybook,
+#         'scenes': scenes,
+#     }, request=request)
+
+#     buffer = io.BytesIO()
+#     pisa_status = pisa.CreatePDF(src=html, dest=buffer, link_callback=link_callback)
+#     if pisa_status.err:
+#         return HttpResponse('เกิดข้อผิดพลาดในการสร้าง PDF', status=500)
+
+#     # 🔔 แจ้งครูเมื่อมีนักเรียนดาวน์โหลด PDF
+#     if is_student and not is_owner:
+#         try:
+#             notify_user(
+#                 storybook.user,
+#                 event_type="student_downloaded",
+#                 verb="นักเรียนดาวน์โหลด PDF",
+#                 description=f"{request.user.get_full_name() or request.user.email} ดาวน์โหลด {storybook.title}",
+#                 target_url=reverse("teacher_view_lesson_detail", args=[storybook.id]),
+#             )
+#         except:
+#             pass
+
+#     # 🔔 แจ้งนักเรียนว่าโหลดแล้ว
+#     try:
+#         notify_user(
+#             request.user,
+#             event_type="download_completed",
+#             verb="ดาวน์โหลด PDF สำเร็จ",
+#             description=f"คุณดาวน์โหลด {storybook.title} เรียบร้อยแล้ว",
+#             target_url=f"/student/storybook/{storybook.id}/",
+#         )
+#     except:
+#         pass
+
+#     buffer.seek(0)
+#     return HttpResponse(
+#         buffer,
+#         content_type='application/pdf',
+#         headers={
+#             'Content-Disposition': f'attachment; filename="lesson_{storybook.id}.pdf"'
+#         }
+#     )
+
+
+
+# def export_lesson_pdf(request, storybook_id):
+#     storybook = get_object_or_404(Storybook, id=storybook_id)
+
+#     is_owner = (storybook.user == request.user)
+#     is_student = (request.user.user_type == 'student')
+
+#     # 🔒 (1) ตรวจสอบ download_permission
+#     if storybook.download_permission == "private" and not is_owner:
+#         return HttpResponseForbidden(
+#             "<h2 style='font-family: THSarabunNew; padding:20px;'>"
+#             "⛔ คุณไม่มีสิทธิ์ดาวน์โหลดบทเรียนนี้ (ตั้งค่าเป็น Private)"
+#             "</h2>"
+#         )
+
+#     # 🔒 (2) ตรวจสอบสิทธิ์เข้าถึงบทเรียน
+#     if not (is_owner or is_student):
+#         return HttpResponseForbidden(
+#             "<h2 style='font-family: THSarabunNew; padding:20px;'>"
+#             "⛔ คุณไม่มีสิทธิ์ดาวน์โหลดบทเรียนนี้"
+#             "</h2>"
+#         )
+
+#     # 📄 โหลดฉากทั้งหมด
+#     scenes = storybook.scenes.order_by("scene_number")
+
+#     # 🎨 ใช้ template ที่ออกแบบเป็นนิทาน (Thai font)
+#     html = render_to_string(
+#         "student/lesson_detail_for_pdf.html",
+#         {
+#             "storybook": storybook,
+#             "scenes": scenes,
+#         },
+#         request=request
+#     )
+
+#     # 🖨️ สร้าง PDF ลง buffer
+#     buffer = io.BytesIO()
+#     pisa_status = pisa.CreatePDF(
+#         html,
+#         dest=buffer,
+#         encoding="utf-8",
+#         link_callback=link_callback
+#     )
+
+#     if pisa_status.err:
+#         return HttpResponse("เกิดข้อผิดพลาดในการสร้าง PDF", status=500)
+
+#     # 🔔 แจ้งครูเมื่อมีนักเรียนดาวน์โหลด PDF
+#     if is_student and not is_owner:
+#         try:
+#             notify_user(
+#                 storybook.user,
+#                 event_type="student_downloaded",
+#                 verb="นักเรียนดาวน์โหลด PDF",
+#                 description=f"{request.user.get_full_name() or request.user.email} ดาวน์โหลด {storybook.title}",
+#                 target_url=reverse("teacher_view_lesson_detail", args=[storybook.id]),
+#             )
+#         except:
+#             pass
+
+#     # 🔔 แจ้งนักเรียนว่าโหลดแล้ว
+#     try:
+#         notify_user(
+#             request.user,
+#             event_type="download_completed",
+#             verb="ดาวน์โหลด PDF สำเร็จ",
+#             description=f"คุณดาวน์โหลด {storybook.title} เรียบร้อยแล้ว",
+#             target_url=f"/student/storybook/{storybook.id}/",
+#         )
+#     except:
+#         pass
+
+#     # 📥 ส่ง PDF กลับให้ผู้ใช้
+#     buffer.seek(0)
+#     return HttpResponse(
+#         buffer,
+#         content_type="application/pdf",
+#         headers={
+#             "Content-Disposition": f'attachment; filename="lesson_{storybook.id}.pdf"'
+#         }
+#     )
+
+
+
+import os
+import uuid
+from django.http import FileResponse, HttpResponseForbidden
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
+from .models import Storybook
+from .utiles.storybook_pdf import create_story_slide, slides_to_pdf
+
 def export_lesson_pdf(request, storybook_id):
     storybook = get_object_or_404(Storybook, id=storybook_id)
+    scenes = storybook.scenes.order_by("scene_number")
 
-    # ตรวจสอบสิทธิ์: ครูเจ้าของบทเรียน หรือ นักเรียนที่สามารถเข้าถึงได้
-    is_owner = storybook.user == request.user
-    is_student_viewer = request.user.user_type == 'student'
+    is_owner = (storybook.user == request.user)
+    is_student = (request.user.user_type == 'student')
 
-    if not (is_owner or is_student_viewer):
-        return HttpResponseForbidden("คุณไม่มีสิทธิ์ดาวน์โหลดบทเรียนนี้")
+    # download_permission
+    if storybook.download_permission == "private" and not is_owner:
+        return HttpResponseForbidden("⛔ คุณไม่มีสิทธิ์ดาวน์โหลดบทเรียนนี้")
 
-    scenes = storybook.scenes.order_by('scene_number')
-    html = render_to_string('teacher/lesson_detail_for_pdf.html', {
-        'storybook': storybook,
-        'scenes': scenes,
-    }, request=request)
+    if not (is_owner or is_student):
+        return HttpResponseForbidden("⛔ คุณไม่มีสิทธิ์เข้าถึงบทเรียนนี้")
 
-    buffer = io.BytesIO()
-    pisa_status = pisa.CreatePDF(src=html, dest=buffer, link_callback=link_callback)
-    if pisa_status.err:
-        return HttpResponse('เกิดข้อผิดพลาดในการสร้าง PDF', status=500)
+    # บันทึกการดาวน์โหลด
+    StorybookDownload.objects.create(
+        storybook=storybook,
+        user=request.user
+    )
 
-    # 🔔 1) แจ้งครูว่า "นักเรียนดาวน์โหลด PDF"
-    if request.user.user_type == 'student' and not is_owner:
+    temp_images = []
+
+    # ⭐ สร้างสไลด์ภาพทีละฉาก
+    for scene in scenes:
+        slide_path = create_story_slide(scene.image_url, scene.text)
+        temp_images.append(slide_path)
+
+    # ⭐ รวมเป็น PDF
+    pdf_path = f"/tmp/storybook_{uuid.uuid4().hex}.pdf"
+    slides_to_pdf(temp_images, pdf_path)
+
+    # ⭐ แจ้งเตือนครู (ถ้านักเรียนดาวน์โหลด)
+    if is_student and not is_owner:
         try:
             notify_user(
-                storybook.user,   # ครู
+                storybook.user,
                 event_type="student_downloaded",
-                verb="ดาวน์โหลด: นักเรียนดาวน์โหลดบทเรียนของคุณ",
-                description=f"{request.user.get_full_name() or request.user.email} ดาวน์โหลด {storybook.title}",
+                verb="นักเรียนดาวน์โหลด PDF",
+                description=f"{request.user.email} ดาวน์โหลด {storybook.title}",
                 target_url=reverse("teacher_view_lesson_detail", args=[storybook.id]),
             )
-        except Exception:
+        except:
             pass
-    
-    # 🔔 2) แจ้งนักเรียนเองว่า "ดาวน์โหลดสำเร็จ"
+
+    # ⭐ แจ้งนักเรียนว่าโหลดสำเร็จ
     try:
         notify_user(
-            request.user,  # นักเรียนผู้ดาวน์โหลด
+            request.user,
             event_type="download_completed",
-            verb="ดาวน์โหลดไฟล์ PDF สำเร็จ",
-            description=f"คุณได้ดาวน์โหลดบทเรียน {storybook.title} เรียบร้อยแล้ว",
+            verb="ดาวน์โหลด PDF สำเร็จ",
+            description=f"ดาวน์โหลดนิทาน {storybook.title} สำเร็จ",
             target_url=f"/student/storybook/{storybook.id}/",
         )
-    except Exception:
+    except:
         pass
 
-    buffer.seek(0)
-    return HttpResponse(
-        buffer,
-        content_type='application/pdf',
-        headers={
-            'Content-Disposition': f'attachment; filename="lesson_{storybook.id}.pdf"'
-        }
-    )
+    # ⭐ ส่งไฟล์ PDF กลับ
+    return FileResponse(open(pdf_path, "rb"), as_attachment=True, filename=f"{storybook.title}.pdf")
+
+
+
+
 
 @login_required
 def delete_account(request):
@@ -770,12 +988,6 @@ except Exception:  # noqa: BLE001
 
 @login_required
 def teacher_view_lesson_detail(request, storybook_id):
-    """
-    หน้าแดชบอร์ดสรุปบทเรียนของครู:
-    - ภาพ/ชื่อเรื่อง/คำอธิบาย
-    - การ์ด metric: ยอดดู, คะแนนเฉลี่ยโหวต, จำนวนโหวต, ความคิดเห็น, ดาวน์โหลด, แชร์, คะแนนเฉลี่ย post-test, จำนวนคนทำ
-    - ตารางนักเรียน: คนล่าสุดที่ทำ + จำนวนครั้งที่ทำ
-    """
     storybook = get_object_or_404(Storybook, id=storybook_id, user=request.user)
 
     # 1) สถิติแบบทดสอบ (PostTest)
@@ -870,26 +1082,32 @@ def final(request, storybook_id):
     storybook = get_object_or_404(Storybook, id=storybook_id, user=request.user)
 
     if request.method == 'POST':
-        # บันทึก download permission
         permission = request.POST.get('download_permission', 'public')
         storybook.download_permission = permission
 
-        # อัปเดตชื่อเรื่องใหม่ (กรณีมีแก้ไข)
         title = request.POST.get('title')
         if title:
             storybook.title = title
 
-        # ตั้งค่า is_uploaded
+        desc = request.POST.get('lesson_description')
+        if desc:
+            storybook.detail_lesson = desc     
+
+        additional = request.POST.get('lesson_additional')
+        if additional:
+            storybook.Additional_lesson_details = additional  
+            
+        creator_name = request.POST.get('lesson_creator')
+
+
         storybook.is_uploaded = True
         storybook.save()
 
-        # URLs ปลายทาง
         teacher_url = reverse("teacher_view_lesson_detail", args=[storybook.id])
         student_url = reverse("student_display_lesson", args=[storybook.id])
 
-    # แจ้งเตือน "หลังคอมมิตจริง" ทั้งครูและนักเรียน
+        # Notify
         def _notify_all():
-        # ครู
             notify_user(
                 storybook.user,
                 event_type="lesson_uploaded",
@@ -897,7 +1115,7 @@ def final(request, storybook_id):
                 description=storybook.title,
                 target_url=teacher_url,
             )
-        # นักเรียน (กันเผื่อครูไปอยู่ในรายชื่อนักเรียน)
+
             for student in storybook.classroom.students.exclude(id=storybook.user_id).distinct():
                 notify_user(
                     student,
@@ -909,8 +1127,7 @@ def final(request, storybook_id):
 
         transaction.on_commit(_notify_all)
 
-        
-        # ดึงข้อมูลคำถามแบบทดสอบ
+        # Post test
         questions_json = request.POST.get('questions_json')
         if questions_json:
             try:
@@ -925,7 +1142,7 @@ def final(request, storybook_id):
                         choice_3=q['choices'][2],
                         choice_4=q['choices'][3],
                         correct_choice=q['correct'],
-                        explanation=q.get('explanation', '') 
+                        explanation=q.get('explanation', '')
                     )
             except Exception as e:
                 messages.error(request, f"เกิดข้อผิดพลาดในการบันทึกคำถาม: {str(e)}")
@@ -934,6 +1151,8 @@ def final(request, storybook_id):
         return redirect('classroom_home', classroom_id=storybook.classroom.id)
 
     return redirect('detail_lesson', storybook_id=storybook.id)
+
+
 
 register = template.Library()
 
@@ -1883,37 +2102,42 @@ def notifications_unread_count(request):
     c = Notification.objects.filter(user=request.user, is_read=False).count()
     return JsonResponse({"count": c})
 
-# @login_required
-# def share_storybook(request, storybook_id):
-#     storybook = get_object_or_404(Storybook, id=storybook_id)
 
-#     # ต้องเป็นนักเรียนเท่านั้น
-#     if request.user.user_type != "student":
-#         return JsonResponse({"ok": False, "error": "Only students can share"}, status=403)
 
-#     # 1) แจ้งครูผู้สอน
-#     try:
-#         notify_user(
-#             storybook.user,
-#             event_type="student_shared",
-#             verb="แชร์บทเรียน: นักเรียนแชร์บทเรียนของคุณ",
-#             description=f"{request.user.get_full_name() or request.user.email} แชร์ {storybook.title}",
-#             target_url=reverse("teacher_view_lesson_detail", args=[storybook.id]),
-#         )
-#     except Exception as e:
-#         print("Teacher notify error:", e)
 
-#     # 2) แจ้งนักเรียนเองว่าแชร์สำเร็จ
-#     try:
-#         notify_user(
-#             request.user,
-#             event_type="share_completed",
-#             verb="แชร์บทเรียนสำเร็จ",
-#             description=f"คุณแชร์บทเรียน {storybook.title} เรียบร้อยแล้ว",
-#             target_url=reverse("student_view_storybook", args=[storybook.id]),
-#         )
-#     except Exception as e:
-#         print("Student notify error:", e)
+@login_required
+def lesson_share_entry(request, storybook_id):
+    storybook = get_object_or_404(Storybook, id=storybook_id)
 
-#     return JsonResponse({"ok": True})
+    StorybookShare.objects.create(
+        storybook=storybook,
+        user=request.user
+    )
 
+    user = request.user
+    is_owner = (storybook.user == user)
+    is_teacher = user.user_type == "teacher"
+    is_student = user.user_type == "student"
+
+    # 1) PRIVATE → ให้เฉพาะเจ้าของ + นักเรียนในห้องนั้นเท่านั้น
+    if storybook.download_permission == "private":
+        # ไม่ใช่เจ้าของ
+        if not is_owner:
+            # ถ้าอยู่ใน classroom ของเรื่องนี้ไหม?
+            if storybook.classroom:
+                if not storybook.classroom.students.filter(id=user.id).exists():
+                    return HttpResponseForbidden("⛔ คุณไม่มีสิทธิ์เข้าถึงบทเรียนนี้")
+            else:
+                return HttpResponseForbidden("⛔ PRIVATE และไม่ได้อยู่ในชั้นเรียนของครู")
+    
+    # 2) PUBLIC → ใครก็เข้าถึงได้
+    
+    # 3) พาไปหน้าตามบทบาท
+    if is_teacher:
+        return redirect("view_lesson_teacher", storybook.id)
+
+    if is_student:
+        return redirect("student_display_lesson", storybook.id)
+
+    # fallback
+    return HttpResponseForbidden("⛔ บทบาทของคุณไม่มีสิทธิ์เข้าถึงหน้านี้")

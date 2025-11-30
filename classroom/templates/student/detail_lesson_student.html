@@ -102,21 +102,13 @@
 
         <!-- 📤 แชร์ + ⭐ รายการโปรด + ... -->
         <div class="flex items-center gap-3">
-
             <!-- ปุ่ม แชร์ -->
-            <button id="share-btn" data-url="{{ request.build_absolute_uri }}"
+            <button id="share-btn"
+                data-url="{% url 'lesson_share_entry' storybook.id %}"
                 class="flex items-center px-4 py-2 rounded-xl bg-white border shadow-sm text-gray-700 text-sm hover:bg-gray-100 transition">
                 <i class="fa-solid fa-share-nodes mr-2"></i> แชร์บทเรียน
             </button>
-
-
             <!-- ปุ่ม รายการโปรด -->
-            {% comment %} <button
-                class="flex items-center px-4 py-2 rounded-xl bg-white border shadow-sm text-gray-700 text-sm hover:bg-gray-100 transition">
-                <i class="fa-solid fa-bookmark mr-2"></i> รายการโปรด
-            </button> {% endcomment %}
-
-            {# ใช้ Font Awesome: fa-regular / fa-solid #}
             <button
                 class="favorite-btn flex items-center px-4 py-2 rounded-xl bg-white border shadow-sm text-gray-700 text-sm hover:bg-gray-100 transition"
                 data-id="{{ storybook.id }}"
@@ -140,10 +132,17 @@
                 <!-- เมนู Dropdown -->
                 <div id="menu-dropdown"
                     class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg py-2 hidden z-50">
-                    <a id="export-pdf-btn" href="{% url 'lesson_detail_for_pdf' storybook.id %}"
-                        class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fa-solid fa-download mr-2"></i> ดาวน์โหลด PDF
-                    </a>
+                    {% if storybook.download_permission == "private" and request.user != storybook.user %}
+                        <button id="export-pdf-btn" 
+                            class="flex items-center px-4 py-2 text-sm text-gray-400 cursor-not-allowed bg-gray-100">
+                            <i class="fa-solid fa-lock mr-2"></i> ดาวน์โหลดไม่ได้ (Private)
+                        </button>
+                    {% else %}
+                        <button id="export-pdf-btn"
+                            class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fa-solid fa-download mr-2"></i> ดาวน์โหลด PDF
+                        </button>
+                    {% endif %}
                     <button id="open-report-modal"
                         class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full">
                         <i class="fa-solid fa-flag mr-2"></i> รายงานเนื้อหา
@@ -554,13 +553,40 @@
 </script>
 
 <script>
-    document.getElementById('export-pdf-btn').addEventListener('click', function () {
-        // แสดง overlay ทันทีที่กดปุ่ม
-        document.getElementById('pdf-loading-overlay').style.display = 'block';
-        // Browser จะสั่ง navigate ไปที่ export_lesson_pdf URL
-        // อย่าเรียก preventDefault() ไว้ จะทำให้การดาวน์โหลดไม่เกิดขึ้น
-    });
+document.addEventListener("DOMContentLoaded", function() {
+    const btn = document.getElementById("export-pdf-btn");
+    const overlay = document.getElementById("pdf-loading-overlay");
+
+    {% if storybook.download_permission == "private" and request.user != storybook.user %}
+        // นักเรียนกดโหลดไม่ได้
+        btn.addEventListener("click", function() {
+            alert("คุณไม่มีสิทธิ์ดาวน์โหลดบทเรียนนี้ (Private)");
+        });
+    {% else %}
+        // โหลดได้
+        btn.addEventListener("click", async function () {
+            overlay.style.display = "block"; // เปิดโหลด
+
+            try {
+                const response = await fetch("{% url 'lesson_detail_for_pdf' storybook.id %}");
+                const blob = await response.blob();
+
+                // สร้างลิงก์ดาวน์โหลด
+                const link = document.createElement("a");
+                link.href = window.URL.createObjectURL(blob);
+                link.download = "{{ storybook.title }}.pdf";
+                link.click();
+            } catch (error) {
+                alert("เกิดข้อผิดพลาดในการสร้าง PDF");
+            }
+
+            overlay.style.display = "none"; // ปิดโหลด
+        });
+    {% endif %}
+});
 </script>
+
+
 
 <script>
     // สำหรับเมนู ...
