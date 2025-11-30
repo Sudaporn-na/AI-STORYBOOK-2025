@@ -53,6 +53,9 @@ class Profile(models.Model):
     class_code = models.CharField(max_length=50, blank=True, null=True)
     classroom_link = models.URLField(blank=True, null=True)
 
+    student_id = models.CharField(max_length=50, blank=True, null=True)
+    grade_level = models.CharField(max_length=50, blank=True, null=True)
+
     def __str__(self):
         return f"Profile of {self.user.email}"
 
@@ -289,3 +292,25 @@ class StorybookAccess(models.Model):
 
     def __str__(self):
         return f"{self.user_id} viewed {self.storybook_id} at {self.created_at}"
+
+
+
+
+
+class StorybookDownload(models.Model):
+    storybook = models.ForeignKey("Storybook", on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.email} downloaded {self.storybook.title}"
+
+
+class StorybookShare(models.Model):
+    storybook = models.ForeignKey("Storybook", on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.email} shared {self.storybook.title}"
+

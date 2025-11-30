@@ -146,6 +146,9 @@
             <input type="hidden" name="questions_json" id="questions-json">
             <input type="hidden" name="download_permission" id="download-permission">
             <input type="hidden" name="title" id="hidden-lesson-title">
+            <input type="hidden" id="hidden-lesson-description" name="lesson_description">
+            <input type="hidden" id="hidden-lesson-additional" name="lesson_additional">
+            <input type="hidden" id="hidden-lesson-creator" name="lesson_creator">
             <button id="upload-btn" type="submit"
                 class="w-full px-6 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition">
                 อัปโหลดงาน
@@ -188,8 +191,10 @@
             const questionText = item.querySelector('input[type="text"]').value.trim();
             const choiceInputs = item.querySelectorAll('input[type="text"]');
             const choices = Array.from(choiceInputs).slice(1).map(i => i.value.trim());
+
             const explanationTextarea = item.querySelector('.explanation-textarea');
             const explanation = explanationTextarea ? explanationTextarea.value.trim() : '';
+
             const radios = item.querySelectorAll('input[type="radio"]');
             let correct = 1;
             radios.forEach((radio, i) => {
@@ -204,14 +209,24 @@
             });
         });
 
-        const permission = document.querySelector('input[name="download_permission"]:checked')?.value || "public";
         const title = document.getElementById('lesson-name').value.trim();
+        const permission = document.querySelector('input[name="download_permission"]:checked')?.value || "public";
+
+        const description = document.getElementById('lesson-description').value.trim();
+        const additional = document.getElementById('lesson-additional').value.trim();
+        const creator = document.getElementById('lesson-creator').value.trim();
 
         document.getElementById('questions-json').value = JSON.stringify(questions);
         document.getElementById('download-permission').value = permission;
         document.getElementById('hidden-lesson-title').value = title;
+
+        document.getElementById('hidden-lesson-description').value = description;
+        document.getElementById('hidden-lesson-additional').value = additional;
+        document.getElementById('hidden-lesson-creator').value = creator;
     });
 </script>
+
+
 
 
 <!-- ยืนยันก่อนยกเลิก -->
@@ -353,7 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let ws = null;
     const totalScenes = 20;
 
-    // ฟังก์ชันเริ่มโหลด + เปิด WebSocket
+    // ฟังก์ชันเริ่มโหลด พร้อมเปิด WebSocket
     function startProgressWebSocket() {
         // แสดง modal (เพราะตอนนี้กำลังประมวลผลจริง ๆ)
         modal.classList.remove("hidden");
@@ -363,14 +378,14 @@ document.addEventListener("DOMContentLoaded", () => {
         ws.onmessage = function(event) {
             const data = JSON.parse(event.data);
 
-            // === PROMPT ===
+            // สร้างพรอมต์
             if (data.evt === "progress" && data.status === "creating_prompt") {
                 sub.textContent = "กำลังสร้างพรอมต์...";
                 bar.style.width = "5%";
                 percent.textContent = "5%";
             }
 
-            // === SCENE X ===
+            // สร้างฉากทีละฉาก
             if (data.evt === "progress" && data.status === "creating_scene") {
                 const x = data.current || 1;
                 sub.textContent = `กำลังสร้างฉากที่ ${x} / ${totalScenes}`;
@@ -379,7 +394,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 percent.textContent = p + "%";
             }
 
-            // === FINISHED ===
+            // เสร็จสิ้นทั้งหมด
             if (data.evt === "progress" && data.status === "finished") {
                 sub.textContent = "สร้างนิทานเสร็จแล้ว!";
                 bar.style.width = "100%";
@@ -392,7 +407,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ws.close();
             }
 
-            // === FAILED (เผื่อ Celery error) ===
+            // FAILED (เผื่อ Celery error)
             if (data.evt === "progress" && data.status === "failed") {
                 sub.textContent = "เกิดข้อผิดพลาดระหว่างสร้างนิทาน";
                 bar.style.width = "100%";
@@ -411,16 +426,11 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
-    // ===========================
     // ตัดสินใจว่าจะโชว์ modal มั้ย
-    // ===========================
     if (status === "processing") {
-        // เคสนี้คือ: เพิ่งอัปไฟล์ / เพิ่งกดสร้าง → Celery ยังรันอยู่
-        // = เราเปิด WebSocket + แสดง modal ให้เห็น progress
-        startProgressWebSocket();
+        startProgressWebSocket(); // เพิ่งอัปไฟล์ / เพิ่งกดสร้าง → Celery ยังรันอยู่ แสดง modal ให้เห็น progress
     } else {
-        // ถ้า ready / failed = ไม่ต้องทำอะไร ปล่อยให้ modal ซ่อนไปเลย
-        modal.classList.add("hidden");
+        modal.classList.add("hidden"); // ถ้า ready / failed = ไม่ต้องทำอะไร ปล่อยให้ modal ซ่อนไปเลย
     }
 
 });

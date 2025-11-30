@@ -30,12 +30,8 @@ def guess_mime_type(filename):
     else:
         return "application/octet-stream"
 
-
-def upload_file_from_bytes(file_bytes: bytes, dest_path: str, max_retries=3, retry_delay=5) -> str:
-    """
-    อัปโหลดไฟล์จาก bytes ไปยัง Supabase Storage พร้อม retry หากเกิด timeout
-    """
-    file_name = f"{uuid4().hex}_{os.path.basename(dest_path)}"
+def upload_file_from_bytes(file_bytes: bytes, dest_path: str, max_retries=3, retry_delay=5) -> str: # อัปโหลดไฟล์จาก bytes ไปยัง Supabase Storage พร้อม retry หากเกิด timeout
+    file_name = f"{uuid4().hex}_{os.path.basename(dest_path)}" 
     final_path = f"{os.path.dirname(dest_path)}/{file_name}"
     mime_type = guess_mime_type(final_path)
     headers = {"content-type": str(mime_type)}
@@ -58,11 +54,7 @@ def upload_file_from_bytes(file_bytes: bytes, dest_path: str, max_retries=3, ret
                 raise RuntimeError(f"Upload failed after {max_retries} attempts: {final_path}")
             time.sleep(retry_delay)
 
-
-def upload_file_from_url(file_url: str, dest_path: str, timeout=30) -> str:
-    """
-    ดาวน์โหลดไฟล์จาก URL แล้วอัปโหลดไปยัง Supabase Storage พร้อม timeout
-    """
+def upload_file_from_url(file_url: str, dest_path: str, timeout=30) -> str: # ดาวน์โหลดไฟล์จาก URL แล้วอัปโหลดไปยัง Supabase Storage
     try:
         response = requests.get(file_url, timeout=timeout)
         response.raise_for_status()

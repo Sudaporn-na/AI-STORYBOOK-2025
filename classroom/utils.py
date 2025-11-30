@@ -1,10 +1,10 @@
-# utils.py (เฉพาะบล็อกหัวไฟล์ + TTS function ที่แก้)
-
+# utils.py 
 import os
 import logging
 import json
 import re
 from io import BytesIO
+from uuid import uuid4
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -15,29 +15,26 @@ from google.genai import types
 
 from pydub import AudioSegment
 
-# --- load env ถ้าใช้ .env ---
 load_dotenv()
 
-# --- FFmpeg path for pydub ---
 
-FFMPEG_BIN  = os.getenv("FFMPEG_BIN",  r"D:\Acer\Download\ffmpeg-8.0-full_build\ffmpeg-8.0-full_build\bin\ffmpeg.exe")
+FFMPEG_BIN = os.getenv("FFMPEG_BIN", r"D:\Acer\Download\ffmpeg-8.0-full_build\ffmpeg-8.0-full_build\bin\ffmpeg.exe")
 FFPROBE_BIN = os.getenv("FFPROBE_BIN", r"D:\Acer\Download\ffmpeg-8.0-full_build\ffmpeg-8.0-full_build\bin\ffprobe.exe")
 
 
 AudioSegment.converter = FFMPEG_BIN
-AudioSegment.ffprobe   = FFPROBE_BIN
+AudioSegment.ffprobe  = FFPROBE_BIN
 
-# --- default voice/lang ---
 DEFAULT_VOICE = os.getenv("GEMINI_TTS_VOICE", "Leda")
-DEFAULT_LANG  = os.getenv("GEMINI_TTS_LANG",  "th-TH")
+DEFAULT_LANG = os.getenv("GEMINI_TTS_LANG", "th-TH")
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-client  = OpenAI()
-gclient = genai.Client()
+client = OpenAI() # Client สำหรับ DALL·E (ตอนนี้ไม่ใช้แล้ว แต่ยังเก็บไว้)
+gclient = genai.Client() # Client สำหรับ Gemini
 
-# ---------- helpers: pitch / postprocess (ของคุณเดิม) ----------
+# ฟังก์ชันช่วยเปลี่ยนความถี่เสียง
 def pitch_shift(seg: AudioSegment, semitones: float) -> AudioSegment:
     new_sr = int(seg.frame_rate * (2 ** (semitones / 12)))
     shifted = seg._spawn(seg.raw_data, overrides={'frame_rate': new_sr})
@@ -57,8 +54,7 @@ def style_postprocess(mp3_bytes: bytes, *, speed=1.0, semitones=0.0, gain_db=0.0
     seg.export(buf, format="mp3", bitrate="64k")
     return buf.getvalue()
 
-# ---------- TTS (Gemini) ----------
-# 1. แปลงข้อความเป็นเสียง MP3
+# 1 แปลงข้อความเป็นเสียง MP3 (ใช้ Gemini TTS)
 def generate_tts_audio(text: str, voice_name: str = DEFAULT_VOICE, language_code: str = DEFAULT_LANG) -> bytes:
     try:
         resp = gclient.models.generate_content(
@@ -74,7 +70,6 @@ def generate_tts_audio(text: str, voice_name: str = DEFAULT_VOICE, language_code
                 ),
             ),
         )
-        # raw PCM 24kHz mono 16-bit
         pcm = resp.candidates[0].content.parts[0].inline_data.data
     except Exception as e:
         logger.error("TTS error: %s", e)
@@ -85,7 +80,7 @@ def generate_tts_audio(text: str, voice_name: str = DEFAULT_VOICE, language_code
     audio.export(buf, format="mp3", bitrate="64k")
     return buf.getvalue()
 
-# 2. ดึงข้อความจาก PDF ]
+# 2 ดึงข้อความจาก PDF
 def extract_text_from_pdf(file_obj) -> str:
     text = ""
     reader = PyPDF2.PdfReader(file_obj)
@@ -99,7 +94,7 @@ def extract_text_from_pdf(file_obj) -> str:
     return text
 
 
-# 3. สรุปเป็นนิทาน 20 ฉาก 
+# 3 สรุปเป็นนิทาน 20 ฉาก ใช้ Gemini 2.5 Pro 
 def summarize_to_scenes(raw_text):
     system_prompt = (
         "คุณคือผู้ช่วย AI ที่เชี่ยวชาญด้านการแปลงบทเรียนยาก ๆ ให้กลายเป็นนิทานภาพที่เด็กประถมเข้าใจได้ "
@@ -115,6 +110,8 @@ def summarize_to_scenes(raw_text):
 {raw_text}
 \"\"\"
 
+**คำสั่งสำคัญ:** ก่อนเริ่มนิทาน ให้คุณสุ่มเลือก **ชื่อตัวละครหลัก (ภาษาไทย)** และ **คำอธิบายลักษณะของตัวละคร (เพศ, อายุ, ลักษณะทางกายภาพ, การแต่งกาย)** มาหนึ่งชุด และใช้ชื่อและคำอธิบายนั้นอย่างสม่ำเสมอในทุกฉาก (ทั้งในส่วน "text" และ "image_prompt")
+
 จุดประสงค์ของการแปลง:
 - ให้เด็กเข้าใจบทเรียนยาก ๆ ผ่านเรื่องราวที่สนุก
 - ใช้ตัวละคร/ฉากที่เชื่อมโยงกับชีวิตประจำวัน
@@ -128,8 +125,7 @@ def summarize_to_scenes(raw_text):
 **แต่ละฉาก** ต้องประกอบด้วย:
 - `"scene"`: เลขฉาก เช่น 1, 2, 3 ...
 - `"text"`: เนื้อหานิทานในฉากนั้น ใช้ภาษาที่เข้าใจง่าย เหมาะกับเด็กประถม และเนื้อหาควรต่อเนื่องจากฉากก่อนหน้า โดยมีความยาวประมาณ 1 ย่อหน้า (40–60 คำ) ไม่เกิน 2 บรรทัด เพื่อให้กระชับและเหมาะสำหรับแสดงต่อฉากภาพประกอบ
-- `"image_prompt"`: prompt สำหรับสร้างภาพจาก DALL·E โดยต้องระบุอย่างละเอียด: ฉาก, ตัวละคร, สีสัน, อารมณ์ และ **สไตล์นิทานแนวการ์ตูน** โดยใช้ลักษณะตัวละครหลักเหมือนเดิมทุกฉาก (ใช้ same character design as previous หรืออธิบายลักษณะซ้ำของตัวละครน้องแนน)
-  (เช่น “เด็กชายกำลังถือสมุดภาพในห้องเรียนที่อบอุ่น มีครูใจดียืนข้างๆ แสงแดดส่องเข้าหน้าต่าง สไตล์การ์ตูน cartoon style, storybook illustration”)
+- `"image_prompt"`: prompt สำหรับสร้างภาพจาก DALL·E โดยต้องระบุอย่างละเอียด: ฉาก, ตัวละคร, สีสัน, อารมณ์ และ **สไตล์นิทานแนวการ์ตูน** โดยต้องระบุชื่อและลักษณะตัวละครที่สุ่มเลือกมาในทุกฉาก และเพิ่มวลี **(same character design throughout the story)** เข้าไปเพื่อเน้นย้ำความสอดคล้อง
 
 **คำเตือนสำคัญ:
 - ห้ามตอบ JSON ที่ไม่สมบูรณ์ เช่น ขาด ] หรือ " หรือ ปิดไม่ครบ
@@ -138,41 +134,41 @@ def summarize_to_scenes(raw_text):
 ตัวอย่างรูปแบบ JSON:
 [
   {{
-    "scene": 3,
-    "text": "น้องแนนเดินเข้าไปในสวนของคุณตา เธอเห็นต้นไม้ที่กำลังออกผล พร้อมกับผึ้งที่บินไปมา...",
-    "image_prompt": "น้องแนน (same character design as previous) ยืนอยู่ในสวนผลไม้ที่เต็มไปด้วยต้นไม้และผึ้งบิน สไตล์การ์ตูน cartoon style, storybook illustration"
+    "scene": 1,
+    "text": "เด็กชายต้นกล้า (เด็กชาย, อายุ 7 ปี, ผมสีดำสั้น, สวมเสื้อยืดสีส้ม) กำลังเดินเล่นในห้องเรียนที่เต็มไปด้วยแสงแดด...",
+    "image_prompt": "ต้นกล้า (เด็กชายอายุ 7 ขวบ ผมสีดำสั้น สวมเสื้อยืดสีส้ม) (same character design throughout the story) ยืนอยู่ในห้องเรียนที่เต็มไปด้วยแสงแดดอ่อนๆ สไตล์การ์ตูน cartoon style, storybook illustration"
   }},
   ...
 ]
 """
-
-    response = client.chat.completions.create(
-        model="gpt-4-1106-preview",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        temperature=0.7
-    )
-
-    result_text = response.choices[0].message.content.strip()
-
-    # ล้าง ```json หรือ ```
-    if result_text.startswith("```json"):
-        result_text = result_text[7:]
-    elif result_text.startswith("```"):
-        result_text = result_text[3:]
-    if result_text.endswith("```"):
-        result_text = result_text[:-3]
-
-    logger.warning("===== JSON TAIL (last 1000 chars) =====\n%s", result_text)
-
+    
     try:
+        full_prompt = f'{system_prompt}\n\n{user_prompt}'
+        
+        response = gclient.models.generate_content(
+            model='gemini-2.5-pro',
+            contents=[
+                types.Content(
+                    role='user', 
+                    parts=[
+                        types.Part.from_text(text=full_prompt)
+                    ]
+                )
+            ],
+            config=types.GenerateContentConfig(
+                temperature=0.7,
+                response_mime_type="application/json" # บังคับให้ output เป็น JSON ล้วนๆ
+            )
+        )
+
+        result_text = response.text.strip()
+        logger.warning("===== JSON TAIL (last 1000 chars) =====\n%s", result_text)
+
         return json.loads(result_text)
 
     except json.JSONDecodeError as e:
         logger.warning(" JSONDecodeError: %s", str(e))
-        if not result_text.endswith("]"):
+        if not result_text.endswith("]"): # โค้ดสำหรับแก้ไข JSON ที่ไม่สมบูรณ์
             fixed = result_text.rsplit('{', 1)[0].rstrip(', \n') + "\n]"
             try:
                 return json.loads(fixed)
@@ -180,9 +176,11 @@ def summarize_to_scenes(raw_text):
                 raise ValueError("แก้แล้วแต่ยังพังอยู่: " + str(e2))
         else:
             raise ValueError("ไม่สามารถแปลง JSON ได้: " + str(e))
+    except Exception as e:
+        logger.error("Gemini generation error: %s", e)
+        raise
 
-
-# 4. กรองคำต้องห้ามแบบเหมารวม 
+# 4 กรองคำต้องห้ามแบบเหมารวม (ใช้สำหรับ DALL·E)
 def sanitize_prompt(prompt: str) -> str:
     bad_words = [
         # คำเกี่ยวกับร่างกายและความรุนแรง
@@ -222,11 +220,8 @@ def sanitize_prompt(prompt: str) -> str:
     return prompt
 
 
-#  5. สร้างภาพจาก DALL·E พร้อม fallback 
+#  5 สร้างภาพจาก DALL·E พร้อม fallback แปลงข้อความ text ที่ใช้ไม่ได้ มาเป็น prompt ที่ปลอดภัย
 def simplify_prompt(text: str) -> str:
-    """
-    แปลงข้อความ text ที่ใช้ไม่ได้ มาเป็น prompt ที่ปลอดภัย
-    """
     keywords = [
         "ห้องเรียน", "เด็กหญิง", "เด็กชาย", "คุณครู", "หนังสือ", "วิทยาศาสตร์", "ธรรมชาติ",
         "สนามเด็กเล่น", "แสงแดด", "สวน", "เพื่อน", "สัตว์", "ครอบครัว", "รอยยิ้ม", "ความสุข"
@@ -238,41 +233,48 @@ def simplify_prompt(text: str) -> str:
 
 def generate_dalle_image(prompt: str) -> str:
     """
-    สร้างภาพจาก prompt (หรือ fallback prompt ถ้า content policy reject)
+    ใช้ Gemini 2.5 Flash Image (2025 SDK)
+    ดึงภาพแบบ raw bytes จาก inline_data.data
     """
+    from .supabase_utils import upload_file_from_bytes
+
     safe_prompt = sanitize_prompt(prompt)
-    styled_prompt = safe_prompt + ", cartoon style, storybook illustration, soft lighting, warm colors, vibrant, highly detailed, happy atmosphere, cozy, child-friendly"
+    styled_prompt = (
+        safe_prompt +
+        ", cartoon style, storybook illustration, warm colors, soft lighting, highly detailed"
+    )
 
     try:
-        response = client.images.generate(
-            model="dall-e-3",
-            prompt=styled_prompt,
-            size="1024x1024",
-            quality="standard",
-            n=1
+        response = gclient.models.generate_content(
+            model="models/gemini-2.5-flash-image",
+            contents=[styled_prompt]
         )
-        return response.data[0].url
+
+        # วนหาชิ้นส่วนภาพที่มี inline_data
+        for part in response.parts:
+            if part.inline_data:
+                # ได้ raw bytes PNG
+                img_bytes = part.inline_data.data  
+
+                file_path = f"scenes/gemini25_{uuid4().hex}.png"
+                return upload_file_from_bytes(img_bytes, file_path)
+
+        raise Exception("Gemini image response has no inline_data")
 
     except Exception as e:
-        logger.warning("สร้างภาพจาก prompt เดิมไม่สำเร็จ: %s", str(e))
+        logger.error("Gemini Image Generation Error: %s", e)
 
-        # fallback
-        fallback_prompt = simplify_prompt(prompt)
-        logger.info("ใช้ fallback prompt: %s", fallback_prompt)
+        # fallback 1×1 PNG
+        BLANK = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+            b"\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\x00\x00\x00"
+            b"\x1f\xf3\xffa\x00\x00\x00\x0cIDATx\x9cc`\xa0\x1f\x00"
+            b"\x05\xfe\x02\xfe\xa7~\x81\x81\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
 
-        try:
-            response = client.images.generate(
-                model="dall-e-3",
-                prompt=fallback_prompt,
-                size="1024x1024",
-                quality="standard",
-                n=1
-            )
-            return response.data[0].url
+        fallback_path = f"scenes/default_{uuid4().hex}.png"
+        return upload_file_from_bytes(BLANK, fallback_path)
 
-        except Exception as e2:
-            logger.error("fallback prompt ก็ล้มเหลว: %s", str(e2))
-            return "https://yourdomain.com/static/default_image.png"
 
 
 if __name__ == "__main__":
@@ -285,15 +287,13 @@ if __name__ == "__main__":
 
     for scene in scenes:
         try:
-            logger.info("🔹 สร้างฉากที่ %d …", scene["scene"])
+            logger.info("สร้างฉากที่ %d …", scene["scene"])
             image_url = generate_dalle_image(scene["image_prompt"])
             tts_bytes = generate_tts_audio(scene["text"])
 
-            logger.info(" ฉาก %d สร้างเสร็จ: ภาพ = %s, เสียง = %d bytes", scene["scene"], image_url, len(tts_bytes))
+            logger.info(" ฉาก %d สร้างเสร็จ: ภาพ = %s, เสียง = %d bytes", scene["scene"], image_url, len(tts_bytes)) 
 
-            # อัปโหลด Supabase หรือบันทึกที่นี่ได้
-
-        except Exception as e:
+        except Exception as e: 
             logger.error(" ฉาก %d มีปัญหา: %s", scene["scene"], str(e))
             continue
 
