@@ -11,6 +11,13 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from .models import Storybook, Comment, Scene # ตรวจสอบให้แน่ใจว่า import Comment ที่มี parent_comment แล้ว
 
+from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from channels.db import database_sync_to_async
+
+from classroom.notify_utils import notify_user
+from django.urls import reverse
+
+
 
 class SceneProgressConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
@@ -150,27 +157,88 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({"event": "deleted", "data": event})
 
     # ---- helpers ----
+    # @sync_to_async
+    # # เพิ่ม parent_comment_id=None
+    # def _create_and_serialize(self, user_id, storybook_id, message, parent_comment_id=None):
+    #     user = User.objects.get(pk=user_id)
+    #     sb = Storybook.objects.get(pk=storybook_id)
+    #     parent = None
+    #     if parent_comment_id:
+    #          # ตรวจสอบคอมเมนต์แม่: ต้องอยู่ใน Storybook เดียวกันและยังไม่ถูกลบ
+    #         try:
+    #             parent = Comment.objects.get(
+    #                 pk=parent_comment_id, storybook=sb, is_deleted=False
+    #             )
+    #         except Comment.DoesNotExist:
+    #             parent_comment_id = None # ถ้าหาไม่เจอหรือถูกลบแล้ว ก็สร้างเป็นคอมเมนต์หลัก
+        
+    #     c = Comment.objects.create(
+    #         storybook=sb, 
+    #         author=user, 
+    #         message=message,
+    #         parent_comment=parent # กำหนดคอมเมนต์แม่
+    #     )
+    #     return self._serialize_comment(c)
+
     @sync_to_async
-    # เพิ่ม parent_comment_id=None
     def _create_and_serialize(self, user_id, storybook_id, message, parent_comment_id=None):
         user = User.objects.get(pk=user_id)
         sb = Storybook.objects.get(pk=storybook_id)
         parent = None
+
+        # กรณีเป็น reply → หา parent comment
         if parent_comment_id:
-             # ตรวจสอบคอมเมนต์แม่: ต้องอยู่ใน Storybook เดียวกันและยังไม่ถูกลบ
             try:
                 parent = Comment.objects.get(
-                    pk=parent_comment_id, storybook=sb, is_deleted=False
+                    pk=parent_comment_id,
+                    storybook=sb,
+                    is_deleted=False
                 )
             except Comment.DoesNotExist:
-                parent_comment_id = None # ถ้าหาไม่เจอหรือถูกลบแล้ว ก็สร้างเป็นคอมเมนต์หลัก
-        
+                parent = None  # parent ไม่เจอ → สร้างเป็นคอมเมนต์หลักแทน
+
+        # สร้างคอมเมนต์
         c = Comment.objects.create(
-            storybook=sb, 
-            author=user, 
+            storybook=sb,
+            author=user,
             message=message,
-            parent_comment=parent # กำหนดคอมเมนต์แม่
+            parent_comment=parent,
         )
+
+        # ============ NOTIFICATION LOGIC ============
+
+        # 1) ถ้าเป็นคอมเมนต์หลัก → แจ้งเตือน "เจ้าของบทเรียน (ครู)"
+        if parent is None:
+            if sb.user != user:  # ไม่เตือนตัวเอง
+                notify_user(
+                    sb.user,
+                    event_type="comment",
+                    verb=f"{user.get_full_name() or user.email} แสดงความคิดเห็นในบทเรียนของคุณ",
+                    description=message,
+                    target_url=reverse("detail_lesson", args=[sb.id]),
+                )
+
+        # 2) ถ้าเป็น reply → แจ้งเตือน "เจ้าของคอมเมนต์แม่"
+        else:
+            if parent.author != user:  # ไม่เตือนตัวเอง
+                # ถ้าเจ้าของคอมเมนต์แม่เป็นครู → link ไปหน้า teacher_view_storybook
+                # ถ้าไม่ใช่ครู → ใช้ student_view_storybook
+                target_view = (
+                    "detail_lesson"
+                    if getattr(parent.author, "user_type", "") == "teacher"
+                    else "student_display_lesson"
+                )
+
+                notify_user(
+                    parent.author,
+                    event_type="comment_reply",
+                    verb=f"{user.get_full_name() or user.email} ตอบกลับความคิดเห็นของคุณ",
+                    description=message,
+                    target_url = reverse(target_view, args=[sb.id]),
+                )
+
+        # ========== END NOTIFICATION LOGIC ==========
+
         return self._serialize_comment(c)
 
     @sync_to_async
@@ -268,3 +336,75 @@ class CommentConsumer(AsyncJsonWebsocketConsumer):
     def _can_delete(self, user, c: Comment):
         # ลบได้เหมือน edit
         return self._can_edit(user, c)
+
+
+ONLINE_COUNTS = {}  # {user_id: count ของ connection แต่ละ user}
+
+
+class PresenceConsumer(AsyncJsonWebsocketConsumer):
+    async def connect(self):
+        user = self.scope.get("user")
+        if not user or user.is_anonymous:
+            await self.close()
+            return
+
+        self.user_id = user.id
+        self.group_name = "presence_global"
+
+        # รับ connection
+        await self.accept()
+
+        # เข้า group สำหรับ broadcast presence
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+
+        # นับ connection ต่อ user (รองรับหลายแท็บ)
+        count = ONLINE_COUNTS.get(self.user_id, 0) + 1
+        ONLINE_COUNTS[self.user_id] = count
+
+        # ส่ง initial list ของผู้ใช้ที่ออนไลน์ให้ client นี้
+        await self.send_json({
+            "type": "initial",
+            "online_user_ids": list(ONLINE_COUNTS.keys())
+        })
+
+        # ถ้าเพิ่งเชื่อมต่อครั้งแรก → broadcast ว่าคนนี้ออนไลน์
+        if count == 1:
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "presence.event",
+                    "event": "online",
+                    "user_id": self.user_id,
+                }
+            )
+
+    async def disconnect(self, close_code):
+        user_id = getattr(self, "user_id", None)
+        if user_id is not None:
+            count = ONLINE_COUNTS.get(user_id, 0) - 1
+            if count <= 0:
+                ONLINE_COUNTS.pop(user_id, None)
+                # broadcast ว่า offline
+                await self.channel_layer.group_send(
+                    self.group_name,
+                    {
+                        "type": "presence.event",
+                        "event": "offline",
+                        "user_id": user_id,
+                    }
+                )
+            else:
+                ONLINE_COUNTS[user_id] = count
+
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def presence_event(self, event):
+        """
+        รับ event จาก group → ส่งต่อไปให้ client หน้าเว็บ
+        """
+        await self.send_json({
+            "type": "presence",
+            "event": event["event"],         # "online" / "offline"
+            "user_id": event["user_id"],
+        })
+
