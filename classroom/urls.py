@@ -113,5 +113,9 @@ urlpatterns = [
     path('notifications/mark-all-read/', views.notifications_mark_all_read, name='notifications_mark_all_read'),
     # path('storybook/<uuid:storybook_id>/share/', views.share_storybook, name='share_storybook'),
 
+    # path("comment/<int:storybook_id>/", add_comment, name="add_comment"),
+    # path("reply/<int:comment_id>/", reply_comment, name="reply_comment"),
+
+
 
 ]

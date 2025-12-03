@@ -40,6 +40,11 @@ from .tasks import process_storybook_async
 from .serializers import ClassroomSerializer
 from .notify_utils import notify_user
 
+from django.contrib.auth.decorators import login_required
+
+from .models import Storybook, Comment
+from classroom.notify_utils import notify_user
+
 logger = logging.getLogger("django.security")
 
 
@@ -363,51 +368,6 @@ def link_callback(uri, rel):
         return uri
     return path
 
-from django.http import HttpResponseForbidden
-
-# def export_lesson_pdf(request, storybook_id):
-#     storybook = get_object_or_404(Storybook, id=storybook_id)
-
-#     # ตรวจสอบสิทธิ์: ถ้าเป็นครูเจ้าของ หรือ นักเรียนที่ดูได้
-#     is_owner = storybook.user == request.user
-#     is_student_viewer = request.user.user_type == 'student'  # หรือจะตรวจสอบว่าลงทะเบียนชั้นเรียนนี้ก็ได้
-
-#     if not (is_owner or is_student_viewer):
-#         return HttpResponseForbidden("คุณไม่มีสิทธิ์ดาวน์โหลดบทเรียนนี้")
-
-#     scenes = storybook.scenes.order_by('scene_number')
-#     html = render_to_string('teacher/lesson_detail_for_pdf.html', {
-#         'storybook': storybook,
-#         'scenes': scenes,
-#     }, request=request)
-
-#     buffer = io.BytesIO()
-#     pisa_status = pisa.CreatePDF(src=html, dest=buffer, link_callback=link_callback)
-#     if pisa_status.err:
-#         return HttpResponse('เกิดข้อผิดพลาดในการสร้าง PDF', status=500)
-
-#     if request.user.user_type == 'student' and not is_owner:
-#         try:
-#             teacher = storybook.user  # ครูเจ้าของบทเรียน
-#             notify_user(
-#                 teacher,
-#                 event_type="student_downloaded",
-#                 verb="ดาวน์โหลด: นักเรียนดาวน์โหลดบทเรียนของคุณ",
-#                 description=f"{request.user.get_full_name() or request.user.email} ดาวน์โหลด {storybook.title}",
-#                 target_url=reverse("teacher_view_lesson_detail", args=[storybook.id]),
-#             )
-#         except Exception:
-#             # ไม่ให้การแจ้งเตือนทำให้การดาวน์โหลดล้ม
-#             pass
-
-#     buffer.seek(0)
-#     return HttpResponse(
-#         buffer,
-#         content_type='application/pdf',
-#         headers={
-#             'Content-Disposition': f'attachment; filename="lesson_{storybook.id}.pdf"'
-#         }
-#     )
 
 # def export_lesson_pdf(request, storybook_id):
 #     storybook = get_object_or_404(Storybook, id=storybook_id)
@@ -1994,14 +1954,7 @@ def admin_report_detail_view(request, storybook_id):
         'reports': reports,
     })
 
-
-# @login_required
-# @user_passes_test(lambda u: u.is_superuser or u.user_type == 'admin')
-# def delete_reported_storybook(request, storybook_id):
-#     storybook = get_object_or_404(Storybook, id=storybook_id)
-#     storybook.delete()
-#     messages.success(request, "ลบบทเรียนเรียบร้อยแล้ว")
-#     return redirect('admin_reported_lessons')    
+  
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser or u.user_type == 'admin')
@@ -2139,5 +2092,74 @@ def lesson_share_entry(request, storybook_id):
     if is_student:
         return redirect("student_display_lesson", storybook.id)
 
+
+@login_required
+def add_comment(request, storybook_id):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=400)
+
+    storybook = get_object_or_404(Storybook, id=storybook_id)
+    text = request.POST.get("text", "").strip()
+
+    if not text:
+        return JsonResponse({"error": "ข้อความว่าง"}, status=400)
+
+    comment = Comment.objects.create(
+        storybook=storybook,
+        author=request.user,
+        text=text,
+    )
+
+    if request.user != storybook.user:
+        notify_user(
+            user=storybook.user,
+            event_type="comment",  # ← ตรงกับ template แล้ว
+            verb=f"{request.user.get_full_name() or request.user.email} แสดงความคิดเห็นในบทเรียนของคุณ",
+            description=text[:120],
+            target_url=reverse("view_uploaded_lesson", args=[storybook.id]),
+        )
+
+    # กลับไปหน้าเดิม
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+@login_required
+def reply_comment(request, comment_id):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=400)
+
+    parent = get_object_or_404(Comment, id=comment_id)
+    text = request.POST.get("text", "").strip()
+
+    if not text:
+        return JsonResponse({"error": "ข้อความว่าง"}, status=400)
+
+    reply = Comment.objects.create(
+        storybook=parent.storybook,
+        author=request.user,
+        text=text,
+        parent_comment=parent,
+    )
+
+    if parent.author != request.user:
+        # ครูตอบนักเรียน หรือ นักเรียนตอบครู / เพื่อน ก็ใช้ logic เดียวกัน
+        # เลือก target_url ตาม role ของ "คนที่จะได้รับแจ้งเตือน"
+        if parent.author.user_type == "teacher":
+            # ถ้าคนรับเป็นครู → พาไปหน้า view_uploaded_lesson
+            target = reverse("view_uploaded_lesson", args=[parent.storybook.id])
+        else:
+            # ถ้าคนรับเป็นนักเรียน → พาไปหน้า student_view_storybook
+            target = reverse("student_view_storybook", args=[parent.storybook.id])
+
+        notify_user(
+            user=parent.author,
+            event_type="comment_reply",  # ← ตรงกับ template แล้ว
+            verb=f"{request.user.get_full_name() or request.user.email} ตอบกลับความคิดเห็นของคุณ",
+            description=text[:120],
+            target_url=target,
+        )
+
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
     # fallback
     return HttpResponseForbidden("⛔ บทบาทของคุณไม่มีสิทธิ์เข้าถึงหน้านี้")
+
