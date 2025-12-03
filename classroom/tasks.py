@@ -13,7 +13,7 @@ def process_storybook_async(storybook_id):
         lesson_path = storybook.file.path
         channel_layer = get_channel_layer()
 
-        # 1 Creating prompt
+        # สร้าง prompt สำหรับสรุปฉาก
         async_to_sync(channel_layer.group_send)(
             f"storybook_{storybook.id}",
             {
@@ -22,15 +22,18 @@ def process_storybook_async(storybook_id):
             }
         )
 
-        # Extract & Summarize
-        raw_text = extract_text_from_pdf(lesson_path)
-        scenes_data = summarize_to_scenes(raw_text)
-        total = len(scenes_data)
+        # ดึงข้อความจาก PDF และสรุปเป็นฉาก
+        # ❗ แก้: ต้อง open file ก่อนส่งเข้า extract_text_from_pdf
+        with open(lesson_path, "rb") as f:
+            raw_text = extract_text_from_pdf(f)
 
-        # 2 Create scenes one by one 
-        for idx, scene_dict in enumerate(scenes_data, start=1):
+        scenes_data = summarize_to_scenes(raw_text) # ได้รายการ dict
+        total = len(scenes_data) # จำนวนฉากทั้งหมด คือบังคับให้สรา้งเเค่ 20 ฉาก ใน utils.py เเล้ว len = 20
 
-            async_to_sync(channel_layer.group_send)(
+        # สร้างแต่ละฉาก
+        for idx, scene_dict in enumerate(scenes_data, start=1): 
+
+            async_to_sync(channel_layer.group_send)(  # แจ้งความคืบหน้า
                 f"storybook_{storybook.id}",
                 {
                     "type": "send_progress",
@@ -44,21 +47,17 @@ def process_storybook_async(storybook_id):
             text = scene_dict["text"]
             prompt = scene_dict["image_prompt"]
 
-            # Image
-            dalle_url = generate_dalle_image(prompt)
-            supabase_image_url = upload_file_from_url(
-                dalle_url,
-                f"scenes/storybook_{storybook.id}_scene_{scene_number}.png"
-            )
+            # รูปภาพ (ตอนนี้ generate_dalle_image คืน Supabase URL ตรง ๆ)
+            supabase_image_url = generate_dalle_image(prompt)
 
-            # TTS Audio
+            # เสียง TTS
             audio_bytes = generate_tts_audio(text)
             supabase_audio_url = upload_file_from_bytes(
                 audio_bytes,
                 f"audios/storybook_{storybook.id}_scene_{scene_number}.mp3"
             )
 
-            # Save DB
+            # บันทึกลงฐานข้อมูล
             Scene.objects.create(
                 storybook=storybook,
                 scene_number=scene_number,
@@ -68,7 +67,7 @@ def process_storybook_async(storybook_id):
                 audio_url=supabase_audio_url
             )
 
-            # Send Scene Realtime
+            # ส่งข้อมูลแบบเรียลไทม์ไปยังผู้ใช้
             async_to_sync(channel_layer.group_send)(
                 f"storybook_{storybook.id}",
                 {
@@ -82,7 +81,7 @@ def process_storybook_async(storybook_id):
                 }
             )
 
-        # FINISHED 
+        # เสร็จสิ้น
         async_to_sync(channel_layer.group_send)(
             f"storybook_{storybook.id}",
             {
@@ -92,7 +91,7 @@ def process_storybook_async(storybook_id):
         )
 
         storybook.is_ready = True
-        storybook.save()
+        storybook.save() # อัปเดตสถานะเป็นพร้อมใช้งาน
 
     except Exception as e:
         storybook = Storybook.objects.filter(id=storybook_id).first()

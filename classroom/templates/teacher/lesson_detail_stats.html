@@ -105,7 +105,7 @@
           <i class="bi bi-clipboard2-check text-2xl"></i>
         </div>
         <div>
-          <p class="text-[13px] text-slate-500">Evaluation results</p>
+          <p class="text-[13px] text-slate-500">คะแนนเฉลี่ยแบบทดสอบ</p>
           <p class="text-2xl font-extrabold text-slate-900">
             {{ evaluation_avg|default:average_score|floatformat:1 }}/10
           </p>
@@ -137,7 +137,7 @@
         </div>
         <div>
           <p class="text-[13px] text-slate-500">ยอดแชร์</p>
-          <p class="text-2xl font-extrabold text-slate-900">{{ total_shares|default:0 }}</p>
+          <p class="text-2xl font-extrabold text-slate-900">{{ shares_count|default:0 }}</p>
         </div>
       </div>
     </div>

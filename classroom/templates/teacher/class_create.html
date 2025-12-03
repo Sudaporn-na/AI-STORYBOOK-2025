@@ -1,6 +1,6 @@
 {% extends 'teacher/base_teacher.html' %}
 {% load static %}
-{% block title %}สร้างห้องเรียน{% endblock %}
+{% block title %}สร้างวิชาเรียน{% endblock %}
 
 {% block content %}
 <div class="min-h-screen flex items-center justify-center px-6 py-16 bg-gradient-to-b from-white to-[#F6F4FF]">
@@ -9,7 +9,7 @@
     <!-- หัวเรื่อง -->
     <h1 class="text-3xl font-extrabold text-brandDeep mb-2 text-center">
       {% if user.user_type == 'teacher' %}
-      สร้างห้องเรียนของคุณ
+      สร้างวิชาของคุณ
       {% else %}
       เข้าร่วมชั้นเรียน
       {% endif %}
@@ -17,7 +17,7 @@
 
     <p class="text-base text-slate-600 mb-6 text-center">
       {% if user.user_type == 'teacher' %}
-      กรอกชื่อห้องเรียน คำอธิบาย และเลือกรูปหน้าปกเพื่อเริ่มต้น
+      กรอกชื่อวิชาเรียน คำอธิบาย และเลือกรูปหน้าปกเพื่อเริ่มต้น
       {% else %}
       ใส่รหัสห้องเรียนเพื่อเข้าร่วม
       {% endif %}
@@ -31,7 +31,7 @@
 
       <!-- ชื่อห้องเรียน -->
       <div>
-        <label for="name" class="block text-sm font-medium text-slate-700 mb-1">ชื่อห้องเรียน</label>
+        <label for="name" class="block text-sm font-medium text-slate-700 mb-1">ชื่อวิชาเรียน</label>
         <input type="text" id="name" name="name" required
           class="w-full border border-[#ddd6fe] rounded-lg px-4 py-2 focus:ring-2 focus:ring-brandMid focus:border-brandMid shadow-sm"
           placeholder="เช่น วิทยาศาสตร์ ป.4" />

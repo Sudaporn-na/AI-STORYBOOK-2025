@@ -76,6 +76,9 @@ urlpatterns = [
     path('reports/delete/<int:report_id>/', views.delete_report, name='delete_report'),
     path('reports/edit/<int:report_id>/', views.edit_report, name='edit_report'),
 
+    path("lesson/share/<int:storybook_id>/", views.lesson_share_entry, name="lesson_share_entry"),
+
+
 
 
     # แอดมิน (Admin)
@@ -109,6 +112,7 @@ urlpatterns = [
     path('notifications/mark-read/<int:pk>/', views.notifications_mark_read, name='notifications_mark_read'),
     path('notifications/mark-all-read/', views.notifications_mark_all_read, name='notifications_mark_all_read'),
     # path('storybook/<uuid:storybook_id>/share/', views.share_storybook, name='share_storybook'),
+
     # path("comment/<int:storybook_id>/", add_comment, name="add_comment"),
     # path("reply/<int:comment_id>/", reply_comment, name="reply_comment"),
 
