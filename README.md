@@ -1,179 +1,42 @@
 # AI STORYBOOK
-# AI STORYBOOK
 
-ระบบจัดการชั้นเรียน (Django + PostgreSQL + HTML + javascript + TailwindCSS + CSS) สำหรับนักเรียนและคุณครู รองรับการสร้างห้องเรียน เข้าร่วม และอนุมัติผ่านแอดมิน
+*Interactive Educational Platform with Generative AI Integration*
 
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white)
+![Django](https://img.shields.io/badge/Django-5.2-092E20?style=flat&logo=django&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white)
+![Celery](https://img.shields.io/badge/Celery-37814A?style=flat&logo=celery&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat&logo=redis&logoColor=white)
 
+## Project Overview
+**AI Storybook** is an innovative, full-stack Learning Management System (LMS) designed to transform static educational materials into highly interactive, AI-generated storybooks. By leveraging Large Language Models (LLMs) and advanced media processing, the platform automates the creation of segmented narratives, dynamic illustrations, and natural text-to-speech audio, providing an immersive learning experience for students and streamlined classroom management for educators.
 
-## phases 1
-- พัฒนาโปรเเกรมโครงสร้างระบบพื้นฐาน (Auth, Models, DB) 
-- ระบบผู้ใช้ เช่น สมัคร, Login/Logout, Google Login
-- สร้างชั้นเรียน 
-- สร้างนิทานจากบทเรียน AI (Gemini) 
-- สร้างฟอร์มแบบทดสอบหลังเรียน
-- เข้าร่วมชั้นเรียน, ดูบทเรียน
-- นักเรียนทำแบบทดสอบหลังเรียน
-- สร้างฟอร์มแบบทดสอบหลังเรียน
-- เพิ่มอีเมลและรหัสยืนยันตัวตนของคุณครู และอื่นฟังก์ชันหลักอื่น
-## phases 2
-- ระบบแจ้งเตือน, กดใจ, แชร์, ค้นหา , สถิติ
-- ฟีเจอร์ Report, Dashboard ผู้ดูแล
-- โปรไฟล์/ประวัติ
-- Flipbook + PDF Download ,สิทธิ์ดาวน์โหลด
-- และอื่นฟังก์ชันรองอื่นๆ
+---
 
+## Core Architecture & Technical Highlights
+
+* ⚙️ **Asynchronous AI Processing:** Implemented a robust background task queue using **Celery** and **Redis** to handle heavy AI generation (Text, Image, TTS) and PDF extraction concurrently, preventing application bottlenecks and ensuring high availability.
+* 🧠 **Generative AI Integration:** Engineered complex prompt pipelines utilizing **Google Gemini API** (Gemini Pro, Flash Image, TTS) with strict safety filter fallbacks and dynamic prompt sanitization to guarantee safe, highly consistent character designs across generated scenes.
+* ☁️ **Scalable Backend & Cloud Storage:** Built a monolithic architecture with **Django** and **PostgreSQL**, integrated with **Supabase S3** for efficient, chunk-managed media storage (handling generated audio and high-resolution images).
+* 💻 **Interactive Frontend:** Developed a responsive, user-friendly interface using **Tailwind CSS** and JavaScript, featuring a dynamic Flipbook reader with synchronized audio playback and real-time automated post-tests.
+
+---
+
+## Key Features
+
+* 🏫 **Classroom Management:** Secure authentication (Google OAuth/Allauth), role-based access control (Teachers/Students), and seamless classroom enrollment.
+* 🪄 **Automated Content Creation:** One-click conversion of lesson plans into 20-scene storybooks complete with AI-generated visual consistency and automated multiple-choice assessments.
+* 📊 **Engagement & Analytics:** Real-time grading, student interaction tracking (likes, shares, favorites), and comprehensive reporting dashboards for administrators.
+
+---
 
 ## Tech Stack
-- Python 3.12
-- Django 5.2
-- PostgreSQL
-- Tailwind CSS
-- CSS
-- Django Allauth
 
-
-
-## การติดตั้ง (Setup)
-
-### 1. Clone โปรเจกต์
-```
-git clone https://github.com/Pratthana-da/DSSI-68.git 
-```
-```
-cd DSSI-68
-```
-
-
-
-### 2. สร้าง Virtual Environment
-```
-py -3.12 -m venv .venv
-```
-
-
-```
-.venv\Scripts\activate
-```   
-
-### 3. ติดตั้ง dependencies
-```
-pip freeze > requirements.txt
-```
-
-```
-pip install -r requirements.txt
-```
-
-### 4. ตั้งค่า Environment File
-- สร้างไฟล์ .env แล้วใส่ค่าประมาณนี้:
-# Supabase
-- SUPABASE_URL=https://klpksjclsuudum.supabase.co
-- SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOc5fQ._-gDQsfevDAyBCGfdluILYDOP7S4gGKkd5T5wUKzwjM
-- SUPABASE_BUCKET=AI_STORYBOOK
-
-# Django settings
-- SECRET_KEY = 'django-inskgbx275^ya!g@y15q83d6-029r'
-
-- สร้าง api key ใน google ai studio
-- GEMINI_API_KEY=AIzaSyA95P7oogiY
-
-- GEMINI_TTS_VOICE=Leda
-- GEMINI_TTS_LANG=th-TH
-- ติดตั้งเเละดาวน์โหลดไว้ในเครื่อง
-- FFMPEG_BIN=C:\ffmpeg\ffmpeg-8.0-full_build\bin\ffmpeg.exe
-- FFPROBE_BIN=C:\ffmpeg\ffmpeg-8.0-full_build\bin\ffprobe.exe
-
-
-### 5. รันคำสั่ง migrate
-```
-python manage.py makemigrations
-```
-```
-python manage.py migrate
-```
-
-### 6. สร้าง superuser
-```
-python manage.py createsuperuser
-```
-
-### รัน redis
-```
-cd Redis-x64-5.0.14.1
-```
-
-```
-.\redis-server.exe 
-```
-
-# เปิดอีก terminal
-### ประมวลผลได้ ทีละ 1 งาน เท่านั้น  pool=solo
-```
-celery -A classroom_project worker --loglevel=info --pool=solo
-```
-
-```
-celery -A classroom_project worker --loglevel=info --pool=threads --concurrency=4
-```
-
-### 7. รันโปรเจกต์
-```
-uvicorn classroom_project.asgi:application --host 127.0.0.1 --port 8000 --reload
-```
-
-### Push ลง git
-### สร้าง Branch
-```
-git checkout -b feature-upload-pdf
-```
-```
-git add .
-```
-```
-git commit -m "เพิ่มหน้าอัปโหลด PDF"
-```
-```
-git push origin feature-upload-pdf
-```
-
-
-### ดึงข้อมูล
-```
-git checkout main
-```
-```
-git pull origin main
-```
-
-### ประมวลผลได้ ทีละหลายงาน concurrency=4 
-```
-celery -A classroom_project worker --loglevel=info --concurrency=4
-
-celery -A classroom_project worker --concurrency=10 --loglevel=info
-
-celery -A classroom_project worker --concurrency=5 --loglevel=info
-# เปิดอีก terminal:
-celery -A classroom_project worker --concurrency=5 --loglevel=info
-
-```
-
-### ยกเลิกการเปลี่ยนแปลงrequirements.txt
-```
-git restore requirements.txt
-```
-```
-del .\security.log
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
+| Category | Technologies |
+| :--- | :--- |
+| 🐍 **Backend** | Python 3.12, Django 5.2, PostgreSQL |
+| 🚀 **Infrastructure & Queues** | Celery, Redis |
+| 🤖 **AI & APIs** | Google Gemini API (Multimodal), Supabase Storage |
+| 🎨 **Frontend** | HTML5, JavaScript, Tailwind CSS |
+| 🎬 **Media Processing** | FFMPEG, Pydub, PyPDF2 |
